@@ -390,6 +390,42 @@
     </gazebo>
   </xacro:macro>
 
+  <!-- Macro to add a GPS sensor. -->
+  <xacro:macro name="gps_plugin_macro" 
+    params="namespace gps_suffix parent_link gps_topic mass_gps_sensor
+      reference_latitude reference_longitude reference_altitude
+      reference_heading noise_normal_position noise_uniform_position
+      *inertia *origin">
+  <!-- GPS link -->
+  <link name="${namespace}/gps${gps_suffix}_link">
+    <inertial>
+      <xacro:insert_block name="inertia" />
+      <mass value="${mass_gps_sensor}" />  <!-- [kg] -->
+      <origin xyz="0 0 0" rpy="0 0 0" />
+    </inertial>
+  </link>
+  <!-- GPS joint -->
+  <joint name="${namespace}/gps${gps_suffix}_link" type="revolute">
+    <xacro:insert_block name="origin" />
+    <parent link="${parent_link}" />
+    <child link="${namespace}/gps${gps_suffix}_link" />
+    <limit upper="0" lower="0" effort="0" velocity="0" />
+  </joint>
+  <gazebo>
+    <plugin filename="librotors_gazebo_gps_plugin.so" name="rotors_gazebo_gps${gps_suffix}_plugin">
+      <robotNamespace>${namespace}</robotNamespace> <!-- (string, required): ros namespace in which the messages are published -->
+      <linkName>${namespace}/gps${gps_suffix}_link</linkName> <!-- (string, required): name of the body which holds the GPS sensor -->
+      <gpsTopic>${gps_topic}</gpsTopic> <!-- (string): name of the sensor output topic and prefix of service names (defaults to 'gps') -->
+      <referenceLatitude>${reference_latitude}</referenceLatitude> <!-- the initial latitude [degrees [-90, 90]] -->
+      <referenceLongitude>${reference_longitude}</referenceLongitude> <!-- the initial longitude [degrees [-180, 180]] -->
+      <referenceAltitude>${reference_altitude}</referenceAltitude> <!-- the initial altitude [m] -->
+      <referenceHeading>${reference_heading}</referenceHeading> <!-- the initial degrees, measured from North [deg] -->
+      <noiseNormalPosition>${noise_normal_position}</noiseNormalPosition> <!-- standard deviation of additive white gaussian noise [m] -->
+      <noiseUniformPosition>${noise_uniform_position}</noiseUniformPosition> <!-- symmetric bounds of uniform noise [m] -->
+    </plugin>
+  </gazebo>
+  </xacro:macro>
+
   <!-- VI sensor macros -->
   <!-- Macro to add a VI-sensor camera. -->
   <xacro:macro name="vi_sensor_camera_macro"
@@ -680,6 +716,24 @@
       <inertia ixx="0.00001" ixy="0.0" ixz="0.0" iyy="0.00001" iyz="0.0" izz="0.00001" />
       <origin xyz="0 0 0" rpy="0 0 0" />
     </xacro:imu_plugin_macro>
+  </xacro:macro>
+
+  <xacro:macro name="default_gps" params="namespace parent_link">
+    <xacro:gps_plugin_macro
+      namespace="${namespace}"
+      gps_suffix=""
+      parent_link="${parent_link}"
+      gps_topic="gps"
+      mass_gps_sensor="0.015"
+      reference_latitude="47.3667"
+      reference_longitude="8.5500"
+      reference_altitude="500.0"
+      reference_heading="0.0"
+      noise_normal_position="0 0 0"
+      noise_uniform_position="0 0 0">
+      <inertia ixx="0.00001" ixy="0.0" ixz="0.0" iyy="0.00001" iyz="0.0" izz="0.00001" />
+      <origin xyz="0 0 0" rpy="0 0 0" />
+    </xacro:gps_plugin_macro>
   </xacro:macro>
 
 </robot>
