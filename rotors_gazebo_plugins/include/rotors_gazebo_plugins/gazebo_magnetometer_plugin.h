@@ -18,8 +18,8 @@
  * limitations under the License.
  */
 
-#ifndef ROTORS_GAZEBO_PLUGINS_GPS_PLUGIN_H
-#define ROTORS_GAZEBO_PLUGINS_GPS_PLUGIN_H
+#ifndef ROTORS_GAZEBO_PLUGINS_MAGNETOMETER_PLUGIN_H
+#define ROTORS_GAZEBO_PLUGINS_MAGNETOMETER_PLUGIN_H
 
 #include <Eigen/Core>
 #include <gazebo/common/common.hh>
@@ -28,25 +28,22 @@
 #include <gazebo/physics/physics.hh>
 #include <mav_msgs/default_topics.h>
 #include <ros/ros.h>
-#include <sensor_msgs/NavSatFix.h>
+#include <sensor_msgs/MagneticField.h>
 
 #include "rotors_gazebo_plugins/common.h"
 
 namespace gazebo {
-// WGS84 constants
-static constexpr double kEquatorialRadius = 6378137.0;
-static constexpr double kPolarRadius = 6356752.3;
+// Default reference values (in Tesla), obtained from World Magnetic Model:
+// (https://www.ngdc.noaa.gov/geomag/WMM/calculators.shtml) for Zurich:
+// lat=+47.3667degN, lon=+8.5500degE, h=+500m, WGS84
+static constexpr double kDefaultRefMagNorth = 0.000021475;
+static constexpr double kDefaultRefMagEast = 0.000000797;
+static constexpr double kDefaultRefMagDown = 0.000042817;
 
-// Default reference values (Zurich: lat=+47.3667degN, lon=+8.5500degE, h=+500m, WGS84)
-static constexpr double kDefaultRefLat = 47.3667;
-static constexpr double kDefaultRefLon = 8.5500;
-static constexpr double kDefaultRefAlt = 500.0;
-static constexpr double kDefaultRefHeading = 0.0;
-
-class GazeboGpsPlugin : public ModelPlugin {
+class GazeboMagnetometerPlugin : public ModelPlugin {
  public:
-  GazeboGpsPlugin();
-  ~GazeboGpsPlugin();
+  GazeboMagnetometerPlugin();
+  ~GazeboMagnetometerPlugin();
 
  protected:
   void Load(physics::ModelPtr _model, sdf::ElementPtr _sdf);
@@ -54,9 +51,9 @@ class GazeboGpsPlugin : public ModelPlugin {
 
  private:
   std::string namespace_;
-  std::string gps_topic_;
+  std::string magnetometer_topic_;
   ros::NodeHandle* node_handle_;
-  ros::Publisher gps_pub_;
+  ros::Publisher magnetometer_pub_;
   std::string frame_id_;
 
   // Pointer to the world
@@ -68,16 +65,12 @@ class GazeboGpsPlugin : public ModelPlugin {
   // Pointer to the update event connection
   event::ConnectionPtr updateConnection_;
 
-  int gps_sequence_;
+  int magnetometer_sequence_;
 
-  double ref_lat_;
-  double ref_lon_;
-  double ref_alt_;
-  double ref_heading_;
-  double earth_radius_;
+  math::Vector3 mag_W_;
 
-  sensor_msgs::NavSatFix gps_message_;
+  sensor_msgs::MagneticField magnetometer_message_;
 };
 }
 
-#endif // ROTORS_GAZEBO_PLUGINS_GPS_PLUGIN_H
+#endif // ROTORS_GAZEBO_PLUGINS_MAGNETOMETER_PLUGIN_H

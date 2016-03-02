@@ -1,19 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(rotors_gazebo_plugins)
 
-set(MAVLINK_INTERFACE)
-set(BUILD_MAVLINK_INTERFACE)
-
-if (MAVLINK_INTERFACE STREQUAL "y")
-  set(BUILD_MAVLINK_INTERFACE TRUE)
-else ()
-  set(BUILD_MAVLINK_INTERFACE FALSE)
-endif ()
-
-if (BUILD_MAVLINK_INTERFACE)
-  message(STATUS "Adding mavros dependency and building mavlink_interface_plugin")
-endif ()
-
 add_definitions(-std=c++11)
 
 # To enable assertions when compiled in release mode.
@@ -34,13 +21,6 @@ find_package(catkin REQUIRED COMPONENTS
   tf
 )
 
-if (BUILD_MAVLINK_INTERFACE)
-  find_package(mavros)
-  find_package(mavros_msgs)
-  message(STATUS "Added mavros dependency")
-endif()
-
-
 find_package(Eigen REQUIRED)
 find_package(octomap REQUIRED)
 find_package(gazebo REQUIRED)
@@ -48,9 +28,6 @@ find_package(OpenCV REQUIRED)
 link_directories(${GAZEBO_LIBRARY_DIRS})
 include_directories(${GAZEBO_INCLUDE_DIRS})
 include_directories(${OpenCV_INCLUDE_DIRS})
-if (BUILD_MAVLINK_INTERFACE)
-  include_directories(${mavros_msgs_INCLUDE_DIRS})
-endif()
 
 catkin_package(
   INCLUDE_DIRS include ${Eigen_INCLUDE_DIRS}
@@ -98,6 +75,10 @@ add_library(rotors_gazebo_gps_plugin src/gazebo_gps_plugin.cpp)
 target_link_libraries(rotors_gazebo_gps_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
 add_dependencies(rotors_gazebo_gps_plugin ${catkin_EXPORTED_TARGETS})
 
+add_library(rotors_gazebo_magnetometer_plugin src/gazebo_magnetometer_plugin.cpp)
+target_link_libraries(rotors_gazebo_magnetometer_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+add_dependencies(rotors_gazebo_magnetometer_plugin ${catkin_EXPORTED_TARGETS})
+
 install(
   TARGETS
     rotors_gazebo_motor_model
@@ -109,6 +90,7 @@ install(
     rotors_gazebo_octomap_plugin
     rotors_gazebo_multirotor_base_plugin
     rotors_gazebo_gps_plugin
+    rotors_gazebo_magnetometer_plugin
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 )

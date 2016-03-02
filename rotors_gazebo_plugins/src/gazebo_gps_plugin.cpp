@@ -20,6 +20,11 @@
 
 #include "rotors_gazebo_plugins/gazebo_gps_plugin.h"
 
+#include <chrono>
+#include <cmath>
+#include <iostream>
+#include <stdio.h>
+
 #include <boost/bind.hpp>
 
 namespace gazebo {
@@ -47,10 +52,6 @@ void GazeboGpsPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
   model_ = _model;
   world_ = model_->GetWorld();
 
-  sdf::Vector3 noise_normal_position;
-  sdf::Vector3 noise_uniform_position;
-  const sdf::Vector3 zeros3(0.0, 0.0, 0.0);
-
   // Use the robot namespace to create the node handle
   if (_sdf->HasElement("robotNamespace"))
     namespace_ = _sdf->GetElement("robotNamespace")->Get<std::string>();
@@ -58,15 +59,18 @@ void GazeboGpsPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
     gzerr << "[gazebo_gps_plugin] Please specify a robotNamespace.\n";
   node_handle_ = new ros::NodeHandle(namespace_);
 
-  // Use the link name to set the frame id
+  // Use the link name as the frame id
+  std::string link_name;
   if (_sdf->HasElement("linkName"))
-    link_name_ = _sdf->GetElement("linkName")->Get<std::string>();
+    link_name = _sdf->GetElement("linkName")->Get<std::string>();
   else
     gzerr << "[gazebo_gps_plugin] Please specify a linkName.\n";
-  link_ = model_->GetLink(link_name_);
+  // Get the pointer to the link
+  link_ = model_->GetLink(link_name);
   if (link_ == NULL)
-    gzthrow("[gazebo_gps_plugin] Couldn't find specified link \"" << link_name_ << "\".");
-  frame_id_ = link_name_;
+    gzthrow("[gazebo_gps_plugin] Couldn't find specified link \"" << link_name << "\".");
+
+  frame_id_ = link_name;
 
   // Retrieve the rest of the SDF parameters
   getSdfParam<std::string>(_sdf, "gpsTopic", gps_topic_, mav_msgs::default_topics::GPS);
@@ -74,8 +78,6 @@ void GazeboGpsPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
   getSdfParam<double>(_sdf, "referenceLongitude", ref_lon_, ref_lon_);
   getSdfParam<double>(_sdf, "referenceAltitude", ref_alt_, ref_alt_);
   getSdfParam<double>(_sdf, "referenceHeading", ref_heading_, ref_heading_);
-  getSdfParam<sdf::Vector3>(_sdf, "noiseNormalPosition", noise_normal_position, zeros3);
-  getSdfParam<sdf::Vector3>(_sdf, "noiseUniformPosition", noise_uniform_position, zeros3);
 
   // Compute the earth radius at the given reference latitude and convert heading to radians
   double a = kEquatorialRadius;
@@ -86,55 +88,35 @@ void GazeboGpsPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
                        (pow(a * cos_lat, 2.0) + pow(b * sin_lat, 2.0)));
   ref_heading_ = ref_heading_ * M_PI / 180.0;
 
-  // Generate random distributions
-  position_n_[0] = NormalDistribution(0, noise_normal_position.x);
-  position_n_[1] = NormalDistribution(0, noise_normal_position.y);
-  position_n_[2] = NormalDistribution(0, noise_normal_position.z);
-
-  position_u_[0] = UniformDistribution(-noise_uniform_position.x, noise_uniform_position.x);
-  position_u_[1] = UniformDistribution(-noise_uniform_position.y, noise_uniform_position.y);
-  position_u_[2] = UniformDistribution(-noise_uniform_position.z, noise_uniform_position.z);
-
-  // Listen to the update event. This event is broadcast every simulation iteration.
+  // Listen to the update event. This event is broadcast every simulation iteration
   this->updateConnection_ =
       event::Events::ConnectWorldUpdateBegin(
           boost::bind(&GazeboGpsPlugin::OnUpdate, this, _1));
 
   gps_pub_ = node_handle_->advertise<sensor_msgs::NavSatFix>(gps_topic_, 1);
 
-  // Fill gps message.
+  // Fill gps message
   gps_message_.header.frame_id = frame_id_;
   gps_message_.status.service = sensor_msgs::NavSatStatus::SERVICE_GPS;
   gps_message_.status.status = sensor_msgs::NavSatStatus::STATUS_FIX;
   gps_message_.latitude = ref_lat_;
   gps_message_.longitude = ref_lon_;
   gps_message_.altitude = ref_alt_;
-
-  //
-  // Covariance?
-  //
+  gps_message_.position_covariance.fill(0.0);
 }
 
 void GazeboGpsPlugin::OnUpdate(const common::UpdateInfo& _info) {
   common::Time current_time  = world_->GetSimTime();
 
   // Get the current pose from Gazebo
-  math::Pose gazebo_pose = link_->GetWorldPose();
-  Eigen::Vector3d position = Eigen::Vector3d(gazebo_pose.pos.x, gazebo_pose.pos.y, gazebo_pose.pos.z);
-
-  // Add noise
-  Eigen::Vector3d pos_n;
-  pos_n << position_n_[0](random_generator_) + position_u_[0](random_generator_),
-           position_n_[1](random_generator_) + position_u_[1](random_generator_),
-           position_n_[2](random_generator_) + position_u_[2](random_generator_);
-  position += pos_n;
+  math::Vector3 position = model_->GetWorldPose().pos;
 
   // Update the GPS coordinates
-  gps_message_.latitude += (position[0] * cos(ref_heading_) + position[1] * sin(ref_heading_)) / earth_radius_;
-  gps_message_.longitude -= (position[1] * cos(ref_heading_) - position[0] * sin(ref_heading_)) / earth_radius_;
-  gps_message_.altitude = position[2];
+  gps_message_.latitude += (position.x * cos(ref_heading_) + position.y * sin(ref_heading_)) / earth_radius_;
+  gps_message_.longitude -= (-position.x * sin(ref_heading_) + position.y * cos(ref_heading_)) / earth_radius_;
+  gps_message_.altitude = position.z;
 
-  // Fill GPS message.
+  // Fill GPS message
   gps_message_.header.seq = gps_sequence_;
   gps_message_.header.stamp.sec = current_time.sec;
   gps_message_.header.stamp.nsec = current_time.nsec;
