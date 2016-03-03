@@ -1,0 +1,96 @@
+<?xml version="1.0"?>
+<!--
+  Copyright 2015 Fadri Furrer, ASL, ETH Zurich, Switzerland
+  Copyright 2015 Michael Burri, ASL, ETH Zurich, Switzerland
+  Copyright 2015 Mina Kamel, ASL, ETH Zurich, Switzerland
+  Copyright 2015 Janosch Nikolic, ASL, ETH Zurich, Switzerland
+  Copyright 2015 Markus Achtelik, ASL, ETH Zurich, Switzerland
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<robot name="atlantik_solar" xmlns:xacro="http://ros.org/wiki/xacro">
+  <!-- Properties -->
+  <xacro:property name="namespace" value="$(arg mav_name)" />
+  <xacro:property name="rotor_velocity_slowdown_sim" value="10" />
+  <xacro:property name="use_mesh_file" value="false" />
+  <xacro:property name="mesh_file" value="" />
+  <xacro:property name="mass_fuselage" value="10.0" /> <!-- [kg] -->
+  <xacro:property name="mass_front_wing" value="5.0" /> <!-- [kg] -->
+  <xacro:property name="body_length" value="3.0" /> <!-- [m] -->
+  <xacro:property name="body_width" value="0.3" /> <!-- [m] -->
+  <xacro:property name="body_height" value="0.16" /> <!-- [m] -->
+  <xacro:property name="wingspan" value="6.0" /> <!-- [m] -->
+  <xacro:property name="root_chord" value="0.3" /> <!-- [m] -->
+  <xacro:property name="front_wing_height" value="0.02" /> <!-- [m] -->
+  <xacro:property name="front_wing_dihedral_angle" value="5" /> <!-- [deg] -->
+  <xacro:property name="PI" value="3.14159" /> <!-- [deg] -->
+
+  <!-- Front wing length -->
+  <xacro:property name="front_wing_length" value="${0.5 * (wingspan - body_width) / 
+    (1.0 - 0.5 * (front_wing_dihedral_angle * front_wing_dihedral_angle * PI * PI / (180.0 * 180.0)))}" />
+
+  <!-- Inertia of the fuselage -->
+  <xacro:property name="body_inertia">
+    <xacro:box_inertia x="${body_length}" y="${body_width}" z="${body_height}" mass="${mass_fuselage}" />
+  </xacro:property>
+
+  <!-- Inertia of a single front wing, assuming it is a cuboid -->
+  <xacro:property name="front_wing_inertia">
+    <xacro:box_inertia x="${front_wing_length}" y="${root_chord}" z="${front_wing_height}" mass="${mass_front_wing}" />
+  </xacro:property>
+
+  <!-- Included URDF Files -->
+  <xacro:include filename="$(find rotors_description)/urdf/fixed_wing_base.xacro" />
+
+  <!-- Instantiate fixed_wing_base_macro once -->
+  <xacro:fixed_wing_base_macro
+    robot_namespace="${namespace}"
+    mass="${mass_fuselage}"
+    body_length="${body_length}"
+    body_width="${body_width}"
+    body_height="${body_height}"
+    use_mesh_file="${use_mesh_file}"
+    mesh_file="${mesh_file}">
+    <xacro:insert_block name="body_inertia" />
+  </xacro:fixed_wing_base_macro>
+
+  <!-- Instantiate wings -->
+  <xacro:wing
+    robot_namespace="${namespace}"
+    suffix="front_left"
+    parent="${namespace}/base_link"
+    mass_wing="${mass_front_wing}"
+    wing_length="${front_wing_length}"
+    wing_width="${root_chord}"
+    wing_height="${front_wing_height}"
+    use_mesh="false"
+    mesh="">
+    <origin xyz="0.5 ${0.25 * (wingspan + body_width)} ${0.5*body_height}" rpy="0.0 ${front_wing_dihedral_angle*PI/180.0} -1.57" />
+    <xacro:insert_block name="front_wing_inertia" />
+  </xacro:wing>
+
+  <xacro:wing
+    robot_namespace="${namespace}"
+    suffix="front_right"
+    parent="${namespace}/base_link"
+    mass_wing="${mass_front_wing}"
+    wing_length="${front_wing_length}"
+    wing_width="${root_chord}"
+    wing_height="${front_wing_height}"
+    use_mesh="false"
+    mesh="">
+    <origin xyz="0.5 ${-0.25 * (wingspan + body_width)} ${0.5*body_height}" rpy="0.0 ${front_wing_dihedral_angle*PI/180.0} 1.57" />
+    <xacro:insert_block name="front_wing_inertia" />
+  </xacro:wing>
+</robot>

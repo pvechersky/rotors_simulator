@@ -18,59 +18,49 @@
  * limitations under the License.
  */
 
-#ifndef ROTORS_GAZEBO_PLUGINS_MAGNETOMETER_PLUGIN_H
-#define ROTORS_GAZEBO_PLUGINS_MAGNETOMETER_PLUGIN_H
+#ifndef ROTORS_GAZEBO_PLUGINS_WING_MODELS_H
+#define ROTORS_GAZEBO_PLUGINS_WING_MODELS_H
 
-#include <Eigen/Core>
+#include <Eigen/Eigen>
 #include <gazebo/common/common.hh>
 #include <gazebo/common/Plugin.hh>
 #include <gazebo/gazebo.hh>
 #include <gazebo/physics/physics.hh>
-#include <mav_msgs/default_topics.h>
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <ros/ros.h>
-#include <sensor_msgs/MagneticField.h>
 
 #include "rotors_gazebo_plugins/common.h"
 
 namespace gazebo {
-// Default reference values (in Tesla), obtained from World Magnetic Model:
-// (https://www.ngdc.noaa.gov/geomag/WMM/calculators.shtml) for Zurich:
-// lat=+47.3667degN, lon=+8.5500degE, h=+500m, WGS84
-static constexpr double kDefaultRefMagNorth = 0.000021475;
-static constexpr double kDefaultRefMagEast = 0.000000797;
-static constexpr double kDefaultRefMagDown = 0.000042817;
 
-class GazeboMagnetometerPlugin : public ModelPlugin {
+class GazeboWingModelPlugin : public ModelPlugin {
  public:
-  GazeboMagnetometerPlugin();
-  virtual ~GazeboMagnetometerPlugin();
+  GazeboWingModelPlugin();
+  virtual ~GazeboWingModelPlugin();
 
  protected:
   void Load(physics::ModelPtr _model, sdf::ElementPtr _sdf);
   void OnUpdate(const common::UpdateInfo&);
 
+  math::Vector3 ComputeAerodynamicForces(math::Vector3 vel);
+  //math::Vector3 get_aerodynamic_moments(math::Vector3 &vel);
+
  private:
   std::string namespace_;
-  std::string magnetometer_topic_;
-  ros::NodeHandle* node_handle_;
-  ros::Publisher magnetometer_pub_;
+  //std::string pose_topic_;
+  ros::NodeHandle *node_handle_;
+  //ros::Subscriber pose_sub_;
   std::string frame_id_;
 
-  // Pointer to the world
+  /// \brief Pointer to the world.
   physics::WorldPtr world_;
-  // Pointer to the model
+  /// \brief Pointer to the model.
   physics::ModelPtr model_;
-  // Pointer to the link
+  /// \brief Pointer to the link.
   physics::LinkPtr link_;
-  // Pointer to the update event connection
+  /// \brief The connections.
   event::ConnectionPtr updateConnection_;
-
-  int magnetometer_sequence_;
-
-  math::Vector3 mag_W_;
-
-  sensor_msgs::MagneticField magnetometer_message_;
 };
 }
 
-#endif // ROTORS_GAZEBO_PLUGINS_MAGNETOMETER_PLUGIN_H
+#endif // ROTORS_GAZEBO_PLUGINS_WING_MODELS_H

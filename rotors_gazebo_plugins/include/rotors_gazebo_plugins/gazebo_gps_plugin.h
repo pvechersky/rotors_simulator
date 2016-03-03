@@ -46,7 +46,7 @@ static constexpr double kDefaultRefHeading = 0.0;
 class GazeboGpsPlugin : public ModelPlugin {
  public:
   GazeboGpsPlugin();
-  ~GazeboGpsPlugin();
+  virtual ~GazeboGpsPlugin();
 
  protected:
   void Load(physics::ModelPtr _model, sdf::ElementPtr _sdf);

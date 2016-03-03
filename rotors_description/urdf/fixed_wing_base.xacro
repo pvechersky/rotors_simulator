@@ -19,30 +19,103 @@
   limitations under the License.
 -->
 
-<robot name="fixed_wing" xmlns:xacro="http://ros.org/wiki/xacro">
-  <xacro:include filename="$(find rotors_description)/urdf/component_snippets.xacro" />
-  <!-- Instantiate fixed wing "mechanics" -->
-  <xacro:include filename="$(find rotors_description)/urdf/firefly.xacro" />
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+  <!-- Macro for the inertia of a box -->
+  <xacro:macro name="box_inertia" params="x y z mass">
+    <inertia ixx="${0.0833333 * mass * (y*y + z*z)}" ixy="0.0" ixz="0.0"
+      iyy="${0.0833333 * mass * (x*x + z*z)}" iyz="0.0"
+      izz="${0.0833333 * mass * (x*x + y*y)}" />
+  </xacro:macro>
 
-  <!-- Instantiate a controller. -->
-  <xacro:controller_plugin_macro namespace="${namespace}" imu_sub_topic="imu" />
+  <!-- Macro for the inertial properties of a box -->
+  <xacro:macro name="box_inertial" params="x y z mass *origin">
+    <inertial>
+      <mass value="${mass}" />
+      <xacro:insert_block name="origin" />
+      <xacro:box_inertia x="${x}" y="${y}" z="${z}" mass="${mass}" />
+    </inertial>
+  </xacro:macro>
 
-  <!-- Mount an ADIS16448 IMU. -->
-  <xacro:default_imu namespace="${namespace}" parent_link="${namespace}/base_link" />
+  <!-- Fixed-wing fuselage link -->
+  <xacro:macro name="fixed_wing_base_macro"
+    params="robot_namespace mass body_length body_width body_height use_mesh_file mesh_file *inertia">
+    <link name="${robot_namespace}/base_link"></link>
 
-  <!-- Mount a GPS. -->
-  <xacro:default_gps namespace="${namespace}" parent_link="${namespace}/base_link" />
+    <joint name="${robot_namespace}/base_joint" type="fixed">
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <parent link="${robot_namespace}/base_link" />
+      <child link="${robot_namespace}/base_link_inertia" />
+    </joint>
 
-  <xacro:if value="$(arg enable_ground_truth)">
-    <xacro:ground_truth_imu_and_odometry namespace="${namespace}" parent_link="${namespace}/base_link" />
-  </xacro:if>
+    <link name="${robot_namespace}/base_link_inertia">
+      <inertial>
+        <mass value="${mass}" />  <!-- [kg] -->
+        <origin xyz="0 0 0" />
+        <xacro:insert_block name="inertia" />
+      </inertial>
 
-  <xacro:if value="$(arg enable_logging)">
-    <!-- Instantiate a logger -->
-    <xacro:bag_plugin_macro
-      namespace="${namespace}"
-      bag_file="$(arg log_file)"
-      rotor_velocity_slowdown_sim="${rotor_velocity_slowdown_sim}" />
-  </xacro:if>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry>
+          <xacro:if value="${use_mesh_file}">
+            <mesh filename="${mesh_file}" scale="1 1 1" />
+          </xacro:if>
+          <xacro:unless value="${use_mesh_file}">
+            <box size="${body_length} ${body_width} ${body_height}"/> <!-- [m] [m] [m] -->
+          </xacro:unless>
+        </geometry>
+      </visual>
 
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry>
+          <box size="${body_length} ${body_width} ${body_height}" /> <!-- [m] [m] [m] -->
+        </geometry>
+      </collision>
+    </link>
+  </xacro:macro>
+
+  <!-- Wing joint and link -->
+  <xacro:macro name="wing"
+    params="robot_namespace suffix parent mass_wing 
+      wing_length wing_width wing_height use_mesh mesh *origin *inertia">
+
+    <joint name="${robot_namespace}/wing_${suffix}_joint" type="revolute">
+      <xacro:insert_block name="origin" />
+      <axis xyz="0 0 1" />
+      <parent link="${parent}" />
+      <child link="${robot_namespace}/wing_${suffix}" />
+      <limit upper="0" lower="0" effort="0" velocity="0" />
+    </joint>
+
+    <link name="${robot_namespace}/wing_${suffix}">
+      <inertial>
+        <mass value="${mass_wing}" /> <!-- [kg] -->
+        <xacro:insert_block name="inertia" />
+      </inertial>
+      <visual>
+        <geometry>
+          <xacro:if value="${use_mesh}">
+            <mesh filename="${mesh}"
+              scale="1 1 1" />
+          </xacro:if>
+          <xacro:unless value="${use_mesh}">
+            <box size="${wing_length} ${wing_width} ${wing_height}"/> <!-- [m] [m] [m] -->
+          </xacro:unless>
+        </geometry>
+      </visual>
+      <collision>
+        <geometry>
+          <box size="${wing_length} ${wing_width} ${wing_height}"/> <!-- [m] [m] [m] -->
+        </geometry>
+      </collision>
+    </link>
+
+    <gazebo>
+      <plugin name="${robot_namespace}_${suffix}_wing_model" filename="librotors_gazebo_wing_model.so">
+        <robotNamespace>${robot_namespace}</robotNamespace>
+        <linkName>${robot_namespace}/wing_${suffix}</linkName>
+      </plugin>
+    </gazebo>
+  </xacro:macro>
 </robot>
