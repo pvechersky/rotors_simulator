@@ -18,40 +18,51 @@
  * limitations under the License.
  */
 
-#ifndef ROTORS_GAZEBO_PLUGINS_WING_MODELS_H
-#define ROTORS_GAZEBO_PLUGINS_WING_MODELS_H
+#ifndef ROTORS_GAZEBO_PLUGINS_PRESSURE_PLUGIN_H
+#define ROTORS_GAZEBO_PLUGINS_PRESSURE_PLUGIN_H
 
-#include <Eigen/Eigen>
+#include <Eigen/Core>
 #include <gazebo/common/common.hh>
 #include <gazebo/common/Plugin.hh>
 #include <gazebo/gazebo.hh>
 #include <gazebo/physics/physics.hh>
+#include <mav_msgs/default_topics.h>
 #include <ros/ros.h>
+#include <sensor_msgs/FluidPressure.h>
 
 #include "rotors_gazebo_plugins/common.h"
 
 namespace gazebo {
-// Default values
-static constexpr float kDefaultAlpha0 = 0.0;
-static constexpr float kDefaultAlphaStall = 15.0;
-static constexpr float kDefaultCLAlpha = 2 * M_PI;
-static constexpr float kDefaultAirDensity = 1.225;
-static constexpr float kDefaultWingArea = 1.0;
+// Constants
+static constexpr double kRs = 8314.32; /* Nm/ (kmol K), gas constant */
+static constexpr double kM0 = 28.9644; /* kg/kmol, mean molecular weight of air */
+static constexpr double kG0 = 9.80665; /* m/s^2, acceleration due to gravity at 45.5425 deg lat */
+static constexpr double kR0 = 6356766.0; /* m, Earth radius at g0 */
+static constexpr double kP0 = 101325.0; /* Pa, air pressure at g0 */
+static constexpr double kT0 = 288.15; /* K, standard sea-level temperature */
+static constexpr double kTl = 0.0065; /* K/m, temperature lapse */
+static constexpr double kAs = kG0 * kM0 / (kRs * -kTl);
 
-class GazeboWingModelPlugin : public ModelPlugin {
+// Default values
+static const std::string kDefaultPressurePubTopic = "air_pressure";
+static constexpr double kDefaultRefAlt = 500.0; /* m, Zurich: h=+500m, WGS84) */
+static constexpr double kDefaultPressureVar = 0.0; /* Pa^2, pressure variance */
+
+class GazeboPressurePlugin : public ModelPlugin {
  public:
-  GazeboWingModelPlugin();
-  virtual ~GazeboWingModelPlugin();
+  GazeboPressurePlugin();
+  virtual ~GazeboPressurePlugin();
 
  protected:
   void Load(physics::ModelPtr _model, sdf::ElementPtr _sdf);
   void OnUpdate(const common::UpdateInfo&);
 
-  math::Vector3 ComputeAerodynamicForces(math::Vector3 vel);
-  //math::Vector3 get_aerodynamic_moments(math::Vector3 &vel);
-
  private:
   std::string namespace_;
+  std::string pressure_topic_;
+  ros::NodeHandle* node_handle_;
+  ros::Publisher pressure_pub_;
+  std::string frame_id_;
 
   // Pointer to the world
   physics::WorldPtr world_;
@@ -62,12 +73,13 @@ class GazeboWingModelPlugin : public ModelPlugin {
   // Pointer to the update event connection
   event::ConnectionPtr updateConnection_;
 
-  float alpha_0_;
-  float alpha_stall_;
-  float c_L_alpha_;
-  float air_density_;
-  float wing_area_;
+  int pressure_sequence_;
+
+  double ref_alt_;
+  double pressure_var_;
+
+  sensor_msgs::FluidPressure pressure_message_;
 };
 }
 
-#endif // ROTORS_GAZEBO_PLUGINS_WING_MODELS_H
+#endif // ROTORS_GAZEBO_PLUGINS_PRESSURE_PLUGIN_H

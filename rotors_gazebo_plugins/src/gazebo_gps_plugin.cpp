@@ -32,11 +32,7 @@ namespace gazebo {
 GazeboGpsPlugin::GazeboGpsPlugin()
     : ModelPlugin(),
       node_handle_(0),
-      gps_sequence_(0),
-      ref_lat_(kDefaultRefLat),
-      ref_lon_(kDefaultRefLon),
-      ref_alt_(kDefaultRefAlt),
-      ref_heading_(kDefaultRefHeading) {
+      gps_sequence_(0) {
 }
 
 GazeboGpsPlugin::~GazeboGpsPlugin() {
@@ -74,10 +70,10 @@ void GazeboGpsPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
 
   // Retrieve the rest of the SDF parameters
   getSdfParam<std::string>(_sdf, "gpsTopic", gps_topic_, mav_msgs::default_topics::GPS);
-  getSdfParam<double>(_sdf, "referenceLatitude", ref_lat_, ref_lat_);
-  getSdfParam<double>(_sdf, "referenceLongitude", ref_lon_, ref_lon_);
-  getSdfParam<double>(_sdf, "referenceAltitude", ref_alt_, ref_alt_);
-  getSdfParam<double>(_sdf, "referenceHeading", ref_heading_, ref_heading_);
+  getSdfParam<double>(_sdf, "referenceLatitude", ref_lat_, kDefaultRefLat);
+  getSdfParam<double>(_sdf, "referenceLongitude", ref_lon_, kDefaultRefLon);
+  getSdfParam<double>(_sdf, "referenceAltitude", ref_alt_, kDefaultRefAlt);
+  getSdfParam<double>(_sdf, "referenceHeading", ref_heading_, kDefaultRefHeading);
 
   // Compute the earth radius at the given reference latitude and convert heading to radians
   double a = kEquatorialRadius;

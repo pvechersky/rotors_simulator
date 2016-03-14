@@ -394,7 +394,7 @@
     </inertial>
   </link>
   <!-- GPS joint -->
-  <joint name="${namespace}/gps${gps_suffix}_link" type="revolute">
+  <joint name="${namespace}/gps${gps_suffix}_joint" type="revolute">
     <xacro:insert_block name="origin" />
     <parent link="${parent_link}" />
     <child link="${namespace}/gps${gps_suffix}_link" />
@@ -429,7 +429,7 @@
     </inertial>
   </link>
   <!-- Magnetometer joint -->
-  <joint name="${namespace}/magnetometer${magnetometer_suffix}_link" type="revolute">
+  <joint name="${namespace}/magnetometer${magnetometer_suffix}_joint" type="revolute">
     <xacro:insert_block name="origin" />
     <parent link="${parent_link}" />
     <child link="${namespace}/magnetometer${magnetometer_suffix}_link" />
@@ -447,6 +447,36 @@
       <referenceMagNorth>${reference_magnetic_field_north}</referenceMagNorth>
       <referenceMagEast>${reference_magnetic_field_east}</referenceMagEast>
       <referenceMagDown>${reference_magnetic_field_down}</referenceMagDown>
+    </plugin>
+  </gazebo>
+  </xacro:macro>
+
+  <!-- Macro to add an air pressure sensor. -->
+  <xacro:macro name="pressure_sensor_plugin_macro"
+    params="namespace pressure_sensor_suffix parent_link pressure_topic mass_pressure_sensor
+      reference_altitude pressure_variance *inertia *origin">
+  <!-- Pressure sensor link -->
+  <link name="${namespace}/pressure_sensor${pressure_sensor_suffix}_link">
+    <inertial>
+      <xacro:insert_block name="inertia" />
+      <mass value="${mass_pressure_sensor}" />  <!-- [kg] -->
+      <origin xyz="0 0 0" rpy="0 0 0" />
+    </inertial>
+  </link>
+  <!-- Pressure sensor joint -->
+  <joint name="${namespace}/pressure_sensor${pressure_sensor_suffix}_joint" type="revolute">
+    <xacro:insert_block name="origin" />
+    <parent link="${parent_link}" />
+    <child link="${namespace}/pressure_sensor${pressure_sensor_suffix}_link" />
+    <limit upper="0" lower="0" effort="0" velocity="0" />
+  </joint>
+  <gazebo>
+    <plugin filename="librotors_gazebo_pressure_plugin.so" name="rotors_gazebo_pressure_sensor${pressure_sensor_suffix}_plugin">
+      <robotNamespace>${namespace}</robotNamespace> <!-- (string, required): ros namespace in which the messages are published -->
+      <linkName>${namespace}/pressure_sensor${pressure_sensor_suffix}_link</linkName> <!-- (string, required): name of the body which holds the pressure sensor -->
+      <pressureTopic>${pressure_topic}</pressureTopic> <!-- (string): name of the sensor output topic and prefix of service names (defaults to 'air_pressure') -->
+      <referenceAltitude>${reference_altitude}</referenceAltitude> <!-- the initial altitude [m] -->
+      <pressureVariance>${pressure_variance}</pressureVariance> <!-- the air pressure variance [Pa^2] -->
     </plugin>
   </gazebo>
   </xacro:macro>
@@ -774,6 +804,20 @@
       <inertia ixx="0.00001" ixy="0.0" ixz="0.0" iyy="0.00001" iyz="0.0" izz="0.00001" />
       <origin xyz="0 0 0" rpy="0 0 0" />
     </xacro:magnetometer_plugin_macro>
+  </xacro:macro>
+
+  <xacro:macro name="default_pressure_sensor" params="namespace parent_link">
+    <xacro:pressure_sensor_plugin_macro
+      namespace="${namespace}"
+      pressure_sensor_suffix=""
+      parent_link="${parent_link}"
+      pressure_topic="air_pressure"
+      mass_pressure_sensor="0.015"
+      reference_altitude="500.0"
+      pressure_variance="0.0">
+      <inertia ixx="0.00001" ixy="0.0" ixz="0.0" iyy="0.00001" iyz="0.0" izz="0.00001" />
+      <origin xyz="0 0 0" rpy="0 0 0" />
+    </xacro:pressure_sensor_plugin_macro>
   </xacro:macro>
 
 </robot>

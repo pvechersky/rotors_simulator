@@ -25,8 +25,8 @@
   <xacro:property name="rotor_velocity_slowdown_sim" value="10" />
   <xacro:property name="use_mesh_file" value="false" />
   <xacro:property name="mesh_file" value="" />
-  <xacro:property name="mass_fuselage" value="10.0" /> <!-- [kg] -->
-  <xacro:property name="mass_front_wing" value="5.0" /> <!-- [kg] -->
+  <xacro:property name="mass_fuselage" value="1.0" /> <!-- [kg] -->
+  <xacro:property name="mass_front_wing" value="1.0" /> <!-- [kg] -->
   <xacro:property name="body_length" value="3.0" /> <!-- [m] -->
   <xacro:property name="body_width" value="0.3" /> <!-- [m] -->
   <xacro:property name="body_height" value="0.16" /> <!-- [m] -->
@@ -34,7 +34,11 @@
   <xacro:property name="root_chord" value="0.3" /> <!-- [m] -->
   <xacro:property name="front_wing_height" value="0.02" /> <!-- [m] -->
   <xacro:property name="front_wing_dihedral_angle" value="5" /> <!-- [deg] -->
-  <xacro:property name="PI" value="3.14159" /> <!-- [deg] -->
+  <xacro:property name="alpha_0" value="0.0" /> <!-- [deg] -->
+  <xacro:property name="alpha_stall" value="15.0" /> <!-- [deg] -->
+  <xacro:property name="c_L_alpha" value="${2.0 * PI}" />
+  <xacro:property name="air_density" value="1.225" /> <!-- [kg/m^3] -->
+  <xacro:property name="PI" value="3.1415926535897931" />
 
   <!-- Front wing length -->
   <xacro:property name="front_wing_length" value="${0.5 * (wingspan - body_width) / 
@@ -75,7 +79,11 @@
     wing_width="${root_chord}"
     wing_height="${front_wing_height}"
     use_mesh="false"
-    mesh="">
+    mesh=""
+    alpha_0="${alpha_0}"
+    alpha_stall="${alpha_stall}"
+    c_L_alpha="${c_L_alpha}"
+    air_density="${air_density}">
     <origin xyz="0.5 ${0.25 * (wingspan + body_width)} ${0.5*body_height}" rpy="0.0 ${front_wing_dihedral_angle*PI/180.0} -1.57" />
     <xacro:insert_block name="front_wing_inertia" />
   </xacro:wing>
@@ -89,7 +97,11 @@
     wing_width="${root_chord}"
     wing_height="${front_wing_height}"
     use_mesh="false"
-    mesh="">
+    mesh=""
+    alpha_0="${alpha_0}"
+    alpha_stall="${alpha_stall}"
+    c_L_alpha="${c_L_alpha}"
+    air_density="${air_density}">
     <origin xyz="0.5 ${-0.25 * (wingspan + body_width)} ${0.5*body_height}" rpy="0.0 ${front_wing_dihedral_angle*PI/180.0} 1.57" />
     <xacro:insert_block name="front_wing_inertia" />
   </xacro:wing>

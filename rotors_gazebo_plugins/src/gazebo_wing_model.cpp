@@ -22,16 +22,11 @@
 namespace gazebo {
 
 GazeboWingModelPlugin::GazeboWingModelPlugin()
-    : ModelPlugin(),
-      node_handle_(0) {
+    : ModelPlugin() {
 }
 
 GazeboWingModelPlugin::~GazeboWingModelPlugin() {
   event::Events::DisconnectWorldUpdateBegin(updateConnection_);
-  if (node_handle_) {
-    node_handle_->shutdown();
-    delete node_handle_;
-  }
 }
 
 void GazeboWingModelPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
@@ -39,14 +34,13 @@ void GazeboWingModelPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
   model_ = _model;
   world_ = model_->GetWorld();
 
-  // Use the robot namespace to create the node handle
+  // Get the robot namespace
   if (_sdf->HasElement("robotNamespace"))
     namespace_ = _sdf->GetElement("robotNamespace")->Get<std::string>();
   else
     gzerr << "[gazebo_wing_model] Please specify a robotNamespace.\n";
-  node_handle_ = new ros::NodeHandle(namespace_);
 
-  // Get the link pointer
+  // Get the link name
   std::string link_name;
   if (_sdf->HasElement("linkName"))
     link_name = _sdf->GetElement("linkName")->Get<std::string>();
@@ -56,6 +50,16 @@ void GazeboWingModelPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
   this->link_ = this->model_->GetLink(link_name);
   if (link_ == NULL)
     gzthrow("[gazebo_wing_model] Couldn't find specified link \"" << link_name << "\".");
+
+  // Retrieve the rest of the SDF parameters
+  getSdfParam<float>(_sdf, "alpha0", alpha_0_, kDefaultAlpha0);
+  getSdfParam<float>(_sdf, "alphaStall", alpha_stall_, kDefaultAlphaStall);
+  getSdfParam<float>(_sdf, "cLAlpha", c_L_alpha_, kDefaultCLAlpha);
+  getSdfParam<float>(_sdf, "airDensity", air_density_, kDefaultAirDensity);
+  getSdfParam<float>(_sdf, "wingArea", wing_area_, kDefaultWingArea);
+
+  alpha_0_ *= M_PI / 180.0;
+  alpha_stall_ *= M_PI / 180.0;
 
   // Listen to the update event. This event is broadcast every simulation iteration
   this->updateConnection_ =
@@ -83,21 +87,12 @@ math::Vector3 GazeboWingModelPlugin::ComputeAerodynamicForces(math::Vector3 vel)
   // Compute angle of attack
   double alpha = -atan2(vel.z,vel.x);
 
-  //
-  // TODO: define constants in the class and as arguments
-  //
-  float c_L_alpha = 2 * M_PI;
-  float alpha_0 = 0.0;
-  float alpha_stall = 15.0 * M_PI / 180.0;
-  float rho = 1.0;
-  float area = 0.9;
-
   // Compute the coefficients of lift and drag
-  float c_L = 0;
-  float c_D = 0;
+  float c_L = 0.0;
+  float c_D = 0.0;
 
-  if (alpha <= alpha_stall && alpha >= -alpha_stall) {
-    c_L = c_L_alpha * (alpha - alpha_0);
+  if (alpha <= alpha_stall_ && alpha >= -alpha_stall_) {
+    c_L = c_L_alpha_ * (alpha - alpha_0_);
     c_D = 0.2;
   }
 
@@ -105,8 +100,8 @@ math::Vector3 GazeboWingModelPlugin::ComputeAerodynamicForces(math::Vector3 vel)
   float speedInLiftDragPlane = sqrt(pow(vel.x, 2.0) + pow(vel.z, 2.0));
 
   // Compute the forces
-  float lift = 0.5 * rho * c_L * area * pow(speedInLiftDragPlane, 2.0);
-  float drag = 0.5 * rho * c_D * area * pow(speedInLiftDragPlane, 2.0);
+  float lift = 0.5 * air_density_ * c_L * wing_area_ * pow(speedInLiftDragPlane, 2.0);
+  float drag = 0.5 * air_density_ * c_D * wing_area_ * pow(speedInLiftDragPlane, 2.0);
 
   // Return the total force acting on the wing
   return math::Vector3(-drag, 0, lift);

@@ -53,7 +53,6 @@
         <origin xyz="0 0 0" />
         <xacro:insert_block name="inertia" />
       </inertial>
-
       <visual>
         <origin xyz="0 0 0" rpy="0 0 0" />
         <geometry>
@@ -65,7 +64,6 @@
           </xacro:unless>
         </geometry>
       </visual>
-
       <collision>
         <origin xyz="0 0 0" rpy="0 0 0" />
         <geometry>
@@ -73,12 +71,19 @@
         </geometry>
       </collision>
     </link>
+
+    <gazebo>
+      <plugin name="fixed_wing_base_plugin" filename="librotors_gazebo_fixedwing_base_plugin.so">
+        <robotNamespace>${robot_namespace}</robotNamespace>
+        <linkName>${robot_namespace}/base_link</linkName>
+      </plugin>
+    </gazebo>
   </xacro:macro>
 
   <!-- Wing joint and link -->
   <xacro:macro name="wing"
-    params="robot_namespace suffix parent mass_wing 
-      wing_length wing_width wing_height use_mesh mesh *origin *inertia">
+    params="robot_namespace suffix parent mass_wing wing_length wing_width wing_height 
+      use_mesh mesh alpha_0 alpha_stall c_L_alpha air_density *origin *inertia">
 
     <joint name="${robot_namespace}/wing_${suffix}_joint" type="revolute">
       <xacro:insert_block name="origin" />
@@ -115,6 +120,11 @@
       <plugin name="${robot_namespace}_${suffix}_wing_model" filename="librotors_gazebo_wing_model.so">
         <robotNamespace>${robot_namespace}</robotNamespace>
         <linkName>${robot_namespace}/wing_${suffix}</linkName>
+        <alpha0>${alpha_0}</alpha0> <!-- the starting angle of attack [deg] -->
+        <alphaStall>${alpha_stall}</alphaStall> <!-- stall angle [deg] -->
+        <cLAlpha>${c_L_alpha}</cLAlpha> <!-- coefficient of lift to angle of attack ratio -->
+        <airDensity>${air_density}</airDensity> <!-- air density [kg/m^3] -->
+        <wingArea>${wing_length * wing_width}</wingArea> <!-- area of the wing [m^2] -->
       </plugin>
     </gazebo>
   </xacro:macro>
