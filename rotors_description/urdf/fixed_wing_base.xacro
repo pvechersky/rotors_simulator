@@ -128,4 +128,78 @@
       </plugin>
     </gazebo>
   </xacro:macro>
+
+  <!-- Tail joint and link -->
+  <xacro:macro name="tail"
+    params="robot_namespace parent mass_tail tail_length tail_width tail_height 
+      use_mesh mesh *origin *inertia">
+
+    <joint name="${robot_namespace}/tail_joint" type="revolute">
+      <xacro:insert_block name="origin" />
+      <axis xyz="0 0 1" />
+      <parent link="${parent}" />
+      <child link="${robot_namespace}/tail" />
+      <limit upper="0" lower="0" effort="0" velocity="0" />
+    </joint>
+
+    <link name="${robot_namespace}/tail">
+      <inertial>
+        <mass value="${mass_tail}" /> <!-- [kg] -->
+        <xacro:insert_block name="inertia" />
+      </inertial>
+      <visual>
+        <geometry>
+          <xacro:if value="${use_mesh}">
+            <mesh filename="${mesh}"
+              scale="1 1 1" />
+          </xacro:if>
+          <xacro:unless value="${use_mesh}">
+            <box size="${tail_length} ${tail_width} ${tail_height}"/> <!-- [m] [m] [m] -->
+          </xacro:unless>
+        </geometry>
+      </visual>
+      <collision>
+        <geometry>
+          <box size="${tail_length} ${tail_width} ${tail_height}"/> <!-- [m] [m] [m] -->
+        </geometry>
+      </collision>
+    </link>
+  </xacro:macro>
+
+  <!-- Rear wing joint and link -->
+  <xacro:macro name="rear_wing"
+    params="robot_namespace suffix parent mass_rear_wing rear_wing_length rear_wing_width 
+      rear_wing_height use_mesh mesh *origin *inertia">
+
+    <joint name="${robot_namespace}/rear_wing_${suffix}_joint" type="revolute">
+      <xacro:insert_block name="origin" />
+      <axis xyz="0 0 1" />
+      <parent link="${parent}" />
+      <child link="${robot_namespace}/rear_wing_${suffix}" />
+      <limit upper="0" lower="0" effort="0" velocity="0" />
+    </joint>
+
+    <link name="${robot_namespace}/rear_wing_${suffix}">
+      <inertial>
+        <mass value="${mass_rear_wing}" /> <!-- [kg] -->
+        <xacro:insert_block name="inertia" />
+      </inertial>
+      <visual>
+        <geometry>
+          <xacro:if value="${use_mesh}">
+            <mesh filename="${mesh}"
+              scale="1 1 1" />
+          </xacro:if>
+          <xacro:unless value="${use_mesh}">
+            <box size="${rear_wing_length} ${rear_wing_width} ${rear_wing_height}"/> <!-- [m] [m] [m] -->
+          </xacro:unless>
+        </geometry>
+      </visual>
+      <collision>
+        <geometry>
+          <box size="${rear_wing_length} ${rear_wing_width} ${rear_wing_height}"/> <!-- [m] [m] [m] -->
+        </geometry>
+      </collision>
+    </link>
+  </xacro:macro>
 </robot>

@@ -6,9 +6,10 @@
 
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
     <arg name="world_name" value="$(find rotors_gazebo)/worlds/basic.world"/>
-    <arg name="paused" value="true" />
-    <arg name="gui" value="true" />
+    <arg name="paused" value="false" />
+    <arg name="gui" value="false" />
   </include>
+
   <group ns="$(arg mav_name)">
     <include file="$(find rotors_gazebo)/launch/spawn_mav.launch">
       <arg name="mav_name" value="$(arg mav_name)" />
@@ -17,5 +18,11 @@
       <arg name="enable_ground_truth" value="$(arg enable_ground_truth)" />
       <arg name="log_file" value="$(arg log_file)"/>
     </include>
+
+    <node name="rotors_mavlink_interface" pkg="rotors_mavlink_interface" type="rotors_mavlink_interface">
+      <param name="gps_topic" value="gps" />
+      <param name="imu_topic" value="imu" />
+      <param name="mavlink_pub_topic" value="mavlink/from" />
+    </node>
   </group>
 </launch>
