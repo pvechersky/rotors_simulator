@@ -68,7 +68,18 @@ void GazeboFixedWingBasePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _
 void GazeboFixedWingBasePlugin::OnUpdate(const common::UpdateInfo& _info) {
   //if (!initialized_)
   //{
-    //link_->AddForce(math::Vector3(250.0, 0.0, 0.0));
+
+  float vel_x = link_->GetWorldLinearVel().x;
+
+  //if (vel_x < 40.0)
+  //{
+  //  link_->AddForce(math::Vector3(150.0, 0.0, 0.0));
+  //}
+
+  //std::cout << "Vel x: " << vel_x << std::endl;
+  //std::cout << "Pos x: " << link_->GetWorldPose().pos.x << std::endl;
+  //std::cout << "Pos z: " << link_->GetWorldPose().pos.z << std::endl;
+
     //initialized_ = true;
   //}
 

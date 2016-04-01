@@ -72,27 +72,40 @@ void GazeboWingModelPlugin::OnUpdate(const common::UpdateInfo& _info) {
   math::Vector3 vel_W = link_->GetWorldLinearVel();
   math::Quaternion rot = link_->GetWorldPose().rot;
 
+  //std::cout << "Vel: " << vel_W << std::endl;
+
   // Rotate the velocity into the body frame
-  math::Vector3 body_vel = rot.RotateVector(vel_W);
+  //math::Vector3 body_vel = rot.RotateVector(vel_W);
+
+  //std::cout << "Body vel: " << body_vel << std::endl;
 
   // Compute the overall force acting on the wing and rotate them into the body frame
-  math::Vector3 forces = ComputeAerodynamicForces(body_vel);
-  math::Vector3 forces_body = rot.RotateVector(forces);
+  math::Vector3 forces = ComputeAerodynamicForces(vel_W);
+  //math::Vector3 forces_body = rot.RotateVector(forces);
 
-  this->link_->AddForce(forces_body);
+  //std::cout << "Forces: " << forces << std::endl;
+
+  //this->link_->AddForce(forces);
   //this->link_->AddRelativeTorque(aerodynamic_moments);
 }
 
 math::Vector3 GazeboWingModelPlugin::ComputeAerodynamicForces(math::Vector3 vel) {
   // Compute angle of attack
-  double alpha = -atan2(vel.z,vel.x);
+  double alpha = atan2(vel.z,vel.x);
+
+  //std::cout << "Alpha: " << alpha << std::endl;
+
+  if (alpha > 0.174533)
+  {
+    alpha = 0.174533;
+  }
 
   // Compute the coefficients of lift and drag
-  float c_L = 0.0;
+  float c_L = 0.5;
   float c_D = 0.0;
 
   if (alpha <= alpha_stall_ && alpha >= -alpha_stall_) {
-    c_L = c_L_alpha_ * (alpha - alpha_0_);
+    c_L = c_L + c_L_alpha_ * (alpha - alpha_0_);
     c_D = 0.2;
   }
 

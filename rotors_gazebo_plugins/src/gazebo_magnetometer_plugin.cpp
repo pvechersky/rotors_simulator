@@ -85,7 +85,7 @@ void GazeboMagnetometerPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _s
 
   magnetometer_pub_ = node_handle_->advertise<sensor_msgs::MagneticField>(magnetometer_topic_, 1);
 
-  mag_W_ = {ref_mag_north, ref_mag_east, ref_mag_down};
+  mag_W_ = math::Vector3(ref_mag_north, ref_mag_east, ref_mag_down);
 
   // Fill magnetometer message
   magnetometer_message_.header.frame_id = frame_id_;

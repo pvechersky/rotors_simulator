@@ -110,7 +110,7 @@ void GazeboGpsPlugin::OnUpdate(const common::UpdateInfo& _info) {
   // Update the GPS coordinates
   gps_message_.latitude += (position.x * cos(ref_heading_) + position.y * sin(ref_heading_)) / earth_radius_;
   gps_message_.longitude -= (-position.x * sin(ref_heading_) + position.y * cos(ref_heading_)) / earth_radius_;
-  gps_message_.altitude = position.z;
+  gps_message_.altitude = position.z + ref_alt_;
 
   // Fill GPS message
   gps_message_.header.seq = gps_sequence_;

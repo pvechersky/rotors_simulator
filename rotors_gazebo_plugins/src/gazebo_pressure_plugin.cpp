@@ -98,6 +98,10 @@ void GazeboPressurePlugin::OnUpdate(const common::UpdateInfo& _info) {
   // Compute the current air pressure
   double p = kP0 * exp(kAs * log(kT0 / t));
 
+  //
+  // CONVERSION to pascals ???
+  //
+
   // Fill the pressure message
   pressure_message_.fluid_pressure = p;
   pressure_message_.header.seq = pressure_sequence_;

@@ -83,11 +83,11 @@
   <!-- Wing joint and link -->
   <xacro:macro name="wing"
     params="robot_namespace suffix parent mass_wing wing_length wing_width wing_height 
-      use_mesh mesh alpha_0 alpha_stall c_L_alpha air_density *origin *inertia">
+      use_mesh mesh alpha_0 alpha_stall c_L_alpha air_density link_x link_y link_z *origin *inertia">
 
     <joint name="${robot_namespace}/wing_${suffix}_joint" type="revolute">
       <xacro:insert_block name="origin" />
-      <axis xyz="0 0 1" />
+      <axis xyz="1 0 0" />
       <parent link="${parent}" />
       <child link="${robot_namespace}/wing_${suffix}" />
       <limit upper="0" lower="0" effort="0" velocity="0" />
@@ -95,10 +95,12 @@
 
     <link name="${robot_namespace}/wing_${suffix}">
       <inertial>
+        <origin xyz="${link_x} ${link_y} ${link_z}" rpy="0 0 0" />
         <mass value="${mass_wing}" /> <!-- [kg] -->
         <xacro:insert_block name="inertia" />
       </inertial>
       <visual>
+        <origin xyz="${link_x} ${link_y} ${link_z}" rpy="0 0 0" />
         <geometry>
           <xacro:if value="${use_mesh}">
             <mesh filename="${mesh}"
@@ -110,21 +112,41 @@
         </geometry>
       </visual>
       <collision>
+        <origin xyz="${link_x} ${link_y} ${link_z}" rpy="0 0 0" />
         <geometry>
           <box size="${wing_length} ${wing_width} ${wing_height}"/> <!-- [m] [m] [m] -->
         </geometry>
       </collision>
     </link>
-
+<!--
     <gazebo>
       <plugin name="${robot_namespace}_${suffix}_wing_model" filename="librotors_gazebo_wing_model.so">
         <robotNamespace>${robot_namespace}</robotNamespace>
         <linkName>${robot_namespace}/wing_${suffix}</linkName>
-        <alpha0>${alpha_0}</alpha0> <!-- the starting angle of attack [deg] -->
-        <alphaStall>${alpha_stall}</alphaStall> <!-- stall angle [deg] -->
-        <cLAlpha>${c_L_alpha}</cLAlpha> <!-- coefficient of lift to angle of attack ratio -->
-        <airDensity>${air_density}</airDensity> <!-- air density [kg/m^3] -->
-        <wingArea>${wing_length * wing_width}</wingArea> <!-- area of the wing [m^2] -->
+        <alpha0>${alpha_0}</alpha0> --> <!-- the starting angle of attack [deg] -->
+        <!--<alphaStall>${alpha_stall}</alphaStall> --> <!-- stall angle [deg] -->
+        <!--<cLAlpha>${c_L_alpha}</cLAlpha> --> <!-- coefficient of lift to angle of attack ratio -->
+        <!--<airDensity>${air_density}</airDensity> --> <!-- air density [kg/m^3] -->
+        <!--<wingArea>${wing_length * wing_width}</wingArea> --> <!-- area of the wing [m^2] -->
+<!--      </plugin>
+    </gazebo> -->
+
+    <gazebo>
+      <plugin name="${robot_namespace}_${suffix}_lift_drag" filename="libLiftDragPlugin.so">
+        <a0>0.1</a0>
+        <cla>4.0</cla>
+        <cda>0.001</cda>
+        <cma>0.00</cma>
+        <alpha_stall>10.0</alpha_stall>
+        <cla_stall>0.0</cla_stall>
+        <cda_stall>0.01</cda_stall>
+        <cma_stall>0.0</cma_stall>
+        <cp>0.0 0.5 0.0</cp>
+        <area>${wing_length * wing_width}</area>
+        <air_density>${air_density}</air_density>
+        <forward>1 0 0</forward>
+        <upward>0 0 1</upward>
+        <link_name>${robot_namespace}/wing_${suffix}</link_name>
       </plugin>
     </gazebo>
   </xacro:macro>
@@ -201,5 +223,24 @@
         </geometry>
       </collision>
     </link>
+
+    <gazebo>
+      <plugin name="${robot_namespace}_${suffix}_rear_lift_drag" filename="libLiftDragPlugin.so">
+        <a0>0.1</a0>
+        <cla>4.0</cla>
+        <cda>0.001</cda>
+        <cma>0.00</cma>
+        <alpha_stall>10.0</alpha_stall>
+        <cla_stall>0.0</cla_stall>
+        <cda_stall>0.01</cda_stall>
+        <cma_stall>0.0</cma_stall>
+        <cp>0.0 0.5 0.0</cp>
+        <area>${rear_wing_length * rear_wing_width}</area>
+        <air_density>1.225</air_density>
+        <forward>1 0 0</forward>
+        <upward>0 0 1</upward>
+        <link_name>${robot_namespace}/rear_wing_${suffix}</link_name>
+      </plugin>
+    </gazebo>
   </xacro:macro>
 </robot>

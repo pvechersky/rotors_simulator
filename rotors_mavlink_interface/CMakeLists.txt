@@ -6,6 +6,7 @@ add_definitions(-std=c++11)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   mavros
+  std_msgs
   mavros_msgs
   sensor_msgs
   cmake_modules

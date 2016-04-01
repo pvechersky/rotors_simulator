@@ -19,10 +19,17 @@
       <arg name="log_file" value="$(arg log_file)"/>
     </include>
 
-    <node name="rotors_mavlink_interface" pkg="rotors_mavlink_interface" type="rotors_mavlink_interface">
+    <remap from="/$(arg mav_name)/mavlink/to" to="/mavlink/to" />
+    <remap from="/$(arg mav_name)/mavlink/from" to="/mavlink/from" />
+
+    <node name="rotors_mavlink_interface" pkg="rotors_mavlink_interface" type="rotors_mavlink_interface" output="screen">
       <param name="gps_topic" value="gps" />
       <param name="imu_topic" value="imu" />
-      <param name="mavlink_pub_topic" value="mavlink/from" />
+      <param name="hil_mode_topic" value="hil_mode" />
+      <param name="mavlink_pub_topic" value="mavlink/to" />
+      <param name="mavlink_sub_topic" value="mavlink/from" />
     </node>
+
+    <node name="rotors_gui" pkg="rqt_rotors" type="rqt_rotors" output="screen" />
   </group>
 </launch>
