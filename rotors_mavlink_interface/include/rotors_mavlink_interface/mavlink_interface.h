@@ -33,7 +33,10 @@
 #include <mavros_msgs/mavlink_convert.h>
 
 namespace rotors_mavlink {
+// Constants
+static constexpr int kAllFieldsUpdated = 4095;
 
+// Default values
 static const std::string kDefaultGpsSubTopic = "gps";
 static const std::string kDefaultImuSubTopic = "imu";
 static const std::string kDefaultMagSubTopic = "magnetic_field";
@@ -49,6 +52,8 @@ class MavlinkInterface {
   MavlinkInterface();
   virtual ~MavlinkInterface();
 
+  void MainTask();
+
   // Callbacks
   void GpsCallback(const sensor_msgs::NavSatFixConstPtr& gps_msg);
   void ImuCallback(const sensor_msgs::ImuConstPtr& imu_msg);
@@ -58,8 +63,12 @@ class MavlinkInterface {
   void MavlinkCallback(const mavros_msgs::MavlinkConstPtr& mavros_msg);
 
   // HIL control
-  void startHil();
-  void stopHil();
+  void StartHil();
+  void StopHil();
+
+  void SendHilSensorData();
+  void ClearAllSensorsUpdateStatuses();
+  bool AreAllSensorsUpdated();
 
  private:
   // ROS interface
@@ -90,6 +99,12 @@ class MavlinkInterface {
   std::string imu_sub_topic_;
   std::string mag_sub_topic_;
   std::string pressure_sub_topic_;
+
+  // Sensor update trackers
+  bool received_gps_;
+  bool received_imu_;
+  bool received_mag_;
+  bool received_pressure_;
 
   // Sensor data
   float acc_x_;                 // X acceleration (m/s^2)

@@ -28,6 +28,10 @@ MavlinkInterface::MavlinkInterface():
   base_mode_(0),
   system_status_(255),
   custom_mode_(0),
+  received_gps_(false),
+  received_imu_(false),
+  received_mag_(false),
+  received_pressure_(false),
   pressure_diff_(0.0),
   pressure_alt_(0.0),
   temperature_(15.0),
@@ -69,6 +73,27 @@ MavlinkInterface::MavlinkInterface():
 MavlinkInterface::~MavlinkInterface() {
 }
 
+void MavlinkInterface::MainTask() {
+  ros::Rate rate_outer(2.0);
+  ros::Rate rate_inner(50.0);
+
+  while (ros::ok()) {
+    if (is_hil_on_) {
+      while (ros::ok() && !AreAllSensorsUpdated()) {
+        ros::spinOnce();
+        rate_inner.sleep();
+      }
+
+      SendHilSensorData();
+
+      ClearAllSensorsUpdateStatuses();
+    }
+
+    ros::spinOnce();
+    rate_outer.sleep();
+  }
+}
+
 void MavlinkInterface::GpsCallback(const sensor_msgs::NavSatFixConstPtr& gps_msg) {
   lat_ = gps_msg->latitude * 10000000;
   lon_ = gps_msg->longitude * 10000000;
@@ -76,31 +101,8 @@ void MavlinkInterface::GpsCallback(const sensor_msgs::NavSatFixConstPtr& gps_msg
 
   fix_type_ = (gps_msg->status.status > sensor_msgs::NavSatStatus::STATUS_NO_FIX) ? 3 : 0;
 
-  /*mavlink_message_t mmsg;
-
-  hil_gps_msg_.time_usec = gps_msg->header.stamp.nsec*1000000;
-  hil_gps_msg_.fix_type = 3;
-  hil_gps_msg_.lat = 47.3667 * 10000000;
-  hil_gps_msg_.lon = 8.5500 * 10000000;
-  hil_gps_msg_.alt = 500 * 1000;
-  hil_gps_msg_.eph = 65535;
-  hil_gps_msg_.epv = 65535;
-  hil_gps_msg_.vel = 0;
-  hil_gps_msg_.vn = 0;
-  hil_gps_msg_.ve = 0;
-  hil_gps_msg_.vd = 0;
-  hil_gps_msg_.cog = 0;
-  hil_gps_msg_.satellites_visible = 5;
-
-  mavlink_hil_gps_t* gps_msg_ptr = &hil_gps_msg_;
-  mavlink_msg_hil_gps_encode(1, 0, &mmsg, gps_msg_ptr);
-  mavlink_message_t* msg = &mmsg;
-
-  mavros_msgs::MavlinkPtr rmsg = boost::make_shared<mavros_msgs::Mavlink>();
-  rmsg->header.stamp = ros::Time::now();
-  mavros_msgs::mavlink::convert(*msg, *rmsg);
-
-  mavlink_pub_.publish(rmsg);*/
+  if (!received_gps_)
+    received_gps_ = true;
 }
 
 void MavlinkInterface::ImuCallback(const sensor_msgs::ImuConstPtr& imu_msg) {
@@ -112,33 +114,8 @@ void MavlinkInterface::ImuCallback(const sensor_msgs::ImuConstPtr& imu_msg) {
   gyro_y_ = imu_msg->angular_velocity.y;
   gyro_z_ = imu_msg->angular_velocity.z;
 
-  /*mavlink_message_t mmsg;
-
-  hil_sensor_msg_.time_usec = imu_msg->header.stamp.nsec*1000;
-  hil_sensor_msg_.xacc = 0.0f;
-  hil_sensor_msg_.yacc = 0.0f;
-  hil_sensor_msg_.zacc = 9.81f;
-  hil_sensor_msg_.xgyro = 0.0f;
-  hil_sensor_msg_.ygyro = 0.0f;
-  hil_sensor_msg_.zgyro = 0.0f;
-  hil_sensor_msg_.xmag = 0.21475f;
-  hil_sensor_msg_.ymag = 0.00797f;
-  hil_sensor_msg_.zmag = 0.42817f;
-  hil_sensor_msg_.abs_pressure = 1010.00f;
-  hil_sensor_msg_.diff_pressure = 0.0;
-  hil_sensor_msg_.pressure_alt = 500.0f;
-  hil_sensor_msg_.temperature = 15.0f;
-  hil_sensor_msg_.fields_updated = 4095;
-
-  mavlink_hil_sensor_t* hil_msg = &hil_sensor_msg_;
-  mavlink_msg_hil_sensor_encode(1, 0, &mmsg, hil_msg);
-  mavlink_message_t* msg = &mmsg;
-
-  mavros_msgs::MavlinkPtr rmsg = boost::make_shared<mavros_msgs::Mavlink>();
-  rmsg->header.stamp = ros::Time::now();
-  mavros_msgs::mavlink::convert(*msg, *rmsg);
-
-  mavlink_pub_.publish(rmsg);*/
+  if (!received_imu_)
+    received_imu_ = true;
 }
 
 void MavlinkInterface::MagCallback(const sensor_msgs::MagneticFieldConstPtr &mag_msg) {
@@ -147,12 +124,18 @@ void MavlinkInterface::MagCallback(const sensor_msgs::MagneticFieldConstPtr &mag
   mag_x_ = mag_msg->magnetic_field.x * 10000;
   mag_y_ = mag_msg->magnetic_field.y * 10000;
   mag_z_ = mag_msg->magnetic_field.z * 10000;
+
+  if (!received_mag_)
+    received_mag_ = true;
 }
 
 void MavlinkInterface::PressureCallback(const sensor_msgs::FluidPressureConstPtr &pressure_msg) {
   // ROS fluid pressure sensor message is in Pascals, while MAVLINK hil sensor message
   // measures fluid pressure in millibar. 1 Pascal = 0.01 millibar
   pressure_abs_ = pressure_msg->fluid_pressure * 0.01;
+
+  if (!received_pressure_)
+    received_pressure_ = true;
 }
 
 void MavlinkInterface::HilModeCallback(const std_msgs::BoolConstPtr& hil_mode_msg) {
@@ -187,11 +170,11 @@ void MavlinkInterface::HilModeCallback(const std_msgs::BoolConstPtr& hil_mode_ms
 
   if (hil_mode_msg->data && !is_hil_on_)
   {
-    startHil();
+    StartHil();
   }
   else if (!hil_mode_msg->data && is_hil_on_)
   {
-    stopHil();
+    StopHil();
   }
 }
 
@@ -227,18 +210,118 @@ void MavlinkInterface::MavlinkCallback(const mavros_msgs::MavlinkConstPtr& mavro
   }
 }
 
-void MavlinkInterface::startHil() {
+void MavlinkInterface::StartHil() {
   gps_sub_ = nh_.subscribe(gps_sub_topic_, 1, &MavlinkInterface::GpsCallback, this);
   imu_sub_ = nh_.subscribe(imu_sub_topic_, 1, &MavlinkInterface::ImuCallback, this);
   mag_sub_ = nh_.subscribe(mag_sub_topic_, 1, &MavlinkInterface::MagCallback, this);
   pressure_sub_ = nh_.subscribe(pressure_sub_topic_, 1, &MavlinkInterface::PressureCallback, this);
 }
 
-void MavlinkInterface::stopHil() {
+void MavlinkInterface::StopHil() {
   gps_sub_.shutdown();
   imu_sub_.shutdown();
   mag_sub_.shutdown();
   pressure_sub_.shutdown();
+}
+
+void MavlinkInterface::SendHilSensorData() {
+  mavlink_message_t mmsg;
+  mavlink_message_t* msg;
+
+  ros::Time current_time = ros::Time::now();
+
+  // Encode and publish the hil_sensor message
+  hil_sensor_msg_.time_usec = current_time.nsec*1000;
+  hil_sensor_msg_.xacc = 0.0f;
+  hil_sensor_msg_.yacc = 0.0f;
+  hil_sensor_msg_.zacc = 9.81f;
+  hil_sensor_msg_.xgyro = 0.0f;
+  hil_sensor_msg_.ygyro = 0.0f;
+  hil_sensor_msg_.zgyro = 0.0f;
+  hil_sensor_msg_.xmag = 0.21475f;
+  hil_sensor_msg_.ymag = 0.00797f;
+  hil_sensor_msg_.zmag = 0.42817f;
+  hil_sensor_msg_.abs_pressure = 1010.00f;
+  hil_sensor_msg_.diff_pressure = 0.0;
+  hil_sensor_msg_.pressure_alt = 500.0f;
+  hil_sensor_msg_.temperature = 15.0f;
+  hil_sensor_msg_.fields_updated = 4095;
+  /*hil_sensor_msg_.time_usec = current_time.nsec*1000;
+  hil_sensor_msg_.xacc = acc_x_;
+  hil_sensor_msg_.yacc = acc_y_;
+  hil_sensor_msg_.zacc = acc_z_;
+  hil_sensor_msg_.xgyro = gyro_x_;
+  hil_sensor_msg_.ygyro = gyro_y_;
+  hil_sensor_msg_.zgyro = gyro_z_;
+  hil_sensor_msg_.xmag = mag_x_;
+  hil_sensor_msg_.ymag = mag_y_;
+  hil_sensor_msg_.zmag = mag_z_;
+  hil_sensor_msg_.abs_pressure = pressure_abs_;
+  hil_sensor_msg_.diff_pressure = pressure_diff_;
+  hil_sensor_msg_.pressure_alt = pressure_alt_;
+  hil_sensor_msg_.temperature = temperature_;
+  hil_sensor_msg_.fields_updated = kAllFieldsUpdated;*/
+
+  mavlink_hil_sensor_t* hil_sensor_msg_ptr = &hil_sensor_msg_;
+  mavlink_msg_hil_sensor_encode(1, 0, &mmsg, hil_sensor_msg_ptr);
+  msg = &mmsg;
+
+  mavros_msgs::MavlinkPtr rmsg_hil_sensor = boost::make_shared<mavros_msgs::Mavlink>();
+  rmsg_hil_sensor->header.stamp.sec = current_time.sec;
+  rmsg_hil_sensor->header.stamp.nsec = current_time.nsec;
+  mavros_msgs::mavlink::convert(*msg, *rmsg_hil_sensor);
+
+  mavlink_pub_.publish(rmsg_hil_sensor);
+
+  // Encode and publish the hil_gps message
+  hil_gps_msg_.time_usec = current_time.nsec*1000;
+  hil_gps_msg_.fix_type = 3;
+  hil_gps_msg_.lat = 47.3667 * 10000000;
+  hil_gps_msg_.lon = 8.5500 * 10000000;
+  hil_gps_msg_.alt = 500 * 1000;
+  hil_gps_msg_.eph = 65535;
+  hil_gps_msg_.epv = 65535;
+  hil_gps_msg_.vel = 0;
+  hil_gps_msg_.vn = 0;
+  hil_gps_msg_.ve = 0;
+  hil_gps_msg_.vd = 0;
+  hil_gps_msg_.cog = 0;
+  hil_gps_msg_.satellites_visible = 5;
+  /*hil_gps_msg_.time_usec = current_time.nsec*1000;
+  hil_gps_msg_.fix_type = fix_type_;
+  hil_gps_msg_.lat = lat_;
+  hil_gps_msg_.lon = lon_;
+  hil_gps_msg_.alt = alt_;
+  hil_gps_msg_.eph = eph_;
+  hil_gps_msg_.epv = epv_;
+  hil_gps_msg_.vel = vel_;
+  hil_gps_msg_.vn = vn_;
+  hil_gps_msg_.ve = ve_;
+  hil_gps_msg_.vd = vd_;
+  hil_gps_msg_.cog = cog_;
+  hil_gps_msg_.satellites_visible = satellites_visible_;*/
+
+  mavlink_hil_gps_t* hil_gps_msg_ptr = &hil_gps_msg_;
+  mavlink_msg_hil_gps_encode(1, 0, &mmsg, hil_gps_msg_ptr);
+  msg = &mmsg;
+
+  mavros_msgs::MavlinkPtr rmsg_hil_gps = boost::make_shared<mavros_msgs::Mavlink>();
+  rmsg_hil_gps->header.stamp.sec = current_time.sec;
+  rmsg_hil_gps->header.stamp.nsec = current_time.nsec;
+  mavros_msgs::mavlink::convert(*msg, *rmsg_hil_gps);
+
+  mavlink_pub_.publish(rmsg_hil_gps);
+}
+
+void MavlinkInterface::ClearAllSensorsUpdateStatuses() {
+  received_gps_ = false;
+  received_imu_ = false;
+  received_mag_ = false;
+  received_pressure_ = false;
+}
+
+bool MavlinkInterface::AreAllSensorsUpdated() {
+  return (received_gps_ && received_imu_ && received_mag_ && received_pressure_);
 }
 }
 
@@ -246,7 +329,7 @@ int main(int argc, char** argv) {
   ros::init(argc, argv, "rotors_mavlink_interface");
   rotors_mavlink::MavlinkInterface mavlink_interface;
 
-  ros::spin();
+  mavlink_interface.MainTask();
 
   return 0;
 }
