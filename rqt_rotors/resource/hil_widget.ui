@@ -6,12 +6,12 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>205</width>
-    <height>127</height>
+    <width>314</width>
+    <height>355</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Form</string>
+   <string>MAVLINK</string>
   </property>
   <widget class="QPushButton" name="button_set_hil_mode">
    <property name="enabled">
@@ -19,8 +19,8 @@
    </property>
    <property name="geometry">
     <rect>
-     <x>50</x>
-     <y>80</y>
+     <x>70</x>
+     <y>280</y>
      <width>99</width>
      <height>27</height>
     </rect>
@@ -29,45 +29,188 @@
     <string>Enable HIL</string>
    </property>
   </widget>
-  <widget class="QWidget" name="formLayoutWidget">
+  <widget class="QGroupBox" name="groupBox">
    <property name="geometry">
     <rect>
-     <x>20</x>
-     <y>20</y>
-     <width>160</width>
-     <height>51</height>
+     <x>30</x>
+     <y>30</y>
+     <width>251</width>
+     <height>221</height>
     </rect>
    </property>
-   <layout class="QFormLayout" name="formLayout">
-    <item row="0" column="0">
-     <widget class="QLabel" name="label_mav_mode">
-      <property name="text">
-       <string>MAV Mode:</string>
-      </property>
-     </widget>
-    </item>
-    <item row="0" column="1">
-     <widget class="QLabel" name="text_mav_mode">
-      <property name="text">
-       <string>N/A</string>
-      </property>
-     </widget>
-    </item>
-    <item row="1" column="0">
-     <widget class="QLabel" name="label_mav_status">
-      <property name="text">
-       <string>MAV Status:</string>
-      </property>
-     </widget>
-    </item>
-    <item row="1" column="1">
-     <widget class="QLabel" name="text_mav_status">
-      <property name="text">
-       <string>N/A</string>
-      </property>
-     </widget>
-    </item>
-   </layout>
+   <property name="title">
+    <string>MAV Mode</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+   </property>
+   <widget class="QWidget" name="formLayoutWidget">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>30</y>
+      <width>221</width>
+      <height>181</height>
+     </rect>
+    </property>
+    <layout class="QFormLayout" name="mav_mode_layout">
+     <property name="labelAlignment">
+      <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+     </property>
+     <property name="formAlignment">
+      <set>Qt::AlignHCenter|Qt::AlignTop</set>
+     </property>
+     <item row="0" column="0">
+      <widget class="QLabel" name="label_mode_safety_armed">
+       <property name="text">
+        <string>SAFETY_ARMED</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QLabel" name="text_mode_safety_armed">
+       <property name="text">
+        <string>N/A</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="label_mode_manual_input">
+       <property name="text">
+        <string>MANUAL_INPUT</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QLabel" name="text_mode_manual_input">
+       <property name="text">
+        <string>N/A</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="label_mode_hil">
+       <property name="text">
+        <string>HIL</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QLabel" name="text_mode_hil">
+       <property name="text">
+        <string>N/A</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item row="7" column="0">
+      <widget class="QLabel" name="label_mode_custom_mode">
+       <property name="text">
+        <string>CUSTOM_MODE</string>
+       </property>
+      </widget>
+     </item>
+     <item row="7" column="1">
+      <widget class="QLabel" name="text_mode_custom_mode">
+       <property name="text">
+        <string>N/A</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="0">
+      <widget class="QLabel" name="label_mode_stabilize">
+       <property name="text">
+        <string>STABILIZE</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="0">
+      <widget class="QLabel" name="label_mode_guided">
+       <property name="text">
+        <string>GUIDED</string>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="0">
+      <widget class="QLabel" name="label_mode_auto">
+       <property name="text">
+        <string>AUTO</string>
+       </property>
+      </widget>
+     </item>
+     <item row="6" column="0">
+      <widget class="QLabel" name="label_mode_test">
+       <property name="text">
+        <string>TEST</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="QLabel" name="text_mode_stabilize">
+       <property name="text">
+        <string>N/A</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="1">
+      <widget class="QLabel" name="text_mode_guided">
+       <property name="text">
+        <string>N/A</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="1">
+      <widget class="QLabel" name="text_mode_auto">
+       <property name="text">
+        <string>N/A</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item row="6" column="1">
+      <widget class="QLabel" name="text_mode_test">
+       <property name="text">
+        <string>N/A</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QLabel" name="text_mav_status">
+   <property name="geometry">
+    <rect>
+     <x>200</x>
+     <y>280</y>
+     <width>26</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>N/A</string>
+   </property>
   </widget>
  </widget>
  <resources/>
