@@ -9,6 +9,7 @@ from python_qt_binding.QtGui import QFormLayout
 from python_qt_binding.QtCore import QTimer, Slot
 from std_msgs.msg import Bool
 from std_msgs.msg import UInt8
+from std_msgs.msg import UInt32
 
 class HilWidget(QWidget):
   # MAV mode flags
@@ -21,9 +22,20 @@ class HilWidget(QWidget):
   MAV_MODE_FLAG_TEST_ENABLED = 2
   MAV_MODE_FLAG_CUSTOM_MODE_ENABLED = 1
 
+  # MAV state dictionary
+  mav_state = {0: 'Uninitialized',
+  1: 'Booting up',
+  2: 'Calibrating',
+  3: 'Standby',
+  4: 'Active',
+  5: 'Critical',
+  6: 'Emergency',
+  7: 'Poweroff'}
+
   # String constants
   STR_UNKNOWN = 'N/A'
   STR_MAV_MODE_SUB_TOPIC = 'mav_mode'
+  STR_MAV_CUSTOM_MODE_SUB_TOPIC = 'mav_custom_mode'
   STR_MAV_STATUS_SUB_TOPIC = 'mav_status'
   STR_HIL_MODE_PUB_TOPIC = 'hil_mode'
 
@@ -38,12 +50,15 @@ class HilWidget(QWidget):
 
     # Set the initial parameters of UI elements
     self.button_set_hil_mode.setEnabled(False)
-    self.text_mav_status.setText(self.STR_UNKNOWN)
+    self.text_state.setText(self.STR_UNKNOWN)
+    self.text_custom_mode.setText(self.STR_UNKNOWN)
     self.clearMavMode()
 
     # Initialize class variables
     self.mav_mode = 0
+    self.mav_custom_mode = 0
     self.mav_status = 255
+    self.received_heartbeat = False
     self.hil_enabled = False
     
     # Set the functions that are called when a button is pressed
@@ -51,6 +66,7 @@ class HilWidget(QWidget):
     
     # Initialize ROS subscribers and publishers
     self.mav_mode_sub = rospy.Subscriber(self.STR_MAV_MODE_SUB_TOPIC, UInt8, self.mavModeCallback, queue_size=1)
+    self.mav_custom_mode_sub = rospy.Subscriber(self.STR_MAV_CUSTOM_MODE_SUB_TOPIC, UInt32, self.mavCustomModeCallback, queue_size=1)
     self.mav_status_sub = rospy.Subscriber(self.STR_MAV_STATUS_SUB_TOPIC, UInt8, self.mavStatusCallback, queue_size=1)
     self.hil_mode_pub = rospy.Publisher(self.STR_HIL_MODE_PUB_TOPIC, Bool, queue_size=1)
 
@@ -58,8 +74,9 @@ class HilWidget(QWidget):
     self.hil_mode_pub.publish(not(self.hil_enabled))
     
   def mavModeCallback(self, msg):
-    if not(self.button_set_hil_mode.isEnabled()):
+    if not(self.received_heartbeat):
       self.button_set_hil_mode.setEnabled(True)
+      self.received_heartbeat = True
 
     if (self.mav_mode != msg.data):
       self.mav_mode = msg.data
@@ -72,10 +89,15 @@ class HilWidget(QWidget):
       else:
         self.button_set_hil_mode.setText('Enable HIL')
 
+  def mavCustomModeCallback(self, msg):
+    if (self.mav_custom_mode != msg.data):
+      self.mav_custom_mode = msg.data
+      self.text_custom_mode.setText(str(msg.data))
+
   def mavStatusCallback(self, msg):
     if (self.mav_status != msg.data):
       self.mav_status = msg.data
-      self.text_mav_status.setText(str(msg.data))
+      self.text_state.setText(self.mav_state[msg.data])
 
   def clearMavMode(self):
     count = self.mav_mode_layout.rowCount()

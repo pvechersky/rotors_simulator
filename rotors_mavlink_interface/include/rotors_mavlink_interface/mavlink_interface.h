@@ -25,11 +25,14 @@
 #include <ros/ros.h>
 #include <std_msgs/Bool.h>
 #include <std_msgs/UInt8.h>
+#include <std_msgs/UInt32.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/NavSatFix.h>
 #include <sensor_msgs/MagneticField.h>
 #include <sensor_msgs/FluidPressure.h>
 
+#include <mav_msgs/Actuators.h>
+#include <mavros_msgs/RCIn.h>
 #include <mavros_msgs/mavlink_convert.h>
 
 namespace rotors_mavlink {
@@ -43,9 +46,12 @@ static const std::string kDefaultMagSubTopic = "magnetic_field";
 static const std::string kDefaultPressureSubTopic = "air_pressure";
 static const std::string kDefaultHilModeSubTopic = "hil_mode";
 static const std::string kDefaultMavlinkSubTopic = "mavlink/from";
+static const std::string kDefaultRCSubTopic = "/mavros/rc/in";
 static const std::string kDefaultMavlinkPubTopic = "mavlink/to";
 static const std::string kDefaultMavModePubTopic = "mav_mode";
+static const std::string kDefaultMavCustomModePubTopic = "mav_custom_mode";
 static const std::string kDefaultMavStatusPubTopic = "mav_status";
+static const std::string kDefaultActuatorsPubTopic = "actuators";
 
 class MavlinkInterface {
  public:
@@ -61,6 +67,7 @@ class MavlinkInterface {
   void PressureCallback(const sensor_msgs::FluidPressureConstPtr& pressure_msg);
   void HilModeCallback(const std_msgs::BoolConstPtr& hil_mode_msg);
   void MavlinkCallback(const mavros_msgs::MavlinkConstPtr& mavros_msg);
+  void RCCallback(const mavros_msgs::RCInConstPtr& rc_in_msg);
 
   // HIL control
   void StartHil();
@@ -79,13 +86,17 @@ class MavlinkInterface {
   ros::Subscriber pressure_sub_;
   ros::Subscriber hil_mode_sub_;
   ros::Subscriber mavlink_sub_;
+  ros::Subscriber rc_in_sub_;
   ros::Publisher mavlink_pub_;
   ros::Publisher mav_mode_pub_;
+  ros::Publisher mav_custom_mode_pub_;
   ros::Publisher mav_status_pub_;
+  ros::Publisher actuators_pub_;
 
   // MAVLINK messages
   mavlink_hil_gps_t hil_gps_msg_;
   mavlink_hil_sensor_t hil_sensor_msg_;
+  mavlink_hil_state_quaternion_t hil_state_qtrn_msg_;
   mavlink_command_long_t cmd_msg_;
 
   // MAV diagnostics

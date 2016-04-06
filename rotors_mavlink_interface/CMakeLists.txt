@@ -25,7 +25,13 @@ add_executable(rotors_mavlink_interface src/mavlink_interface.cpp)
 add_dependencies(rotors_mavlink_interface ${catkin_EXPORTED_TARGETS})
 target_link_libraries(rotors_mavlink_interface ${catkin_LIBRARIES})
 
-install(TARGETS rotors_mavlink_interface
+add_executable(rotors_ping_mav src/ping_mav.cpp)
+add_dependencies(rotors_ping_mav ${catkin_EXPORTED_TARGETS})
+target_link_libraries(rotors_ping_mav ${catkin_LIBRARIES})
+
+install(TARGETS
+    rotors_mavlink_interface
+    rotors_ping_mav
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

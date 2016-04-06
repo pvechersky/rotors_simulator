@@ -21,14 +21,19 @@
 #ifndef ROTORS_GAZEBO_PLUGINS_GAZEBO_FIXEDWING_BASE_PLUGIN_H
 #define ROTORS_GAZEBO_PLUGINS_GAZEBO_FIXEDWING_BASE_PLUGIN_H
 
+#include <ros/ros.h>
 #include <gazebo/common/common.hh>
 #include <gazebo/common/Plugin.hh>
 #include <gazebo/gazebo.hh>
 #include <gazebo/physics/physics.hh>
+#include <mav_msgs/Actuators.h>
 
 #include "rotors_gazebo_plugins/common.h"
 
 namespace gazebo {
+// Default values
+static const std::string kDefaultActuatorsSubTopic = "actuators";
+static constexpr double kDefaultMaxThrust = 200.0;
 
 class GazeboFixedWingBasePlugin : public ModelPlugin {
  public:
@@ -41,6 +46,9 @@ class GazeboFixedWingBasePlugin : public ModelPlugin {
 
  private:
   std::string namespace_;
+  std::string actuators_topic_;
+  ros::NodeHandle* node_handle_;
+  ros::Subscriber actuators_sub_;
 
   // Pointer to the world
   physics::WorldPtr world_;
@@ -50,6 +58,11 @@ class GazeboFixedWingBasePlugin : public ModelPlugin {
   physics::LinkPtr link_;
   // Pointer to the update event connection
   event::ConnectionPtr updateConnection_;
+
+  double max_thrust_;
+  double ref_thrust_;
+
+  void actuatorsCallback(const mav_msgs::ActuatorsConstPtr& act_msg);
 };
 }
 

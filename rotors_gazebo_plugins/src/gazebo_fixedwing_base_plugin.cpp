@@ -30,11 +30,17 @@
 namespace gazebo {
 
 GazeboFixedWingBasePlugin::GazeboFixedWingBasePlugin()
-    : ModelPlugin() {
+    : ModelPlugin(),
+      node_handle_(0),
+      ref_thrust_(0.0) {
 }
 
 GazeboFixedWingBasePlugin::~GazeboFixedWingBasePlugin() {
   event::Events::DisconnectWorldUpdateBegin(updateConnection_);
+  if (node_handle_) {
+    node_handle_->shutdown();
+    delete node_handle_;
+  }
 }
 
 void GazeboFixedWingBasePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
@@ -47,6 +53,7 @@ void GazeboFixedWingBasePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _
     namespace_ = _sdf->GetElement("robotNamespace")->Get<std::string>();
   else
     gzerr << "[gazebo_fixedwing_base_plugin] Please specify a robotNamespace.\n";
+  node_handle_ = new ros::NodeHandle(namespace_);
 
   // Get the link name
   std::string link_name;
@@ -59,22 +66,20 @@ void GazeboFixedWingBasePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _
   if (link_ == NULL)
     gzthrow("[gazebo_fixedwing_base_plugin] Couldn't find specified link \"" << link_name << "\".");
 
+  getSdfParam<std::string>(_sdf, "actuatorsTopic", actuators_topic_,
+                           kDefaultActuatorsSubTopic);
+  getSdfParam<double>(_sdf, "maxThrust", max_thrust_, kDefaultMaxThrust);
+
   // Listen to the update event. This event is broadcast every simulation iteration
   this->updateConnection_ =
       event::Events::ConnectWorldUpdateBegin(
           boost::bind(&GazeboFixedWingBasePlugin::OnUpdate, this, _1));
+
+  actuators_sub_ = node_handle_->subscribe(actuators_topic_, 1, &GazeboFixedWingBasePlugin::actuatorsCallback, this);
 }
 
 void GazeboFixedWingBasePlugin::OnUpdate(const common::UpdateInfo& _info) {
-  //if (!initialized_)
-  //{
-
-  float vel_x = link_->GetWorldLinearVel().x;
-
-  //if (vel_x < 40.0)
-  //{
-  //  link_->AddForce(math::Vector3(150.0, 0.0, 0.0));
-  //}
+  link_->AddForce(math::Vector3(ref_thrust_, 0.0, 0.0));
 
   //std::cout << "Vel x: " << vel_x << std::endl;
   //std::cout << "Pos x: " << link_->GetWorldPose().pos.x << std::endl;
@@ -85,15 +90,12 @@ void GazeboFixedWingBasePlugin::OnUpdate(const common::UpdateInfo& _info) {
 
   //double altitude = model_->GetWorldPose().pos.z;
   //std::cout << altitude << std::endl;
+}
 
-  //common::Time current_time  = world_->GetSimTime();
+void GazeboFixedWingBasePlugin::actuatorsCallback(const mav_msgs::ActuatorsConstPtr& act_msg) {
+  ref_thrust_ = act_msg->normalized.at(0) * max_thrust_;
 
-  // Get the current pose from Gazebo
-  //math::Pose pose = link_->GetWorldPose();
-
-  //pose.pos.x += 0.001;
-
-  //link_->SetWorldPose(pose);
+  std::cout << "New thrust command: " << ref_thrust_ << std::endl;
 }
 
 GZ_REGISTER_MODEL_PLUGIN(GazeboFixedWingBasePlugin);

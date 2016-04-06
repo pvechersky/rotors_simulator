@@ -1,0 +1,3 @@
+<launch>
+  <node name="rotors_ping_all_mavs" pkg="rotors_mavlink_interface" type="rotors_ping_mav" output="screen" />
+</launch>
