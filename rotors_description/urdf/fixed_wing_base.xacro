@@ -38,7 +38,8 @@
 
   <!-- Fixed-wing fuselage link -->
   <xacro:macro name="fixed_wing_base_macro"
-    params="robot_namespace mass body_length body_width body_height use_mesh_file mesh_file *inertia">
+    params="robot_namespace mass body_length body_width body_height 
+      actuator_topic max_thrust use_mesh_file mesh_file *inertia">
     <link name="${robot_namespace}/base_link"></link>
 
     <joint name="${robot_namespace}/base_joint" type="fixed">
@@ -76,6 +77,8 @@
       <plugin name="fixed_wing_base_plugin" filename="librotors_gazebo_fixedwing_base_plugin.so">
         <robotNamespace>${robot_namespace}</robotNamespace>
         <linkName>${robot_namespace}/base_link</linkName>
+	<actuatorsTopic>${actuator_topic}</actuatorsTopic>
+        <maxThrust>${max_thrust}</maxThrust>
       </plugin>
     </gazebo>
   </xacro:macro>
