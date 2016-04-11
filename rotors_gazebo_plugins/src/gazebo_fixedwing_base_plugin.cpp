@@ -66,8 +66,15 @@ void GazeboFixedWingBasePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _
   if (link_ == NULL)
     gzthrow("[gazebo_fixedwing_base_plugin] Couldn't find specified link \"" << link_name << "\".");
 
-  getSdfParam<std::string>(_sdf, "actuatorsTopic", actuators_topic_,
+  std::string actuators_topic;
+  std::string gui_throttle_topic;
+  std::string reset_topic;
+  getSdfParam<std::string>(_sdf, "actuatorsTopic", actuators_topic,
                            kDefaultActuatorsSubTopic);
+  getSdfParam<std::string>(_sdf, "guiThrottleTopic", gui_throttle_topic,
+                           kDefaultGuiThrottleSubTopic);
+  getSdfParam<std::string>(_sdf, "resetTopic", reset_topic,
+                           kDefaultResetSubTopic);
   getSdfParam<double>(_sdf, "maxThrust", max_thrust_, kDefaultMaxThrust);
 
   // Listen to the update event. This event is broadcast every simulation iteration
@@ -75,27 +82,63 @@ void GazeboFixedWingBasePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _
       event::Events::ConnectWorldUpdateBegin(
           boost::bind(&GazeboFixedWingBasePlugin::OnUpdate, this, _1));
 
-  actuators_sub_ = node_handle_->subscribe(actuators_topic_, 1, &GazeboFixedWingBasePlugin::actuatorsCallback, this);
+  actuators_sub_ = node_handle_->subscribe(actuators_topic, 1, &GazeboFixedWingBasePlugin::actuatorsCallback, this);
+  gui_throttle_sub_ = node_handle_->subscribe(gui_throttle_topic, 1, &GazeboFixedWingBasePlugin::guiThrottleCallback, this);
+  reset_sub_ = node_handle_->subscribe(reset_topic, 1, &GazeboFixedWingBasePlugin::resetCallback, this);
 }
 
 void GazeboFixedWingBasePlugin::OnUpdate(const common::UpdateInfo& _info) {
   link_->AddForce(math::Vector3(ref_thrust_, 0.0, 0.0));
-
-  //std::cout << "Vel x: " << vel_x << std::endl;
-  //std::cout << "Pos x: " << link_->GetWorldPose().pos.x << std::endl;
-  //std::cout << "Pos z: " << link_->GetWorldPose().pos.z << std::endl;
-
-    //initialized_ = true;
-  //}
-
-  //double altitude = model_->GetWorldPose().pos.z;
-  //std::cout << altitude << std::endl;
 }
 
 void GazeboFixedWingBasePlugin::actuatorsCallback(const mav_msgs::ActuatorsConstPtr& act_msg) {
   ref_thrust_ = act_msg->normalized.at(0) * max_thrust_;
 
   std::cout << "New thrust command: " << ref_thrust_ << std::endl;
+}
+
+void GazeboFixedWingBasePlugin::guiThrottleCallback(const std_msgs::UInt8ConstPtr& throttle_msg) {
+  ref_thrust_ = (double)throttle_msg->data / 100.0 * max_thrust_;
+
+  std::cout << "New thrust command: " << ref_thrust_ << std::endl;
+}
+
+void GazeboFixedWingBasePlugin::resetCallback(const std_msgs::BoolConstPtr& reset_msg) {
+  if (reset_msg->data) {
+    math::Pose pose = model_->GetWorldPose();
+    pose.pos.x = 0.0;
+    pose.pos.y = 0.0;
+    pose.pos.z = 0.0;
+    pose.rot.w = 1.0;
+    pose.rot.x = 0.0;
+    pose.rot.y = 0.0;
+    pose.rot.z = 0.0;
+    model_->SetWorldPose(pose);
+
+    math::Vector3 lin_vel = model_->GetWorldLinearVel();
+    lin_vel.x = 0.0;
+    lin_vel.y = 0.0;
+    lin_vel.z = 0.0;
+    model_->SetLinearVel(lin_vel);
+
+    math::Vector3 lin_acc = model_->GetWorldLinearAccel();
+    lin_acc.x = 0.0;
+    lin_acc.y = 0.0;
+    lin_acc.z = 0.0;
+    model_->SetLinearAccel(lin_acc);
+
+    math::Vector3 ang_vel = model_->GetWorldAngularVel();
+    ang_vel.x = 0.0;
+    ang_vel.y = 0.0;
+    ang_vel.z = 0.0;
+    model_->SetAngularVel(ang_vel);
+
+    math::Vector3 ang_acc = model_->GetWorldAngularAccel();
+    ang_acc.x = 0.0;
+    ang_acc.y = 0.0;
+    ang_acc.z = 0.0;
+    model_->SetAngularAccel(ang_acc);
+  }
 }
 
 GZ_REGISTER_MODEL_PLUGIN(GazeboFixedWingBasePlugin);

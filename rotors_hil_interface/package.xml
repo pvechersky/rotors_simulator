@@ -1,7 +1,8 @@
+<?xml version="1.0"?>
 <package>
-  <name>rotors_mavlink_interface</name>
-  <version>2.0.1</version>
-  <description>RotorS mavlink interface package</description>
+  <name>rotors_hil_interface</name>
+  <version>0.0.1</version>
+  <description>RotorS Hardware-in-the-loop interface package</description>
 
   <maintainer email="pavelv@student.ethz.ch">Fadri Furrer</maintainer>
 
@@ -31,5 +32,4 @@
   <run_depend>std_msgs</run_depend>
   <run_depend>mavros_msgs</run_depend>
   <run_depend>sensor_msgs</run_depend>
-
 </package>

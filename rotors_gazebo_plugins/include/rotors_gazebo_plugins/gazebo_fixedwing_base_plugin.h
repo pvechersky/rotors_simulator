@@ -27,12 +27,16 @@
 #include <gazebo/gazebo.hh>
 #include <gazebo/physics/physics.hh>
 #include <mav_msgs/Actuators.h>
+#include <std_msgs/UInt8.h>
+#include <std_msgs/Bool.h>
 
 #include "rotors_gazebo_plugins/common.h"
 
 namespace gazebo {
 // Default values
 static const std::string kDefaultActuatorsSubTopic = "actuators";
+static const std::string kDefaultGuiThrottleSubTopic = "gui_throttle";
+static const std::string kDefaultResetSubTopic = "reset";
 static constexpr double kDefaultMaxThrust = 200.0;
 
 class GazeboFixedWingBasePlugin : public ModelPlugin {
@@ -46,9 +50,10 @@ class GazeboFixedWingBasePlugin : public ModelPlugin {
 
  private:
   std::string namespace_;
-  std::string actuators_topic_;
   ros::NodeHandle* node_handle_;
   ros::Subscriber actuators_sub_;
+  ros::Subscriber gui_throttle_sub_;
+  ros::Subscriber reset_sub_;
 
   // Pointer to the world
   physics::WorldPtr world_;
@@ -63,6 +68,8 @@ class GazeboFixedWingBasePlugin : public ModelPlugin {
   double ref_thrust_;
 
   void actuatorsCallback(const mav_msgs::ActuatorsConstPtr& act_msg);
+  void guiThrottleCallback(const std_msgs::UInt8ConstPtr& throttle_msg);
+  void resetCallback(const std_msgs::BoolConstPtr& reset_msg);
 };
 }
 

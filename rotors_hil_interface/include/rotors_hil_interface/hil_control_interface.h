@@ -18,40 +18,39 @@
  * limitations under the License.
  */
 
+#ifndef ROTORS_HIL_CONTROL_INTERFACE_H_
+#define ROTORS_HIL_CONTROL_INTERFACE_H_
 
-#ifndef ROTORS_PING_MAV_H_
-#define ROTORS_PING_MAV_H_
-
-#include <string>
-#include <iostream>
 #include <ros/ros.h>
+#include <std_msgs/UInt8.h>
+
 #include <mavros_msgs/mavlink_convert.h>
 
-namespace rotors_mavlink {
+namespace rotors_hil {
 // Default values
-static const std::string kDefaultMavlinkSubTopic = "mavlink/from";
-static const std::string kDefaultMavlinkPubTopic = "mavlink/to";
+static const std::string kDefaultMavlinkSubTopic = "/mavlink/from";
+static const std::string kDefaultMavModePubTopic = "mav_mode";
+static const std::string kDefaultMavStatusPubTopic = "mav_status";
 
-class PingMav {
+class HilControlInterface {
  public:
-  PingMav();
-  virtual ~PingMav();
+  HilControlInterface();
+  virtual ~HilControlInterface();
 
-  // Mavlink callback
+  // Callbacks
   void MavlinkCallback(const mavros_msgs::MavlinkConstPtr& mavros_msg);
-
-  // Ping functions
-  void PingAll();
 
  private:
   // ROS interface
   ros::NodeHandle nh_;
   ros::Subscriber mavlink_sub_;
-  ros::Publisher mavlink_pub_;
+  ros::Publisher mav_mode_pub_;
+  ros::Publisher mav_status_pub_;
 
-  // Message handle
-  mavlink_ping_t ping_msg_;
+  // MAV diagnostics
+  uint8_t base_mode_;
+  uint8_t system_status_;
 };
 }
 
-#endif // ROTORS_PING_MAV_H_
+#endif // ROTORS_HIL_CONTROL_INTERFACE_H_

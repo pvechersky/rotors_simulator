@@ -18,16 +18,13 @@
  * limitations under the License.
  */
 
-#include "rotors_mavlink_interface/mavlink_interface.h"
-//#include "rotors_simulator/rotors_mavlink_interface/include/rotors_mavlink_interface/mavlink_interface.h"
+#include "rotors_hil_interface/hil_sensors_interface.h"
+//#include "rotors_simulator/rotors_hil_interface/include/rotors_hil_interface/hil_sensors_interface.h"
 
-namespace rotors_mavlink {
+namespace rotors_hil {
 
-MavlinkInterface::MavlinkInterface():
+HilSensorsInterface::HilSensorsInterface():
   is_hil_on_(false),
-  base_mode_(0),
-  system_status_(255),
-  custom_mode_(0),
   received_gps_(false),
   received_imu_(false),
   received_mag_(false),
@@ -47,63 +44,53 @@ MavlinkInterface::MavlinkInterface():
 {
   ros::NodeHandle pnh("~");
 
-  std::string hil_mode_sub_topic;
-  std::string mavlink_sub_topic;
-  std::string rc_sub_topic;
+  std::string set_mode_sub_topic;
   std::string mavlink_pub_topic;
-  std::string mav_mode_pub_topic;
-  std::string mav_custom_mode_pub_topic;
-  std::string mav_status_pub_topic;
-  std::string actuators_pub_topic;
   pnh.param("gps_topic", gps_sub_topic_, kDefaultGpsSubTopic);
   pnh.param("imu_topic", imu_sub_topic_, kDefaultImuSubTopic);
   pnh.param("mag_topic", mag_sub_topic_, kDefaultMagSubTopic);
   pnh.param("pressure_topic", pressure_sub_topic_, kDefaultPressureSubTopic);
-  pnh.param("hil_mode_topic", hil_mode_sub_topic, kDefaultHilModeSubTopic);
-  pnh.param("mavlink_sub_topic", mavlink_sub_topic, kDefaultMavlinkSubTopic);
-  pnh.param("rc_sub_topic", rc_sub_topic, kDefaultRCSubTopic);
+  pnh.param("set_mode_topic", set_mode_sub_topic, kDefaultSetModeSubTopic);
   pnh.param("mavlink_pub_topic", mavlink_pub_topic, kDefaultMavlinkPubTopic);
-  pnh.param("mav_mode_pub_topic", mav_mode_pub_topic, kDefaultMavModePubTopic);
-  pnh.param("mav_custom_mode_pub_topic", mav_custom_mode_pub_topic, kDefaultMavCustomModePubTopic);
-  pnh.param("mav_status_pub_topic", mav_status_pub_topic, kDefaultMavStatusPubTopic);
-  pnh.param("actuators_pub_topic", actuators_pub_topic, kDefaultActuatorsPubTopic);
 
-  hil_mode_sub_ = nh_.subscribe(hil_mode_sub_topic, 1, &MavlinkInterface::HilModeCallback, this);
-  mavlink_sub_ = nh_.subscribe(mavlink_sub_topic, 10, &MavlinkInterface::MavlinkCallback, this);
-  rc_in_sub_ = nh_.subscribe(rc_sub_topic, 1, &MavlinkInterface::RCCallback, this);
+  set_mode_sub_ = nh_.subscribe(set_mode_sub_topic, 1, &HilSensorsInterface::SetModeCallback, this);
 
-  mavlink_pub_ = nh_.advertise<mavros_msgs::Mavlink>(mavlink_pub_topic, 10);
-  mav_mode_pub_ = nh_.advertise<std_msgs::UInt8>(mav_mode_pub_topic, 1);
-  mav_custom_mode_pub_ = nh_.advertise<std_msgs::UInt32>(mav_custom_mode_pub_topic, 1);
-  mav_status_pub_ = nh_.advertise<std_msgs::UInt8>(mav_status_pub_topic, 1);
-  actuators_pub_ = nh_.advertise<mav_msgs::Actuators>(actuators_pub_topic, 1);
+  mavlink_pub_ = nh_.advertise<mavros_msgs::Mavlink>(mavlink_pub_topic, 3);
 }
 
-MavlinkInterface::~MavlinkInterface() {
+HilSensorsInterface::~HilSensorsInterface() {
 }
 
-void MavlinkInterface::MainTask() {
+void HilSensorsInterface::MainTask() {
   ros::Rate rate_outer(2.0);
-  ros::Rate rate_inner(50.0);
+  ros::Rate rate_inner(10.0);
 
+  // First, we wait until HIL is enabled
+  while (ros::ok() && !is_hil_on_) {
+    ros::spinOnce();
+    rate_inner.sleep();
+  }
+
+  BeginSensorPublishing();
+
+  // The outer loop sends the sensor data to autopilot at lower frequency
   while (ros::ok()) {
-    if (is_hil_on_) {
-      while (ros::ok() && !AreAllSensorsUpdated()) {
-        ros::spinOnce();
-        rate_inner.sleep();
-      }
-
-      SendHilSensorData();
-
-      ClearAllSensorsUpdateStatuses();
+    // Wait until we have received updates from all the sensor
+    while (!AreAllSensorsUpdated()) {
+      ros::spinOnce();
+      rate_inner.sleep();
     }
+
+    SendHilSensorData();
+
+    ClearAllSensorsUpdateStatuses();
 
     ros::spinOnce();
     rate_outer.sleep();
   }
 }
 
-void MavlinkInterface::GpsCallback(const sensor_msgs::NavSatFixConstPtr& gps_msg) {
+void HilSensorsInterface::GpsCallback(const sensor_msgs::NavSatFixConstPtr& gps_msg) {
   lat_ = gps_msg->latitude * 10000000;
   lon_ = gps_msg->longitude * 10000000;
   alt_ = gps_msg->altitude * 1000;
@@ -114,7 +101,7 @@ void MavlinkInterface::GpsCallback(const sensor_msgs::NavSatFixConstPtr& gps_msg
     received_gps_ = true;
 }
 
-void MavlinkInterface::ImuCallback(const sensor_msgs::ImuConstPtr& imu_msg) {
+void HilSensorsInterface::ImuCallback(const sensor_msgs::ImuConstPtr& imu_msg) {
   acc_x_ = imu_msg->linear_acceleration.x;
   acc_y_ = imu_msg->linear_acceleration.y;
   acc_z_ = imu_msg->linear_acceleration.z;
@@ -127,7 +114,7 @@ void MavlinkInterface::ImuCallback(const sensor_msgs::ImuConstPtr& imu_msg) {
     received_imu_ = true;
 }
 
-void MavlinkInterface::MagCallback(const sensor_msgs::MagneticFieldConstPtr &mag_msg) {
+void HilSensorsInterface::MagCallback(const sensor_msgs::MagneticFieldConstPtr &mag_msg) {
   // ROS magnetic field sensor message is in Tesla, while MAVLINK hil sensor message
   // measures magnetic field in Gauss. 1 Tesla = 10000 Gauss
   mag_x_ = mag_msg->magnetic_field.x * 10000;
@@ -138,7 +125,7 @@ void MavlinkInterface::MagCallback(const sensor_msgs::MagneticFieldConstPtr &mag
     received_mag_ = true;
 }
 
-void MavlinkInterface::PressureCallback(const sensor_msgs::FluidPressureConstPtr &pressure_msg) {
+void HilSensorsInterface::PressureCallback(const sensor_msgs::FluidPressureConstPtr &pressure_msg) {
   // ROS fluid pressure sensor message is in Pascals, while MAVLINK hil sensor message
   // measures fluid pressure in millibar. 1 Pascal = 0.01 millibar
   pressure_abs_ = pressure_msg->fluid_pressure * 0.01;
@@ -147,25 +134,15 @@ void MavlinkInterface::PressureCallback(const sensor_msgs::FluidPressureConstPtr
     received_pressure_ = true;
 }
 
-void MavlinkInterface::HilModeCallback(const std_msgs::BoolConstPtr& hil_mode_msg) {
+void HilSensorsInterface::SetModeCallback(const std_msgs::UInt8ConstPtr& set_mode_msg) {
   mavlink_message_t mmsg;
-
-  uint8_t new_base_mode = base_mode_ & ~MAV_MODE_FLAG_DECODE_POSITION_HIL;
-  if (hil_mode_msg->data)
-  {
-    new_base_mode |= MAV_MODE_FLAG_HIL_ENABLED;
-  }
-  else
-  {
-    new_base_mode &= ~MAV_MODE_FLAG_HIL_ENABLED;
-  }
 
   cmd_msg_.target_system = 1;
   cmd_msg_.target_component = 0;
   cmd_msg_.command = MAV_CMD_DO_SET_MODE;
   cmd_msg_.confirmation = 1;
-  cmd_msg_.param1 = new_base_mode;
-  cmd_msg_.param2 = custom_mode_;
+  cmd_msg_.param1 = set_mode_msg->data;
+  cmd_msg_.param2 = 0;
 
   mavlink_command_long_t* cmd_msg_ptr = &cmd_msg_;
   mavlink_msg_command_long_encode(1, 0, &mmsg, cmd_msg_ptr);
@@ -180,98 +157,17 @@ void MavlinkInterface::HilModeCallback(const std_msgs::BoolConstPtr& hil_mode_ms
 
   mavlink_pub_.publish(rmsg);
 
-  if (hil_mode_msg->data && !is_hil_on_)
-  {
-    StartHil();
-  }
-  else if (!hil_mode_msg->data && is_hil_on_)
-  {
-    StopHil();
-  }
+  is_hil_on_ = (set_mode_msg->data & MAV_MODE_FLAG_HIL_ENABLED);
 }
 
-void MavlinkInterface::MavlinkCallback(const mavros_msgs::MavlinkConstPtr& mavros_msg) {
-  if (mavros_msg->msgid == MAVLINK_MSG_ID_HEARTBEAT)
-  {
-    mavlink_message_t* mavlink_msg;
-    mavros_msgs::mavlink::convert(*mavros_msg, *mavlink_msg);
-
-    mavlink_heartbeat_t heartbeat;
-    mavlink_msg_heartbeat_decode(mavlink_msg, &heartbeat);
-
-    if (base_mode_ != heartbeat.base_mode || custom_mode_ != heartbeat.custom_mode)
-    {
-      base_mode_ = heartbeat.base_mode;
-      custom_mode_ = heartbeat.custom_mode;
-
-      is_hil_on_ = (base_mode_ & MAV_MODE_FLAG_HIL_ENABLED);
-
-      std_msgs::UInt8 mav_mode_msg;
-      mav_mode_msg.data = base_mode_;
-      mav_mode_pub_.publish(mav_mode_msg);
-
-      std_msgs::UInt32 mav_custom_mode_msg;
-      mav_custom_mode_msg.data = custom_mode_;
-      mav_custom_mode_pub_.publish(mav_custom_mode_msg);
-    }
-
-    if (system_status_ != heartbeat.system_status)
-    {
-      system_status_ = heartbeat.system_status;
-
-      std_msgs::UInt8 mav_status_msg;
-      mav_status_msg.data = system_status_;
-      mav_status_pub_.publish(mav_status_msg);
-    }
-  }
+void HilSensorsInterface::BeginSensorPublishing() {
+  gps_sub_ = nh_.subscribe(gps_sub_topic_, 1, &HilSensorsInterface::GpsCallback, this);
+  imu_sub_ = nh_.subscribe(imu_sub_topic_, 1, &HilSensorsInterface::ImuCallback, this);
+  mag_sub_ = nh_.subscribe(mag_sub_topic_, 1, &HilSensorsInterface::MagCallback, this);
+  pressure_sub_ = nh_.subscribe(pressure_sub_topic_, 1, &HilSensorsInterface::PressureCallback, this);
 }
 
-void MavlinkInterface::RCCallback(const mavros_msgs::RCInConstPtr& rc_in_msg) {
-  ros::Time current_time = ros::Time::now();
-
-  mav_msgs::Actuators act_msg;
-
-  //
-  // Double check these
-  //
-  float max_aileron = M_PI * 0.1;
-  float max_elevator = M_PI * 0.1;
-  float max_rudder = M_PI * 0.1;
-
-  float throttle = (rc_in_msg->channels.at(2) - 1500) * 0.002;
-  throttle = (throttle > 0.0) ? throttle : 0.0;
-  float aileron = (rc_in_msg->channels.at(3) - 1500) * 0.1 * max_aileron;
-  float elevator = (rc_in_msg->channels.at(4) - 1500) * 0.1 * max_elevator;
-  float rudder = (rc_in_msg->channels.at(5) - 1500) * 0.1 * max_rudder;
-
-  act_msg.angles.push_back(aileron);
-  act_msg.angles.push_back(elevator);
-  act_msg.angles.push_back(rudder);
-
-  act_msg.normalized.push_back(throttle);
-
-  act_msg.header.seq = 1;
-  act_msg.header.stamp.sec = current_time.sec;
-  act_msg.header.stamp.nsec = current_time.nsec;
-
-  actuators_pub_.publish(act_msg);
-}
-
-void MavlinkInterface::StartHil() {
-  gps_sub_ = nh_.subscribe(gps_sub_topic_, 1, &MavlinkInterface::GpsCallback, this);
-  imu_sub_ = nh_.subscribe(imu_sub_topic_, 1, &MavlinkInterface::ImuCallback, this);
-  mag_sub_ = nh_.subscribe(mag_sub_topic_, 1, &MavlinkInterface::MagCallback, this);
-  pressure_sub_ = nh_.subscribe(pressure_sub_topic_, 1, &MavlinkInterface::PressureCallback, this);
-}
-
-void MavlinkInterface::StopHil() {
-  gps_sub_.shutdown();
-  imu_sub_.shutdown();
-  mag_sub_.shutdown();
-  pressure_sub_.shutdown();
-}
-
-void MavlinkInterface::SendHilSensorData() {
+void HilSensorsInterface::SendHilSensorData() {
   mavlink_message_t mmsg;
   mavlink_message_t* msg;
 
@@ -392,23 +288,23 @@ void MavlinkInterface::SendHilSensorData() {
   mavlink_pub_.publish(rmsg_hil_state_qtrn);
 }
 
-void MavlinkInterface::ClearAllSensorsUpdateStatuses() {
+void HilSensorsInterface::ClearAllSensorsUpdateStatuses() {
   received_gps_ = false;
   received_imu_ = false;
   received_mag_ = false;
   received_pressure_ = false;
 }
 
-bool MavlinkInterface::AreAllSensorsUpdated() {
+bool HilSensorsInterface::AreAllSensorsUpdated() {
   return (received_gps_ && received_imu_ && received_mag_ && received_pressure_);
 }
 }
 
 int main(int argc, char** argv) {
-  ros::init(argc, argv, "rotors_mavlink_interface");
-  rotors_mavlink::MavlinkInterface mavlink_interface;
+  ros::init(argc, argv, "rotors_hil_sensors_interface");
+  rotors_hil::HilSensorsInterface hil_sensors_interface;
 
-  mavlink_interface.MainTask();
+  hil_sensors_interface.MainTask();
 
   return 0;
 }

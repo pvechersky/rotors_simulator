@@ -9,7 +9,6 @@ from python_qt_binding.QtGui import QFormLayout
 from python_qt_binding.QtCore import QTimer, Slot
 from std_msgs.msg import Bool
 from std_msgs.msg import UInt8
-from std_msgs.msg import UInt32
 
 class HilWidget(QWidget):
   # MAV mode flags
@@ -35,11 +34,12 @@ class HilWidget(QWidget):
   # String constants
   STR_UNKNOWN = 'N/A'
   STR_MAV_MODE_SUB_TOPIC = 'mav_mode'
-  STR_MAV_CUSTOM_MODE_SUB_TOPIC = 'mav_custom_mode'
   STR_MAV_STATUS_SUB_TOPIC = 'mav_status'
-  STR_HIL_MODE_PUB_TOPIC = 'hil_mode'
+  STR_SET_MODE_PUB_TOPIC = 'set_mode'
+  STR_RESET_MODEL_PUB_TOPIC = 'reset'
+  STR_THROTTLE_PUB_TOPIC = 'gui_throttle'
 
-  def __init__(self, rotors_namespace='firefly'):
+  def __init__(self):
     # Init QWidget
     super(HilWidget, self).__init__()
     self.setObjectName('HilWidget')
@@ -50,49 +50,65 @@ class HilWidget(QWidget):
 
     # Set the initial parameters of UI elements
     self.button_set_hil_mode.setEnabled(False)
+    self.button_arm.setEnabled(False)
     self.text_state.setText(self.STR_UNKNOWN)
-    self.text_custom_mode.setText(self.STR_UNKNOWN)
+    self.vertical_slider_throttle.setValue(0)
     self.clearMavMode()
 
     # Initialize class variables
     self.mav_mode = 0
-    self.mav_custom_mode = 0
     self.mav_status = 255
     self.received_heartbeat = False
     self.hil_enabled = False
+    self.armed = False
     
-    # Set the functions that are called when a button is pressed
+    # Set the functions that are called when signals are emitted
     self.button_set_hil_mode.pressed.connect(self.on_set_hil_mode_button_pressed)
+    self.button_arm.pressed.connect(self.on_arm_button_pressed)
+    self.button_reset_model.pressed.connect(self.on_reset_model_button_pressed)
+    self.vertical_slider_throttle.valueChanged.connect(self.on_throttle_value_changed)
     
     # Initialize ROS subscribers and publishers
     self.mav_mode_sub = rospy.Subscriber(self.STR_MAV_MODE_SUB_TOPIC, UInt8, self.mavModeCallback, queue_size=1)
-    self.mav_custom_mode_sub = rospy.Subscriber(self.STR_MAV_CUSTOM_MODE_SUB_TOPIC, UInt32, self.mavCustomModeCallback, queue_size=1)
     self.mav_status_sub = rospy.Subscriber(self.STR_MAV_STATUS_SUB_TOPIC, UInt8, self.mavStatusCallback, queue_size=1)
-    self.hil_mode_pub = rospy.Publisher(self.STR_HIL_MODE_PUB_TOPIC, Bool, queue_size=1)
+    self.set_mode_pub = rospy.Publisher(self.STR_SET_MODE_PUB_TOPIC, UInt8, queue_size=1)
+    self.reset_pub = rospy.Publisher(self.STR_RESET_MODEL_PUB_TOPIC, Bool, queue_size=1)
+    self.throttle_pub = rospy.Publisher(self.STR_THROTTLE_PUB_TOPIC, UInt8, queue_size=1)
 
   def on_set_hil_mode_button_pressed(self):
-    self.hil_mode_pub.publish(not(self.hil_enabled))
+    new_mode = self.mav_mode | self.MAV_MODE_FLAG_HIL_ENABLED
+    self.set_mode_pub.publish(new_mode)
+
+  def on_arm_button_pressed(self):
+    new_mode = self.mav_mode | self.MAV_MODE_FLAG_SAFETY_ARMED
+    self.set_mode_pub.publish(new_mode)
+
+  def on_reset_model_button_pressed(self):
+    self.reset_pub.publish(True)
+
+  def on_throttle_value_changed(self):
+    self.throttle_pub.publish(self.vertical_slider_throttle.value())
     
   def mavModeCallback(self, msg):
     if not(self.received_heartbeat):
       self.button_set_hil_mode.setEnabled(True)
+      self.button_arm.setEnabled(True)
       self.received_heartbeat = True
 
     if (self.mav_mode != msg.data):
       self.mav_mode = msg.data
       self.processMavMode(msg.data)
 
-      self.hil_enabled = (msg.data & self.MAV_MODE_FLAG_HIL_ENABLED)
+      new_hil_enabled = (msg.data & self.MAV_MODE_FLAG_HIL_ENABLED)
+      new_armed = (msg.data & self.MAV_MODE_FLAG_SAFETY_ARMED)
 
-      if (self.hil_enabled):
-        self.button_set_hil_mode.setText('Disable HIL')
-      else:
-        self.button_set_hil_mode.setText('Enable HIL')
-
-  def mavCustomModeCallback(self, msg):
-    if (self.mav_custom_mode != msg.data):
-      self.mav_custom_mode = msg.data
-      self.text_custom_mode.setText(str(msg.data))
+      if (self.hil_enabled != new_hil_enabled):
+        self.hil_enabled = new_hil_enabled
+        self.button_set_hil_mode.setEnabled(not(new_hil_enabled))
+      
+      if (self.armed != new_armed):
+        self.armed = new_armed
+        self.button_arm.setEnabled(not(new_armed))
 
   def mavStatusCallback(self, msg):
     if (self.mav_status != msg.data):

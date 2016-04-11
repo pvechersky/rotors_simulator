@@ -18,24 +18,19 @@
  * limitations under the License.
  */
 
-
-#ifndef ROTORS_MAVLINK_INTERFACE_H_
-#define ROTORS_MAVLINK_INTERFACE_H_
+#ifndef ROTORS_HIL_SENSORS_INTERFACE_H_
+#define ROTORS_HIL_SENSORS_INTERFACE_H_
 
 #include <ros/ros.h>
-#include <std_msgs/Bool.h>
 #include <std_msgs/UInt8.h>
-#include <std_msgs/UInt32.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/NavSatFix.h>
 #include <sensor_msgs/MagneticField.h>
 #include <sensor_msgs/FluidPressure.h>
 
-#include <mav_msgs/Actuators.h>
-#include <mavros_msgs/RCIn.h>
 #include <mavros_msgs/mavlink_convert.h>
 
-namespace rotors_mavlink {
+namespace rotors_hil {
 // Constants
 static constexpr int kAllFieldsUpdated = 4095;
 
@@ -44,19 +39,13 @@ static const std::string kDefaultGpsSubTopic = "gps";
 static const std::string kDefaultImuSubTopic = "imu";
 static const std::string kDefaultMagSubTopic = "magnetic_field";
 static const std::string kDefaultPressureSubTopic = "air_pressure";
-static const std::string kDefaultHilModeSubTopic = "hil_mode";
-static const std::string kDefaultMavlinkSubTopic = "mavlink/from";
-static const std::string kDefaultRCSubTopic = "/mavros/rc/in";
-static const std::string kDefaultMavlinkPubTopic = "mavlink/to";
-static const std::string kDefaultMavModePubTopic = "mav_mode";
-static const std::string kDefaultMavCustomModePubTopic = "mav_custom_mode";
-static const std::string kDefaultMavStatusPubTopic = "mav_status";
-static const std::string kDefaultActuatorsPubTopic = "actuators";
+static const std::string kDefaultSetModeSubTopic = "set_mode";
+static const std::string kDefaultMavlinkPubTopic = "/mavlink/to";
 
-class MavlinkInterface {
+class HilSensorsInterface {
  public:
-  MavlinkInterface();
-  virtual ~MavlinkInterface();
+  HilSensorsInterface();
+  virtual ~HilSensorsInterface();
 
   void MainTask();
 
@@ -65,14 +54,10 @@ class MavlinkInterface {
   void ImuCallback(const sensor_msgs::ImuConstPtr& imu_msg);
   void MagCallback(const sensor_msgs::MagneticFieldConstPtr& mag_msg);
   void PressureCallback(const sensor_msgs::FluidPressureConstPtr& pressure_msg);
-  void HilModeCallback(const std_msgs::BoolConstPtr& hil_mode_msg);
-  void MavlinkCallback(const mavros_msgs::MavlinkConstPtr& mavros_msg);
-  void RCCallback(const mavros_msgs::RCInConstPtr& rc_in_msg);
+  void SetModeCallback(const std_msgs::UInt8ConstPtr& set_mode_msg);
 
-  // HIL control
-  void StartHil();
-  void StopHil();
-
+  // Sensor data management
+  void BeginSensorPublishing();
   void SendHilSensorData();
   void ClearAllSensorsUpdateStatuses();
   bool AreAllSensorsUpdated();
@@ -84,26 +69,14 @@ class MavlinkInterface {
   ros::Subscriber imu_sub_;
   ros::Subscriber mag_sub_;
   ros::Subscriber pressure_sub_;
-  ros::Subscriber hil_mode_sub_;
-  ros::Subscriber mavlink_sub_;
-  ros::Subscriber rc_in_sub_;
+  ros::Subscriber set_mode_sub_;
   ros::Publisher mavlink_pub_;
-  ros::Publisher mav_mode_pub_;
-  ros::Publisher mav_custom_mode_pub_;
-  ros::Publisher mav_status_pub_;
-  ros::Publisher actuators_pub_;
 
   // MAVLINK messages
   mavlink_hil_gps_t hil_gps_msg_;
   mavlink_hil_sensor_t hil_sensor_msg_;
   mavlink_hil_state_quaternion_t hil_state_qtrn_msg_;
   mavlink_command_long_t cmd_msg_;
-
-  // MAV diagnostics
-  bool is_hil_on_;
-  uint8_t base_mode_;
-  uint8_t system_status_;
-  uint32_t custom_mode_;
 
   // Sensors topics
   std::string gps_sub_topic_;
@@ -112,6 +85,7 @@ class MavlinkInterface {
   std::string pressure_sub_topic_;
 
   // Sensor update trackers
+  bool is_hil_on_;
   bool received_gps_;
   bool received_imu_;
   bool received_mag_;
@@ -146,4 +120,4 @@ class MavlinkInterface {
 };
 }
 
-#endif // ROTORS_MAVLINK_INTERFACE_H_
+#endif // ROTORS_HIL_SENSORS_INTERFACE_H_
