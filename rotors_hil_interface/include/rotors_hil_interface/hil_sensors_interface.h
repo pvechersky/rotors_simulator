@@ -25,6 +25,7 @@
 #include <std_msgs/UInt8.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/NavSatFix.h>
+#include <mav_msgs/default_topics.h>
 #include <sensor_msgs/MagneticField.h>
 #include <sensor_msgs/FluidPressure.h>
 
@@ -35,9 +36,6 @@ namespace rotors_hil {
 static constexpr int kAllFieldsUpdated = 4095;
 
 // Default values
-static const std::string kDefaultGpsSubTopic = "gps";
-static const std::string kDefaultImuSubTopic = "imu";
-static const std::string kDefaultMagSubTopic = "magnetic_field";
 static const std::string kDefaultPressureSubTopic = "air_pressure";
 static const std::string kDefaultSetModeSubTopic = "set_mode";
 static const std::string kDefaultMavlinkPubTopic = "/mavlink/to";
@@ -57,7 +55,6 @@ class HilSensorsInterface {
   void SetModeCallback(const std_msgs::UInt8ConstPtr& set_mode_msg);
 
   // Sensor data management
-  void BeginSensorPublishing();
   void SendHilSensorData();
   void ClearAllSensorsUpdateStatuses();
   bool AreAllSensorsUpdated();
@@ -78,14 +75,7 @@ class HilSensorsInterface {
   mavlink_hil_state_quaternion_t hil_state_qtrn_msg_;
   mavlink_command_long_t cmd_msg_;
 
-  // Sensors topics
-  std::string gps_sub_topic_;
-  std::string imu_sub_topic_;
-  std::string mag_sub_topic_;
-  std::string pressure_sub_topic_;
-
   // Sensor update trackers
-  bool is_hil_on_;
   bool received_gps_;
   bool received_imu_;
   bool received_mag_;

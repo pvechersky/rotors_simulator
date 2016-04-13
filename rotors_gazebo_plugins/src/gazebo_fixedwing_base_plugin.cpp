@@ -67,12 +67,12 @@ void GazeboFixedWingBasePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _
     gzthrow("[gazebo_fixedwing_base_plugin] Couldn't find specified link \"" << link_name << "\".");
 
   std::string actuators_topic;
-  std::string gui_throttle_topic;
+  //std::string gui_throttle_topic;
   std::string reset_topic;
   getSdfParam<std::string>(_sdf, "actuatorsTopic", actuators_topic,
                            kDefaultActuatorsSubTopic);
-  getSdfParam<std::string>(_sdf, "guiThrottleTopic", gui_throttle_topic,
-                           kDefaultGuiThrottleSubTopic);
+  //getSdfParam<std::string>(_sdf, "guiThrottleTopic", gui_throttle_topic,
+  //                         kDefaultGuiThrottleSubTopic);
   getSdfParam<std::string>(_sdf, "resetTopic", reset_topic,
                            kDefaultResetSubTopic);
   getSdfParam<double>(_sdf, "maxThrust", max_thrust_, kDefaultMaxThrust);
@@ -83,7 +83,7 @@ void GazeboFixedWingBasePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _
           boost::bind(&GazeboFixedWingBasePlugin::OnUpdate, this, _1));
 
   actuators_sub_ = node_handle_->subscribe(actuators_topic, 1, &GazeboFixedWingBasePlugin::actuatorsCallback, this);
-  gui_throttle_sub_ = node_handle_->subscribe(gui_throttle_topic, 1, &GazeboFixedWingBasePlugin::guiThrottleCallback, this);
+  //gui_throttle_sub_ = node_handle_->subscribe(gui_throttle_topic, 1, &GazeboFixedWingBasePlugin::guiThrottleCallback, this);
   reset_sub_ = node_handle_->subscribe(reset_topic, 1, &GazeboFixedWingBasePlugin::resetCallback, this);
 }
 
@@ -92,16 +92,19 @@ void GazeboFixedWingBasePlugin::OnUpdate(const common::UpdateInfo& _info) {
 }
 
 void GazeboFixedWingBasePlugin::actuatorsCallback(const mav_msgs::ActuatorsConstPtr& act_msg) {
-  ref_thrust_ = act_msg->normalized.at(0) * max_thrust_;
+  ref_thrust_ = (act_msg->normalized.at(0) * 0.5 + 0.5) * max_thrust_;
 
   std::cout << "New thrust command: " << ref_thrust_ << std::endl;
+  std::cout << "New aileron angle: " << act_msg->angles[0] << std::endl;
+  std::cout << "New elevator angle: " << act_msg->angles[1] << std::endl;
+  std::cout << "New rudder angle: " << act_msg->angles[2] << std::endl << std::endl;
 }
 
-void GazeboFixedWingBasePlugin::guiThrottleCallback(const std_msgs::UInt8ConstPtr& throttle_msg) {
+/*void GazeboFixedWingBasePlugin::guiThrottleCallback(const std_msgs::UInt8ConstPtr& throttle_msg) {
   ref_thrust_ = (double)throttle_msg->data / 100.0 * max_thrust_;
 
   std::cout << "New thrust command: " << ref_thrust_ << std::endl;
-}
+}*/
 
 void GazeboFixedWingBasePlugin::resetCallback(const std_msgs::BoolConstPtr& reset_msg) {
   if (reset_msg->data) {

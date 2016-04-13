@@ -24,7 +24,6 @@
 namespace rotors_hil {
 
 HilSensorsInterface::HilSensorsInterface():
-  is_hil_on_(false),
   received_gps_(false),
   received_imu_(false),
   received_mag_(false),
@@ -44,18 +43,26 @@ HilSensorsInterface::HilSensorsInterface():
 {
   ros::NodeHandle pnh("~");
 
+  std::string gps_sub_topic;
+  std::string imu_sub_topic;
+  std::string mag_sub_topic;
+  std::string pressure_sub_topic;
   std::string set_mode_sub_topic;
   std::string mavlink_pub_topic;
-  pnh.param("gps_topic", gps_sub_topic_, kDefaultGpsSubTopic);
-  pnh.param("imu_topic", imu_sub_topic_, kDefaultImuSubTopic);
-  pnh.param("mag_topic", mag_sub_topic_, kDefaultMagSubTopic);
-  pnh.param("pressure_topic", pressure_sub_topic_, kDefaultPressureSubTopic);
+  pnh.param("gps_topic", gps_sub_topic, std::string(mav_msgs::default_topics::GPS));
+  pnh.param("imu_topic", imu_sub_topic, std::string(mav_msgs::default_topics::IMU));
+  pnh.param("mag_topic", mag_sub_topic, std::string(mav_msgs::default_topics::MAGNETIC_FIELD));
+  pnh.param("pressure_topic", pressure_sub_topic, kDefaultPressureSubTopic);
   pnh.param("set_mode_topic", set_mode_sub_topic, kDefaultSetModeSubTopic);
   pnh.param("mavlink_pub_topic", mavlink_pub_topic, kDefaultMavlinkPubTopic);
 
+  gps_sub_ = nh_.subscribe(gps_sub_topic, 1, &HilSensorsInterface::GpsCallback, this);
+  imu_sub_ = nh_.subscribe(imu_sub_topic, 1, &HilSensorsInterface::ImuCallback, this);
+  mag_sub_ = nh_.subscribe(mag_sub_topic, 1, &HilSensorsInterface::MagCallback, this);
+  pressure_sub_ = nh_.subscribe(pressure_sub_topic, 1, &HilSensorsInterface::PressureCallback, this);
   set_mode_sub_ = nh_.subscribe(set_mode_sub_topic, 1, &HilSensorsInterface::SetModeCallback, this);
 
-  mavlink_pub_ = nh_.advertise<mavros_msgs::Mavlink>(mavlink_pub_topic, 3);
+  mavlink_pub_ = nh_.advertise<mavros_msgs::Mavlink>(mavlink_pub_topic, 5);
 }
 
 HilSensorsInterface::~HilSensorsInterface() {
@@ -63,15 +70,7 @@ HilSensorsInterface::~HilSensorsInterface() {
 
 void HilSensorsInterface::MainTask() {
   ros::Rate rate_outer(2.0);
-  ros::Rate rate_inner(10.0);
-
-  // First, we wait until HIL is enabled
-  while (ros::ok() && !is_hil_on_) {
-    ros::spinOnce();
-    rate_inner.sleep();
-  }
-
-  BeginSensorPublishing();
+  ros::Rate rate_inner(20.0);
 
   // The outer loop sends the sensor data to autopilot at lower frequency
   while (ros::ok()) {
@@ -82,8 +81,6 @@ void HilSensorsInterface::MainTask() {
     }
 
     SendHilSensorData();
-
-    ClearAllSensorsUpdateStatuses();
 
     ros::spinOnce();
     rate_outer.sleep();
@@ -156,15 +153,6 @@ void HilSensorsInterface::SetModeCallback(const std_msgs::UInt8ConstPtr& set_mod
   mavros_msgs::mavlink::convert(*msg, *rmsg);
 
   mavlink_pub_.publish(rmsg);
-
-  is_hil_on_ = (set_mode_msg->data & MAV_MODE_FLAG_HIL_ENABLED);
-}
-
-void HilSensorsInterface::BeginSensorPublishing() {
-  gps_sub_ = nh_.subscribe(gps_sub_topic_, 1, &HilSensorsInterface::GpsCallback, this);
-  imu_sub_ = nh_.subscribe(imu_sub_topic_, 1, &HilSensorsInterface::ImuCallback, this);
-  mag_sub_ = nh_.subscribe(mag_sub_topic_, 1, &HilSensorsInterface::MagCallback, this);
-  pressure_sub_ = nh_.subscribe(pressure_sub_topic_, 1, &HilSensorsInterface::PressureCallback, this);
 }
 
 void HilSensorsInterface::SendHilSensorData() {
@@ -174,7 +162,7 @@ void HilSensorsInterface::SendHilSensorData() {
   ros::Time current_time = ros::Time::now();
 
   // Encode and publish the hil_sensor message
-  hil_sensor_msg_.time_usec = current_time.nsec*1000;
+  /*hil_sensor_msg_.time_usec = current_time.nsec * 1000;
   hil_sensor_msg_.xacc = 0.0f;
   hil_sensor_msg_.yacc = 0.0f;
   hil_sensor_msg_.zacc = 9.81f;
@@ -188,8 +176,8 @@ void HilSensorsInterface::SendHilSensorData() {
   hil_sensor_msg_.diff_pressure = 0.0;
   hil_sensor_msg_.pressure_alt = 500.0f;
   hil_sensor_msg_.temperature = 15.0f;
-  hil_sensor_msg_.fields_updated = 4095;
-  /*hil_sensor_msg_.time_usec = current_time.nsec*1000;
+  hil_sensor_msg_.fields_updated = 4095;*/
+  hil_sensor_msg_.time_usec = current_time.nsec*1000;
   hil_sensor_msg_.xacc = acc_x_;
   hil_sensor_msg_.yacc = acc_y_;
   hil_sensor_msg_.zacc = acc_z_;
@@ -203,7 +191,7 @@ void HilSensorsInterface::SendHilSensorData() {
   hil_sensor_msg_.diff_pressure = pressure_diff_;
   hil_sensor_msg_.pressure_alt = pressure_alt_;
   hil_sensor_msg_.temperature = temperature_;
-  hil_sensor_msg_.fields_updated = kAllFieldsUpdated;*/
+  hil_sensor_msg_.fields_updated = kAllFieldsUpdated;
 
   mavlink_hil_sensor_t* hil_sensor_msg_ptr = &hil_sensor_msg_;
   mavlink_msg_hil_sensor_encode(1, 0, &mmsg, hil_sensor_msg_ptr);
@@ -217,7 +205,7 @@ void HilSensorsInterface::SendHilSensorData() {
   mavlink_pub_.publish(rmsg_hil_sensor);
 
   // Encode and publish the hil_gps message
-  hil_gps_msg_.time_usec = current_time.nsec*1000;
+  /*hil_gps_msg_.time_usec = current_time.nsec * 1000;
   hil_gps_msg_.fix_type = 3;
   hil_gps_msg_.lat = 47.3667 * 10000000;
   hil_gps_msg_.lon = 8.5500 * 10000000;
@@ -229,8 +217,8 @@ void HilSensorsInterface::SendHilSensorData() {
   hil_gps_msg_.ve = 0;
   hil_gps_msg_.vd = 0;
   hil_gps_msg_.cog = 0;
-  hil_gps_msg_.satellites_visible = 5;
-  /*hil_gps_msg_.time_usec = current_time.nsec*1000;
+  hil_gps_msg_.satellites_visible = 5;*/
+  hil_gps_msg_.time_usec = current_time.nsec*1000;
   hil_gps_msg_.fix_type = fix_type_;
   hil_gps_msg_.lat = lat_;
   hil_gps_msg_.lon = lon_;
@@ -242,7 +230,7 @@ void HilSensorsInterface::SendHilSensorData() {
   hil_gps_msg_.ve = ve_;
   hil_gps_msg_.vd = vd_;
   hil_gps_msg_.cog = cog_;
-  hil_gps_msg_.satellites_visible = satellites_visible_;*/
+  hil_gps_msg_.satellites_visible = satellites_visible_;
 
   mavlink_hil_gps_t* hil_gps_msg_ptr = &hil_gps_msg_;
   mavlink_msg_hil_gps_encode(1, 0, &mmsg, hil_gps_msg_ptr);
@@ -256,7 +244,7 @@ void HilSensorsInterface::SendHilSensorData() {
   mavlink_pub_.publish(rmsg_hil_gps);
 
   // Encode and publish the hil_state_quaternion message
-  hil_state_qtrn_msg_.time_usec = current_time.nsec*1000;
+  /*hil_state_qtrn_msg_.time_usec = current_time.nsec * 1000;
   hil_state_qtrn_msg_.attitude_quaternion[0] = 1.0;
   hil_state_qtrn_msg_.attitude_quaternion[1] = 0.0;
   hil_state_qtrn_msg_.attitude_quaternion[2] = 0.0;
@@ -274,7 +262,26 @@ void HilSensorsInterface::SendHilSensorData() {
   hil_state_qtrn_msg_.true_airspeed = 0;
   hil_state_qtrn_msg_.xacc = 0;
   hil_state_qtrn_msg_.yacc = 0;
-  hil_state_qtrn_msg_.zacc = 0;
+  hil_state_qtrn_msg_.zacc = 9.81f;*/
+  hil_state_qtrn_msg_.time_usec = current_time.nsec * 1000;
+  hil_state_qtrn_msg_.attitude_quaternion[0] = 1.0;
+  hil_state_qtrn_msg_.attitude_quaternion[1] = 0.0;
+  hil_state_qtrn_msg_.attitude_quaternion[2] = 0.0;
+  hil_state_qtrn_msg_.attitude_quaternion[3] = 0.0;
+  hil_state_qtrn_msg_.rollspeed = gyro_x_;
+  hil_state_qtrn_msg_.pitchspeed = gyro_y_;
+  hil_state_qtrn_msg_.yawspeed = gyro_z_;
+  hil_state_qtrn_msg_.lat = lat_;
+  hil_state_qtrn_msg_.lon = lon_;
+  hil_state_qtrn_msg_.alt = alt_;
+  hil_state_qtrn_msg_.vx = 0;
+  hil_state_qtrn_msg_.vy = 0;
+  hil_state_qtrn_msg_.vz = 0;
+  hil_state_qtrn_msg_.ind_airspeed = 0;
+  hil_state_qtrn_msg_.true_airspeed = 0;
+  hil_state_qtrn_msg_.xacc = acc_x_;
+  hil_state_qtrn_msg_.yacc = acc_y_;
+  hil_state_qtrn_msg_.zacc = acc_z_;
 
   mavlink_hil_state_quaternion_t* hil_state_qtrn_msg_ptr = &hil_state_qtrn_msg_;
   mavlink_msg_hil_state_quaternion_encode(1, 0, &mmsg, hil_state_qtrn_msg_ptr);
@@ -286,6 +293,8 @@ void HilSensorsInterface::SendHilSensorData() {
   mavros_msgs::mavlink::convert(*msg, *rmsg_hil_state_qtrn);
 
   mavlink_pub_.publish(rmsg_hil_state_qtrn);
+
+  ClearAllSensorsUpdateStatuses();
 }
 
 void HilSensorsInterface::ClearAllSensorsUpdateStatuses() {

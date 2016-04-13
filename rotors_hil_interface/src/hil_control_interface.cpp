@@ -32,14 +32,23 @@ HilControlInterface::HilControlInterface():
   std::string mavlink_sub_topic;
   std::string mav_mode_pub_topic;
   std::string mav_status_pub_topic;
+  std::string actuators_pub_topic;
   pnh.param("mavlink_sub_topic", mavlink_sub_topic, kDefaultMavlinkSubTopic);
   pnh.param("mav_mode_pub_topic", mav_mode_pub_topic, kDefaultMavModePubTopic);
   pnh.param("mav_status_pub_topic", mav_status_pub_topic, kDefaultMavStatusPubTopic);
+  pnh.param("actuators_pub_topic", actuators_pub_topic, kDefaultActuatorsPubTopic);
+  pnh.param("roll_min", roll_min_, kDefaultRollMin);
+  pnh.param("roll_max", roll_max_, kDefaultRollMax);
+  pnh.param("pitch_min", pitch_min_, kDefaultPitchMin);
+  pnh.param("pitch_max", pitch_max_, kDefaultPitchMax);
+  pnh.param("yaw_min", yaw_min_, kDefaultYawMin);
+  pnh.param("yaw_max", yaw_max_, kDefaultYawMax);
 
-  mavlink_sub_ = nh_.subscribe(mavlink_sub_topic, 10, &HilControlInterface::MavlinkCallback, this);
+  mavlink_sub_ = nh_.subscribe(mavlink_sub_topic, 15, &HilControlInterface::MavlinkCallback, this);
 
   mav_mode_pub_ = nh_.advertise<std_msgs::UInt8>(mav_mode_pub_topic, 1);
   mav_status_pub_ = nh_.advertise<std_msgs::UInt8>(mav_status_pub_topic, 1);
+  actuators_pub_ = nh_.advertise<mav_msgs::Actuators>(actuators_pub_topic, 1);
 }
 
 HilControlInterface::~HilControlInterface() {
@@ -47,11 +56,13 @@ HilControlInterface::~HilControlInterface() {
 
 void HilControlInterface::MavlinkCallback(const mavros_msgs::MavlinkConstPtr& mavros_msg) {
   if (mavros_msg->msgid == MAVLINK_MSG_ID_HEARTBEAT) {
-    mavlink_message_t* mavlink_msg;
+    mavlink_message_t* mavlink_msg(new mavlink_message_t);
     mavros_msgs::mavlink::convert(*mavros_msg, *mavlink_msg);
 
     mavlink_heartbeat_t heartbeat;
     mavlink_msg_heartbeat_decode(mavlink_msg, &heartbeat);
+
+    delete mavlink_msg;
 
     if (base_mode_ != heartbeat.base_mode) {
       base_mode_ = heartbeat.base_mode;
@@ -70,7 +81,39 @@ void HilControlInterface::MavlinkCallback(const mavros_msgs::MavlinkConstPtr& ma
     }
   }
   else if (mavros_msg->msgid == MAVLINK_MSG_ID_HIL_CONTROLS) {
+    mavlink_message_t* mavlink_msg(new mavlink_message_t);
+    mavros_msgs::mavlink::convert(*mavros_msg, *mavlink_msg);
 
+    mavlink_hil_controls_t hil_controls;
+    mavlink_msg_hil_controls_decode(mavlink_msg, &hil_controls);
+
+    delete mavlink_msg;
+
+    mav_msgs::Actuators act_msg;
+
+    ros::Time current_time = ros::Time::now();
+
+    std::cout << "HIL CONTROL" << std::endl;
+    std::cout << hil_controls.time_usec << std::endl;
+    std::cout << hil_controls.roll_ailerons << std::endl;
+    std::cout << hil_controls.pitch_elevator << std::endl;
+    std::cout << hil_controls.yaw_rudder << std::endl;
+
+    float aileron_angle = (roll_max_ + roll_min_) * 0.5 + (roll_max_ - roll_min_) * 0.5 * hil_controls.roll_ailerons;
+    float elevator_angle = (pitch_max_ + pitch_min_) * 0.5 + (pitch_max_ - pitch_min_) * 0.5 * hil_controls.pitch_elevator;
+    float rudder_angle = (yaw_max_ + yaw_min_) * 0.5 + (yaw_max_ - yaw_min_) * 0.5 * hil_controls.yaw_rudder;
+    float throttle = hil_controls.throttle * 2.0 - 1.0;
+
+    act_msg.angles.push_back(aileron_angle);
+    act_msg.angles.push_back(elevator_angle);
+    act_msg.angles.push_back(rudder_angle);
+    act_msg.normalized.push_back(throttle);
+
+    act_msg.header.seq = 1;
+    act_msg.header.stamp.sec = current_time.sec;
+    act_msg.header.stamp.nsec = current_time.nsec;
+
+    actuators_pub_.publish(act_msg);
   }
 }
 }

@@ -6,6 +6,7 @@ add_definitions(-std=c++11)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   mavros
+  mav_msgs
   std_msgs
   mavros_msgs
   sensor_msgs
@@ -15,19 +16,19 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES
-  CATKIN_DEPENDS roscpp mavros mavros_msgs sensor_msgs std_msgs
+  CATKIN_DEPENDS roscpp mav_msgs mavros mavros_msgs sensor_msgs std_msgs
   DEPENDS
 )
 
-include_directories(include ${catkin_INCLUDE_DIRS})
+include_directories(include ${catkin_INCLUDE_DIRS} ${mavros_msgs_INCLUDE_DIRS})
 
 add_executable(rotors_hil_control_interface src/hil_control_interface.cpp)
-add_dependencies(rotors_hil_control_interface ${catkin_EXPORTED_TARGETS})
-target_link_libraries(rotors_hil_control_interface ${catkin_LIBRARIES})
+add_dependencies(rotors_hil_control_interface ${catkin_EXPORTED_TARGETS} ${mavros_EXPORTED_TARGETS} ${mavros_msgs_EXPORTED_TARGETS})
+target_link_libraries(rotors_hil_control_interface ${catkin_LIBRARIES} ${mavros_LIBRARIES})
 
 add_executable(rotors_hil_sensors_interface src/hil_sensors_interface.cpp)
-add_dependencies(rotors_hil_sensors_interface ${catkin_EXPORTED_TARGETS})
-target_link_libraries(rotors_hil_sensors_interface ${catkin_LIBRARIES})
+add_dependencies(rotors_hil_sensors_interface ${catkin_EXPORTED_TARGETS} ${mavros_EXPORTED_TARGETS} ${mavros_msgs_EXPORTED_TARGETS})
+target_link_libraries(rotors_hil_sensors_interface ${catkin_LIBRARIES} ${mavros_LIBRARIES})
 
 install(TARGETS
     rotors_hil_control_interface
