@@ -21,6 +21,8 @@
 #ifndef ROTORS_GAZEBO_PLUGINS_MAGNETOMETER_PLUGIN_H
 #define ROTORS_GAZEBO_PLUGINS_MAGNETOMETER_PLUGIN_H
 
+#include <random>
+
 #include <Eigen/Core>
 #include <gazebo/common/common.hh>
 #include <gazebo/common/Plugin.hh>
@@ -42,6 +44,9 @@ static constexpr double kDefaultRefMagDown = 0.000042817;
 
 class GazeboMagnetometerPlugin : public ModelPlugin {
  public:
+  typedef std::normal_distribution<> NormalDistribution;
+  typedef std::uniform_real_distribution<> UniformDistribution;
+
   GazeboMagnetometerPlugin();
   virtual ~GazeboMagnetometerPlugin();
 
@@ -70,6 +75,12 @@ class GazeboMagnetometerPlugin : public ModelPlugin {
   math::Vector3 mag_W_;
 
   sensor_msgs::MagneticField magnetometer_message_;
+
+  NormalDistribution noise_n_[3];
+  UniformDistribution noise_u_[3];
+
+  std::random_device random_device_;
+  std::mt19937 random_generator_;
 };
 }
 

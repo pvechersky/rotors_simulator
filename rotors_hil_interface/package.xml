@@ -4,7 +4,7 @@
   <version>0.0.1</version>
   <description>RotorS Hardware-in-the-loop interface package</description>
 
-  <maintainer email="pavelv@student.ethz.ch">Fadri Furrer</maintainer>
+  <maintainer email="pavelv@student.ethz.ch">Pavel Vechersky</maintainer>
 
   <author>Fadri Furrer</author>
   <author>Michael Burri</author>

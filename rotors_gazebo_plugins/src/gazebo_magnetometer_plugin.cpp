@@ -32,7 +32,8 @@ namespace gazebo {
 GazeboMagnetometerPlugin::GazeboMagnetometerPlugin()
     : ModelPlugin(),
       node_handle_(0),
-      magnetometer_sequence_(0) {
+      magnetometer_sequence_(0),
+      random_generator_(random_device_()) {
 }
 
 GazeboMagnetometerPlugin::~GazeboMagnetometerPlugin() {
@@ -71,12 +72,17 @@ void GazeboMagnetometerPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _s
   double ref_mag_north;
   double ref_mag_east;
   double ref_mag_down;
+  sdf::Vector3 noise_normal;
+  sdf::Vector3 noise_uniform;
+  const sdf::Vector3 zeros3(0.0, 0.0, 0.0);
 
   // Retrieve the rest of the SDF parameters
   getSdfParam<std::string>(_sdf, "magnetometerTopic", magnetometer_topic_, mav_msgs::default_topics::MAGNETIC_FIELD);
   getSdfParam<double>(_sdf, "referenceMagNorth", ref_mag_north, kDefaultRefMagNorth);
   getSdfParam<double>(_sdf, "referenceMagEast", ref_mag_east, kDefaultRefMagEast);
   getSdfParam<double>(_sdf, "referenceMagDown", ref_mag_down, kDefaultRefMagDown);
+  getSdfParam<sdf::Vector3>(_sdf, "noiseNormal", noise_normal, zeros3);
+  getSdfParam<sdf::Vector3>(_sdf, "noiseUniform", noise_uniform, zeros3);
 
   // Listen to the update event. This event is broadcast every simulation iteration.
   this->updateConnection_ =
@@ -93,6 +99,15 @@ void GazeboMagnetometerPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _s
   magnetometer_message_.magnetic_field.y = mag_W_.y;
   magnetometer_message_.magnetic_field.z = mag_W_.z;
   magnetometer_message_.magnetic_field_covariance.fill(0.0);
+
+  // Create the noise distributions
+  noise_n_[0] = NormalDistribution(0, noise_normal.x);
+  noise_n_[1] = NormalDistribution(0, noise_normal.y);
+  noise_n_[2] = NormalDistribution(0, noise_normal.z);
+
+  noise_u_[0] = UniformDistribution(-noise_uniform.x, noise_uniform.x);
+  noise_u_[1] = UniformDistribution(-noise_uniform.y, noise_uniform.y);
+  noise_u_[2] = UniformDistribution(-noise_uniform.z, noise_uniform.z);
 }
 
 void GazeboMagnetometerPlugin::OnUpdate(const common::UpdateInfo& _info) {
@@ -100,13 +115,24 @@ void GazeboMagnetometerPlugin::OnUpdate(const common::UpdateInfo& _info) {
   math::Pose gazebo_pose = link_->GetWorldPose();
   common::Time current_time  = world_->GetSimTime();
 
-  // Rotate the earth magnetic field into the inertial frame
-  math::Vector3 field = gazebo_pose.rot.RotateVectorReverse(mag_W_);
-
-  // Fill the magnetic field message
+  // Fill the magnetic field message header
   magnetometer_message_.header.seq = magnetometer_sequence_;
   magnetometer_message_.header.stamp.sec = current_time.sec;
   magnetometer_message_.header.stamp.nsec = current_time.nsec;
+
+  // Calculate the distortion in the orientation
+  math::Quaternion q_noise;
+  q_noise.SetFromEuler(noise_n_[0](random_generator_) + noise_u_[0](random_generator_),
+          noise_n_[1](random_generator_) + noise_u_[1](random_generator_),
+          noise_n_[2](random_generator_) + noise_u_[2](random_generator_));
+
+  // Add distortion to current orientation
+  math::Quaternion att = gazebo_pose.rot * q_noise;
+
+  // Rotate the earth magnetic field into the inertial frame
+  math::Vector3 field = att.RotateVectorReverse(mag_W_);
+
+  // Fill the message values
   magnetometer_message_.magnetic_field.x = field.x;
   magnetometer_message_.magnetic_field.y = field.y;
   magnetometer_message_.magnetic_field.z = field.z;

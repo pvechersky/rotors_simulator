@@ -88,16 +88,16 @@ void GazeboFixedWingBasePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _
 }
 
 void GazeboFixedWingBasePlugin::OnUpdate(const common::UpdateInfo& _info) {
-  link_->AddForce(math::Vector3(ref_thrust_, 0.0, 0.0));
+  //link_->AddForce(math::Vector3(ref_thrust_, 0.0, 0.0));
 }
 
 void GazeboFixedWingBasePlugin::actuatorsCallback(const mav_msgs::ActuatorsConstPtr& act_msg) {
   ref_thrust_ = (act_msg->normalized.at(0) * 0.5 + 0.5) * max_thrust_;
 
-  std::cout << "New thrust command: " << ref_thrust_ << std::endl;
+  /*std::cout << "New thrust command: " << ref_thrust_ << std::endl;
   std::cout << "New aileron angle: " << act_msg->angles[0] << std::endl;
   std::cout << "New elevator angle: " << act_msg->angles[1] << std::endl;
-  std::cout << "New rudder angle: " << act_msg->angles[2] << std::endl << std::endl;
+  std::cout << "New rudder angle: " << act_msg->angles[2] << std::endl << std::endl;*/
 }
 
 /*void GazeboFixedWingBasePlugin::guiThrottleCallback(const std_msgs::UInt8ConstPtr& throttle_msg) {

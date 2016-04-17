@@ -419,7 +419,7 @@
   <xacro:macro name="magnetometer_plugin_macro"
     params="namespace magnetometer_suffix parent_link magnetometer_topic mass_magnetometer
       reference_magnetic_field_north reference_magnetic_field_east reference_magnetic_field_down
-      *inertia *origin">
+      noise_normal noise_uniform *inertia *origin">
   <!-- Magnetometer link -->
   <link name="${namespace}/magnetometer${magnetometer_suffix}_link">
     <inertial>
@@ -447,6 +447,8 @@
       <referenceMagNorth>${reference_magnetic_field_north}</referenceMagNorth>
       <referenceMagEast>${reference_magnetic_field_east}</referenceMagEast>
       <referenceMagDown>${reference_magnetic_field_down}</referenceMagDown>
+      <noiseNormal>${noise_normal}</noiseNormal> <!-- standard deviation of additive white gaussian noise [rad] -->
+      <noiseUniform>${noise_uniform}</noiseUniform> <!-- symmetric bounds of uniform noise [rad] -->
     </plugin>
   </gazebo>
   </xacro:macro>
@@ -800,7 +802,9 @@
       mass_magnetometer="0.015"
       reference_magnetic_field_north="0.000021475"
       reference_magnetic_field_east="0.000000797"
-      reference_magnetic_field_down="0.000042817">
+      reference_magnetic_field_down="0.000042817"
+      noise_normal="0 0 0"
+      noise_uniform="0 0 0">
       <inertia ixx="0.00001" ixy="0.0" ixz="0.0" iyy="0.00001" iyz="0.0" izz="0.00001" />
       <origin xyz="0 0 0" rpy="0 0 0" />
     </xacro:magnetometer_plugin_macro>

@@ -24,6 +24,7 @@
 #include <ros/ros.h>
 #include <std_msgs/UInt8.h>
 #include <sensor_msgs/Imu.h>
+#include <nav_msgs/Odometry.h>
 #include <sensor_msgs/NavSatFix.h>
 #include <mav_msgs/default_topics.h>
 #include <sensor_msgs/MagneticField.h>
@@ -51,6 +52,7 @@ class HilSensorsInterface {
   void GpsCallback(const sensor_msgs::NavSatFixConstPtr& gps_msg);
   void ImuCallback(const sensor_msgs::ImuConstPtr& imu_msg);
   void MagCallback(const sensor_msgs::MagneticFieldConstPtr& mag_msg);
+  void OdometryCallback(const nav_msgs::OdometryConstPtr& odom_msg);
   void PressureCallback(const sensor_msgs::FluidPressureConstPtr& pressure_msg);
   void SetModeCallback(const std_msgs::UInt8ConstPtr& set_mode_msg);
 
@@ -65,6 +67,7 @@ class HilSensorsInterface {
   ros::Subscriber gps_sub_;
   ros::Subscriber imu_sub_;
   ros::Subscriber mag_sub_;
+  ros::Subscriber odometry_sub_;
   ros::Subscriber pressure_sub_;
   ros::Subscriber set_mode_sub_;
   ros::Publisher mavlink_pub_;
@@ -79,12 +82,17 @@ class HilSensorsInterface {
   bool received_gps_;
   bool received_imu_;
   bool received_mag_;
+  bool received_odometry_;
   bool received_pressure_;
 
   // Sensor data
   float acc_x_;                 // X acceleration (m/s^2)
   float acc_y_;                 // Y acceleration (m/s^2)
   float acc_z_;                 // Z acceleration (m/s^2)
+  float att_w_;                 // w component of attitude quaternion
+  float att_x_;                 // x component of attitude quaternion
+  float att_y_;                 // y component of attitude quaternion
+  float att_z_;                 // z component of attitude quaternion
   float gyro_x_;                // Angular speed around X axis in body frame (rad / sec)
   float gyro_y_;                // Angular speed around Y axis in body frame (rad / sec)
   float gyro_z_;                // Angular speed around Z axis in body frame (rad / sec)

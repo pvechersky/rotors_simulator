@@ -27,31 +27,28 @@ HilSensorsInterface::HilSensorsInterface():
   received_gps_(false),
   received_imu_(false),
   received_mag_(false),
+  received_odometry_(false),
   received_pressure_(false),
   pressure_diff_(0.0),
-  pressure_alt_(0.0),
   temperature_(15.0),
-  eph_(65535),
-  epv_(65535),
-  vel_(65535),
+  eph_(100),
+  epv_(100),
   cog_(65535),
-  fix_type_(0),
-  vn_(0),
-  ve_(0),
-  vd_(0),
-  satellites_visible_(255)
+  satellites_visible_(5)
 {
   ros::NodeHandle pnh("~");
 
   std::string gps_sub_topic;
   std::string imu_sub_topic;
   std::string mag_sub_topic;
+  std::string odometry_sub_topic;
   std::string pressure_sub_topic;
   std::string set_mode_sub_topic;
   std::string mavlink_pub_topic;
   pnh.param("gps_topic", gps_sub_topic, std::string(mav_msgs::default_topics::GPS));
   pnh.param("imu_topic", imu_sub_topic, std::string(mav_msgs::default_topics::IMU));
   pnh.param("mag_topic", mag_sub_topic, std::string(mav_msgs::default_topics::MAGNETIC_FIELD));
+  pnh.param("odometry_topic", odometry_sub_topic, std::string(mav_msgs::default_topics::ODOMETRY));
   pnh.param("pressure_topic", pressure_sub_topic, kDefaultPressureSubTopic);
   pnh.param("set_mode_topic", set_mode_sub_topic, kDefaultSetModeSubTopic);
   pnh.param("mavlink_pub_topic", mavlink_pub_topic, kDefaultMavlinkPubTopic);
@@ -59,6 +56,7 @@ HilSensorsInterface::HilSensorsInterface():
   gps_sub_ = nh_.subscribe(gps_sub_topic, 1, &HilSensorsInterface::GpsCallback, this);
   imu_sub_ = nh_.subscribe(imu_sub_topic, 1, &HilSensorsInterface::ImuCallback, this);
   mag_sub_ = nh_.subscribe(mag_sub_topic, 1, &HilSensorsInterface::MagCallback, this);
+  odometry_sub_ = nh_.subscribe(odometry_sub_topic, 1, &HilSensorsInterface::OdometryCallback, this);
   pressure_sub_ = nh_.subscribe(pressure_sub_topic, 1, &HilSensorsInterface::PressureCallback, this);
   set_mode_sub_ = nh_.subscribe(set_mode_sub_topic, 1, &HilSensorsInterface::SetModeCallback, this);
 
@@ -94,6 +92,9 @@ void HilSensorsInterface::GpsCallback(const sensor_msgs::NavSatFixConstPtr& gps_
 
   fix_type_ = (gps_msg->status.status > sensor_msgs::NavSatStatus::STATUS_NO_FIX) ? 3 : 0;
 
+  // FOR NOW
+  pressure_alt_ = gps_msg->altitude;
+
   if (!received_gps_)
     received_gps_ = true;
 }
@@ -122,6 +123,22 @@ void HilSensorsInterface::MagCallback(const sensor_msgs::MagneticFieldConstPtr &
     received_mag_ = true;
 }
 
+void HilSensorsInterface::OdometryCallback(const nav_msgs::OdometryConstPtr& odom_msg) {
+  att_w_ = odom_msg->pose.pose.orientation.w;
+  att_x_ = odom_msg->pose.pose.orientation.x;
+  att_y_ = odom_msg->pose.pose.orientation.y;
+  att_z_ = odom_msg->pose.pose.orientation.z;
+
+  vn_ = odom_msg->twist.twist.linear.x * 100;
+  ve_ = odom_msg->twist.twist.linear.y * 100;
+  vd_ = odom_msg->twist.twist.linear.z * 100;
+
+  vel_ = sqrt(vn_^2 + ve_^2 + vd_^2) * 100;
+
+  if (!received_odometry_)
+    received_odometry_ = true;
+}
+
 void HilSensorsInterface::PressureCallback(const sensor_msgs::FluidPressureConstPtr &pressure_msg) {
   // ROS fluid pressure sensor message is in Pascals, while MAVLINK hil sensor message
   // measures fluid pressure in millibar. 1 Pascal = 0.01 millibar
@@ -139,7 +156,7 @@ void HilSensorsInterface::SetModeCallback(const std_msgs::UInt8ConstPtr& set_mod
   cmd_msg_.command = MAV_CMD_DO_SET_MODE;
   cmd_msg_.confirmation = 1;
   cmd_msg_.param1 = set_mode_msg->data;
-  cmd_msg_.param2 = 0;
+  cmd_msg_.param2 = 1;
 
   mavlink_command_long_t* cmd_msg_ptr = &cmd_msg_;
   mavlink_msg_command_long_encode(1, 0, &mmsg, cmd_msg_ptr);
@@ -177,7 +194,7 @@ void HilSensorsInterface::SendHilSensorData() {
   hil_sensor_msg_.pressure_alt = 500.0f;
   hil_sensor_msg_.temperature = 15.0f;
   hil_sensor_msg_.fields_updated = 4095;*/
-  hil_sensor_msg_.time_usec = current_time.nsec*1000;
+  hil_sensor_msg_.time_usec = current_time.nsec * 1000;
   hil_sensor_msg_.xacc = acc_x_;
   hil_sensor_msg_.yacc = acc_y_;
   hil_sensor_msg_.zacc = acc_z_;
@@ -218,7 +235,7 @@ void HilSensorsInterface::SendHilSensorData() {
   hil_gps_msg_.vd = 0;
   hil_gps_msg_.cog = 0;
   hil_gps_msg_.satellites_visible = 5;*/
-  hil_gps_msg_.time_usec = current_time.nsec*1000;
+  hil_gps_msg_.time_usec = current_time.nsec * 1000;
   hil_gps_msg_.fix_type = fix_type_;
   hil_gps_msg_.lat = lat_;
   hil_gps_msg_.lon = lon_;
@@ -264,21 +281,21 @@ void HilSensorsInterface::SendHilSensorData() {
   hil_state_qtrn_msg_.yacc = 0;
   hil_state_qtrn_msg_.zacc = 9.81f;*/
   hil_state_qtrn_msg_.time_usec = current_time.nsec * 1000;
-  hil_state_qtrn_msg_.attitude_quaternion[0] = 1.0;
-  hil_state_qtrn_msg_.attitude_quaternion[1] = 0.0;
-  hil_state_qtrn_msg_.attitude_quaternion[2] = 0.0;
-  hil_state_qtrn_msg_.attitude_quaternion[3] = 0.0;
+  hil_state_qtrn_msg_.attitude_quaternion[0] = att_w_;
+  hil_state_qtrn_msg_.attitude_quaternion[1] = att_x_;
+  hil_state_qtrn_msg_.attitude_quaternion[2] = att_y_;
+  hil_state_qtrn_msg_.attitude_quaternion[3] = att_z_;
   hil_state_qtrn_msg_.rollspeed = gyro_x_;
   hil_state_qtrn_msg_.pitchspeed = gyro_y_;
   hil_state_qtrn_msg_.yawspeed = gyro_z_;
   hil_state_qtrn_msg_.lat = lat_;
   hil_state_qtrn_msg_.lon = lon_;
   hil_state_qtrn_msg_.alt = alt_;
-  hil_state_qtrn_msg_.vx = 0;
-  hil_state_qtrn_msg_.vy = 0;
-  hil_state_qtrn_msg_.vz = 0;
-  hil_state_qtrn_msg_.ind_airspeed = 0;
-  hil_state_qtrn_msg_.true_airspeed = 0;
+  hil_state_qtrn_msg_.vx = vn_;
+  hil_state_qtrn_msg_.vy = ve_;
+  hil_state_qtrn_msg_.vz = vd_;
+  hil_state_qtrn_msg_.ind_airspeed = vel_; // FOR NOW
+  hil_state_qtrn_msg_.true_airspeed = vel_; // FOR NOW
   hil_state_qtrn_msg_.xacc = acc_x_;
   hil_state_qtrn_msg_.yacc = acc_y_;
   hil_state_qtrn_msg_.zacc = acc_z_;
@@ -301,11 +318,12 @@ void HilSensorsInterface::ClearAllSensorsUpdateStatuses() {
   received_gps_ = false;
   received_imu_ = false;
   received_mag_ = false;
+  received_odometry_ = false;
   received_pressure_ = false;
 }
 
 bool HilSensorsInterface::AreAllSensorsUpdated() {
-  return (received_gps_ && received_imu_ && received_mag_ && received_pressure_);
+  return (received_gps_ && received_imu_ && received_mag_ && received_odometry_ && received_pressure_);
 }
 }
 
