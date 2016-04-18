@@ -46,7 +46,7 @@
   <!-- Fixed-wing fuselage link -->
   <xacro:macro name="fixed_wing_base_macro"
     params="robot_namespace mass body_length body_width body_height 
-      actuator_topic max_thrust color use_mesh_file mesh_file *inertia">
+      color use_mesh_file mesh_file *inertia">
     <link name="${robot_namespace}/base_link"></link>
 
     <joint name="${robot_namespace}/base_joint" type="fixed">
@@ -80,14 +80,6 @@
       </collision>
     </link>
 
-    <gazebo>
-      <plugin name="fixed_wing_base_plugin" filename="librotors_gazebo_fixedwing_base_plugin.so">
-        <robotNamespace>${robot_namespace}</robotNamespace>
-        <linkName>${robot_namespace}/base_link</linkName>
-	<actuatorsTopic>${actuator_topic}</actuatorsTopic>
-        <maxThrust>${max_thrust}</maxThrust>
-      </plugin>
-    </gazebo>
     <gazebo reference="${robot_namespace}/base_link">
       <material>Gazebo/${color}</material>
     </gazebo>
@@ -95,7 +87,8 @@
 
   <!-- Wheel joint and link -->
   <xacro:macro name="wheel"
-    params="robot_namespace suffix parent mass_wheel color use_mesh mesh wheel_radius wheel_width *origin *inertia">
+    params="robot_namespace suffix parent mass_wheel color use_mesh mesh 
+      wheel_radius wheel_width *origin *inertia">
 
     <joint name="${robot_namespace}/wheel_${suffix}_joint" type="revolute">
       <xacro:insert_block name="origin" />
@@ -175,11 +168,11 @@
     <gazebo>
       <plugin name="${robot_namespace}_${suffix}_lift_drag" filename="libLiftDragPlugin.so">
       <!--<plugin name="${robot_namespace}_${suffix}_lift_drag" filename="librotors_gazebo_lift_drag_plugin.so">-->
-        <a0>0.01</a0>
-        <cla>4.0</cla>
+        <a0>${alpha_0}</a0>
+        <cla>${c_L_alpha}</cla>
         <cda>0.01</cda>
         <cma>0.00</cma>
-        <alpha_stall>0.09</alpha_stall>
+        <alpha_stall>${alpha_stall}</alpha_stall>
         <cla_stall>0.0</cla_stall>
         <cda_stall>0.01</cda_stall>
         <cma_stall>0.0</cma_stall>
@@ -240,7 +233,7 @@
   <!-- Rear wing joint and link -->
   <xacro:macro name="rear_wing"
     params="robot_namespace suffix parent mass_rear_wing rear_wing_length rear_wing_width 
-      rear_wing_height color use_mesh mesh *origin *inertia">
+      rear_wing_height color use_mesh mesh alpha_0 alpha_stall c_L_alpha *origin *inertia">
 
     <joint name="${robot_namespace}/rear_wing_${suffix}_joint" type="revolute">
       <xacro:insert_block name="origin" />
@@ -276,11 +269,11 @@
     <gazebo>
       <plugin name="${robot_namespace}_${suffix}_rear_lift_drag" filename="libLiftDragPlugin.so">
       <!--<plugin name="${robot_namespace}_${suffix}_lift_drag" filename="librotors_gazebo_lift_drag_plugin.so">-->
-        <a0>0.01</a0>
-        <cla>4.0</cla>
+        <a0>${alpha_0}</a0>
+        <cla>${c_L_alpha}</cla>
         <cda>0.01</cda>
         <cma>0.00</cma>
-        <alpha_stall>0.09</alpha_stall>
+        <alpha_stall>${alpha_stall}</alpha_stall>
         <cla_stall>0.0</cla_stall>
         <cda_stall>0.01</cda_stall>
         <cma_stall>0.0</cma_stall>
@@ -357,4 +350,50 @@
       <material>Gazebo/${color}</material>
     </gazebo>
   </xacro:macro>
+
+  <!-- Control surface joint and link -->
+  <xacro:macro name="control_surface"
+    params="robot_namespace surface_name parent mass_surface min_angle 
+      max_angle color use_mesh mesh surface_length surface_width surface_height
+      *axis *joint_origin *link_origin *inertia">
+
+    <joint name="${robot_namespace}/${surface_name}_joint" type="revolute">
+      <xacro:insert_block name="joint_origin" />
+      <xacro:insert_block name="axis" />
+      <parent link="${parent}" />
+      <child link="${robot_namespace}/${surface_name}" />
+      <limit upper="${max_angle}" lower="${min_angle}" effort="100.0" velocity="3.0" />
+    </joint>
+
+    <link name="${robot_namespace}/${surface_name}">
+      <inertial>
+        <xacro:insert_block name="link_origin" />
+        <mass value="${mass_surface}" /> <!-- [kg] -->
+        <xacro:insert_block name="inertia" />
+      </inertial>
+      <visual>
+        <xacro:insert_block name="link_origin" />
+        <geometry>
+          <xacro:if value="${use_mesh}">
+            <mesh filename="${mesh}"
+              scale="1 1 1" />
+          </xacro:if>
+          <xacro:unless value="${use_mesh}">
+            <box size="${surface_length} ${surface_width} ${surface_height}"/> <!-- [m] [m] [m] -->
+          </xacro:unless>
+        </geometry>
+      </visual>
+      <collision>
+        <xacro:insert_block name="link_origin" />
+        <geometry>
+          <box size="${surface_length} ${surface_width} ${surface_height}"/> <!-- [m] [m] [m] -->
+        </geometry>
+      </collision>
+    </link>
+
+    <gazebo reference="${robot_namespace}/${surface_name}">
+      <material>Gazebo/${color}</material>
+    </gazebo>
+  </xacro:macro>
+
 </robot>
