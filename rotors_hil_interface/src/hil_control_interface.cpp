@@ -93,21 +93,18 @@ void HilControlInterface::MavlinkCallback(const mavros_msgs::MavlinkConstPtr& ma
 
     ros::Time current_time = ros::Time::now();
 
-    std::cout << "HIL CONTROL" << std::endl;
-    std::cout << hil_controls.time_usec << std::endl;
-    std::cout << hil_controls.roll_ailerons << std::endl;
-    std::cout << hil_controls.pitch_elevator << std::endl;
-    std::cout << hil_controls.yaw_rudder << std::endl;
+    //float aileron_angle = (roll_max_ + roll_min_) * 0.5 + (roll_max_ - roll_min_) * 0.5 * hil_controls.roll_ailerons;
+    //float elevator_angle = (pitch_max_ + pitch_min_) * 0.5 + (pitch_max_ - pitch_min_) * 0.5 * hil_controls.pitch_elevator;
+    //float rudder_angle = (yaw_max_ + yaw_min_) * 0.5 + (yaw_max_ - yaw_min_) * 0.5 * hil_controls.yaw_rudder;
+    //float throttle = hil_controls.throttle * 2.0 - 1.0;
 
-    float aileron_angle = (roll_max_ + roll_min_) * 0.5 + (roll_max_ - roll_min_) * 0.5 * hil_controls.roll_ailerons;
-    float elevator_angle = (pitch_max_ + pitch_min_) * 0.5 + (pitch_max_ - pitch_min_) * 0.5 * hil_controls.pitch_elevator;
-    float rudder_angle = (yaw_max_ + yaw_min_) * 0.5 + (yaw_max_ - yaw_min_) * 0.5 * hil_controls.yaw_rudder;
-    float throttle = hil_controls.throttle * 2.0 - 1.0;
+    //act_msg.angles.push_back(aileron_angle);
+    //act_msg.angles.push_back(elevator_angle);
+    //act_msg.angles.push_back(rudder_angle);
+    //act_msg.normalized.push_back(throttle);
 
-    act_msg.angles.push_back(aileron_angle);
-    act_msg.angles.push_back(elevator_angle);
-    act_msg.angles.push_back(rudder_angle);
-    act_msg.normalized.push_back(throttle);
+    float max_rotor_velocity = 838.0f;
+    act_msg.angular_velocities.push_back(hil_controls.throttle * max_rotor_velocity);
 
     act_msg.header.seq = 1;
     act_msg.header.stamp.sec = current_time.sec;

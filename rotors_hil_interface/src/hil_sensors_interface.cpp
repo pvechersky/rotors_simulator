@@ -133,7 +133,7 @@ void HilSensorsInterface::OdometryCallback(const nav_msgs::OdometryConstPtr& odo
   ve_ = odom_msg->twist.twist.linear.y * 100;
   vd_ = odom_msg->twist.twist.linear.z * 100;
 
-  vel_ = sqrt(vn_^2 + ve_^2 + vd_^2) * 100;
+  vel_ = sqrt(vn_^2 + ve_^2 + vd_^2);
 
   if (!received_odometry_)
     received_odometry_ = true;
@@ -194,7 +194,7 @@ void HilSensorsInterface::SendHilSensorData() {
   hil_sensor_msg_.pressure_alt = 500.0f;
   hil_sensor_msg_.temperature = 15.0f;
   hil_sensor_msg_.fields_updated = 4095;*/
-  hil_sensor_msg_.time_usec = current_time.nsec * 1000;
+  /*hil_sensor_msg_.time_usec = current_time.nsec * 1000;
   hil_sensor_msg_.xacc = acc_x_;
   hil_sensor_msg_.yacc = acc_y_;
   hil_sensor_msg_.zacc = acc_z_;
@@ -219,7 +219,7 @@ void HilSensorsInterface::SendHilSensorData() {
   rmsg_hil_sensor->header.stamp.nsec = current_time.nsec;
   mavros_msgs::mavlink::convert(*msg, *rmsg_hil_sensor);
 
-  mavlink_pub_.publish(rmsg_hil_sensor);
+  mavlink_pub_.publish(rmsg_hil_sensor);*/
 
   // Encode and publish the hil_gps message
   /*hil_gps_msg_.time_usec = current_time.nsec * 1000;
@@ -235,7 +235,7 @@ void HilSensorsInterface::SendHilSensorData() {
   hil_gps_msg_.vd = 0;
   hil_gps_msg_.cog = 0;
   hil_gps_msg_.satellites_visible = 5;*/
-  hil_gps_msg_.time_usec = current_time.nsec * 1000;
+  /*hil_gps_msg_.time_usec = current_time.nsec * 1000;
   hil_gps_msg_.fix_type = fix_type_;
   hil_gps_msg_.lat = lat_;
   hil_gps_msg_.lon = lon_;
@@ -258,7 +258,7 @@ void HilSensorsInterface::SendHilSensorData() {
   rmsg_hil_gps->header.stamp.nsec = current_time.nsec;
   mavros_msgs::mavlink::convert(*msg, *rmsg_hil_gps);
 
-  mavlink_pub_.publish(rmsg_hil_gps);
+  mavlink_pub_.publish(rmsg_hil_gps);*/
 
   // Encode and publish the hil_state_quaternion message
   /*hil_state_qtrn_msg_.time_usec = current_time.nsec * 1000;

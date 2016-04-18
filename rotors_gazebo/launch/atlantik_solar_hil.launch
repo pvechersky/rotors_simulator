@@ -10,7 +10,7 @@
     <arg name="world_name" value="$(find rotors_gazebo)/worlds/$(arg world_name).world"/>
     <!-- <arg name="debug" value="true" /> -->
     <arg name="paused" value="false" />
-    <arg name="gui" value="false" />
+    <arg name="gui" value="true" />
   </include>
 
   <group ns="$(arg mav_name)">
@@ -31,6 +31,7 @@
 
     <node name="hil_control_interface" pkg="rotors_hil_interface" type="rotors_hil_control_interface" output="screen">
       <param name="mavlink_sub_topic" value="/mavlink/from" />
+      <param name="actuators_pub_topic" value="gazebo/command/motor_speed" />
     </node>
 
     <node name="rotors_gui" pkg="rqt_rotors" type="rqt_rotors" output="screen" />

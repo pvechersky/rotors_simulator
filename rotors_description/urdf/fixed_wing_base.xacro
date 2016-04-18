@@ -27,6 +27,13 @@
       izz="${0.0833333 * mass * (x*x + y*y)}" />
   </xacro:macro>
 
+  <!-- Macro for the inertia of a cylinder -->
+  <xacro:macro name="cylinder_inertia" params="r h mass">
+    <inertia ixx="${0.0833333 * mass * (3*r*r + h*h)}" ixy="0.0" ixz="0.0"
+      iyy="${0.0833333 * mass * (3*r*r + h*h)}" iyz="0.0"
+      izz="${0.5 * mass * r * r}" />
+  </xacro:macro>
+
   <!-- Macro for the inertial properties of a box -->
   <xacro:macro name="box_inertial" params="x y z mass *origin">
     <inertial>
@@ -39,11 +46,11 @@
   <!-- Fixed-wing fuselage link -->
   <xacro:macro name="fixed_wing_base_macro"
     params="robot_namespace mass body_length body_width body_height 
-      actuator_topic max_thrust use_mesh_file mesh_file *inertia">
+      actuator_topic max_thrust color use_mesh_file mesh_file *inertia">
     <link name="${robot_namespace}/base_link"></link>
 
     <joint name="${robot_namespace}/base_joint" type="fixed">
-      <origin xyz="0 0 0" rpy="0 0 0" />
+      <origin xyz="0 0 0.1" rpy="0 0 0" />
       <parent link="${robot_namespace}/base_link" />
       <child link="${robot_namespace}/base_link_inertia" />
     </joint>
@@ -81,12 +88,55 @@
         <maxThrust>${max_thrust}</maxThrust>
       </plugin>
     </gazebo>
+    <gazebo reference="${robot_namespace}/base_link">
+      <material>Gazebo/${color}</material>
+    </gazebo>
+  </xacro:macro>
+
+  <!-- Wheel joint and link -->
+  <xacro:macro name="wheel"
+    params="robot_namespace suffix parent mass_wheel color use_mesh mesh wheel_radius wheel_width *origin *inertia">
+
+    <joint name="${robot_namespace}/wheel_${suffix}_joint" type="revolute">
+      <xacro:insert_block name="origin" />
+      <axis xyz="0 1 0" />
+      <parent link="${parent}" />
+      <child link="${robot_namespace}/wheel_${suffix}" />
+      <limit upper="0" lower="0" effort="0" velocity="0" />
+    </joint>
+
+    <link name="${robot_namespace}/wheel_${suffix}">
+      <inertial>
+        <mass value="${mass_wheel}" /> <!-- [kg] -->
+        <xacro:insert_block name="inertia" />
+      </inertial>
+      <visual>
+        <geometry>
+          <xacro:if value="${use_mesh}">
+            <mesh filename="${mesh}"
+              scale="1 1 1" />
+          </xacro:if>
+          <xacro:unless value="${use_mesh}">
+            <cylinder length="${wheel_width}" radius="${wheel_radius}" /> <!-- [m] -->
+          </xacro:unless>
+        </geometry>
+      </visual>
+      <collision>
+        <geometry>
+          <cylinder length="${wheel_width}" radius="${wheel_radius}" /> <!-- [m] -->
+        </geometry>
+      </collision>
+    </link>
+
+    <gazebo reference="${robot_namespace}/wheel_${suffix}">
+      <material>Gazebo/${color}</material>
+    </gazebo>
   </xacro:macro>
 
   <!-- Wing joint and link -->
   <xacro:macro name="wing"
     params="robot_namespace suffix parent mass_wing wing_length wing_width wing_height 
-      use_mesh mesh alpha_0 alpha_stall c_L_alpha air_density link_x link_y link_z *origin *inertia">
+      color use_mesh mesh alpha_0 alpha_stall c_L_alpha air_density *origin *inertia">
 
     <joint name="${robot_namespace}/wing_${suffix}_joint" type="revolute">
       <xacro:insert_block name="origin" />
@@ -98,12 +148,12 @@
 
     <link name="${robot_namespace}/wing_${suffix}">
       <inertial>
-        <origin xyz="${link_x} ${link_y} ${link_z}" rpy="0 0 0" />
+        <origin xyz="0 0 0" rpy="0 0 0" />
         <mass value="${mass_wing}" /> <!-- [kg] -->
         <xacro:insert_block name="inertia" />
       </inertial>
       <visual>
-        <origin xyz="${link_x} ${link_y} ${link_z}" rpy="0 0 0" />
+        <origin xyz="0 0 0" rpy="0 0 0" />
         <geometry>
           <xacro:if value="${use_mesh}">
             <mesh filename="${mesh}"
@@ -115,32 +165,21 @@
         </geometry>
       </visual>
       <collision>
-        <origin xyz="${link_x} ${link_y} ${link_z}" rpy="0 0 0" />
+        <origin xyz="0 0 0" rpy="0 0 0" />
         <geometry>
           <box size="${wing_length} ${wing_width} ${wing_height}"/> <!-- [m] [m] [m] -->
         </geometry>
       </collision>
     </link>
-<!--
-    <gazebo>
-      <plugin name="${robot_namespace}_${suffix}_wing_model" filename="librotors_gazebo_wing_model.so">
-        <robotNamespace>${robot_namespace}</robotNamespace>
-        <linkName>${robot_namespace}/wing_${suffix}</linkName>
-        <alpha0>${alpha_0}</alpha0> --> <!-- the starting angle of attack [deg] -->
-        <!--<alphaStall>${alpha_stall}</alphaStall> --> <!-- stall angle [deg] -->
-        <!--<cLAlpha>${c_L_alpha}</cLAlpha> --> <!-- coefficient of lift to angle of attack ratio -->
-        <!--<airDensity>${air_density}</airDensity> --> <!-- air density [kg/m^3] -->
-        <!--<wingArea>${wing_length * wing_width}</wingArea> --> <!-- area of the wing [m^2] -->
-<!--      </plugin>
-    </gazebo> -->
 
     <gazebo>
       <plugin name="${robot_namespace}_${suffix}_lift_drag" filename="libLiftDragPlugin.so">
-        <a0>0.1</a0>
+      <!--<plugin name="${robot_namespace}_${suffix}_lift_drag" filename="librotors_gazebo_lift_drag_plugin.so">-->
+        <a0>0.01</a0>
         <cla>4.0</cla>
         <cda>0.01</cda>
         <cma>0.00</cma>
-        <alpha_stall>0.3</alpha_stall>
+        <alpha_stall>0.09</alpha_stall>
         <cla_stall>0.0</cla_stall>
         <cda_stall>0.01</cda_stall>
         <cma_stall>0.0</cma_stall>
@@ -152,12 +191,15 @@
         <link_name>${robot_namespace}/wing_${suffix}</link_name>
       </plugin>
     </gazebo>
+    <gazebo reference="${robot_namespace}/wing_${suffix}">
+      <material>Gazebo/${color}</material>
+    </gazebo>
   </xacro:macro>
 
   <!-- Tail joint and link -->
   <xacro:macro name="tail"
     params="robot_namespace parent mass_tail tail_length tail_width tail_height 
-      use_mesh mesh *origin *inertia">
+      color use_mesh mesh *origin *inertia">
 
     <joint name="${robot_namespace}/tail_joint" type="revolute">
       <xacro:insert_block name="origin" />
@@ -189,12 +231,16 @@
         </geometry>
       </collision>
     </link>
+
+    <gazebo reference="${robot_namespace}/tail">
+      <material>Gazebo/${color}</material>
+    </gazebo>
   </xacro:macro>
 
   <!-- Rear wing joint and link -->
   <xacro:macro name="rear_wing"
     params="robot_namespace suffix parent mass_rear_wing rear_wing_length rear_wing_width 
-      rear_wing_height use_mesh mesh *origin *inertia">
+      rear_wing_height color use_mesh mesh *origin *inertia">
 
     <joint name="${robot_namespace}/rear_wing_${suffix}_joint" type="revolute">
       <xacro:insert_block name="origin" />
@@ -229,11 +275,12 @@
 
     <gazebo>
       <plugin name="${robot_namespace}_${suffix}_rear_lift_drag" filename="libLiftDragPlugin.so">
-        <a0>0.03</a0>
+      <!--<plugin name="${robot_namespace}_${suffix}_lift_drag" filename="librotors_gazebo_lift_drag_plugin.so">-->
+        <a0>0.01</a0>
         <cla>4.0</cla>
         <cda>0.01</cda>
         <cma>0.00</cma>
-        <alpha_stall>0.3</alpha_stall>
+        <alpha_stall>0.09</alpha_stall>
         <cla_stall>0.0</cla_stall>
         <cda_stall>0.01</cda_stall>
         <cma_stall>0.0</cma_stall>
@@ -244,6 +291,70 @@
         <upward>0 0 1</upward>
         <link_name>${robot_namespace}/rear_wing_${suffix}</link_name>
       </plugin>
+    </gazebo>
+    <gazebo reference="${robot_namespace}/rear_wing_${suffix}">
+      <material>Gazebo/${color}</material>
+    </gazebo>
+  </xacro:macro>
+
+  <!-- Propeller joint and link -->
+  <xacro:macro name="propeller"
+    params="robot_namespace direction motor_constant moment_constant parent mass_propeller 
+      radius_propeller time_constant_up time_constant_down max_propeller_velocity motor_number 
+      rotor_drag_coefficient rolling_moment_coefficient use_own_mesh mesh color *origin *inertia">
+
+    <joint name="${robot_namespace}/propeller_joint" type="continuous">
+      <xacro:insert_block name="origin" />
+      <axis xyz="0 0 1" />
+      <parent link="${parent}" />
+      <child link="${robot_namespace}/propeller" />
+    </joint>
+
+    <link name="${robot_namespace}/propeller">
+      <inertial>
+        <mass value="${mass_propeller}" /> <!-- [kg] -->
+        <xacro:insert_block name="inertia" />
+      </inertial>
+      <visual>
+        <geometry>
+          <xacro:if value="${use_own_mesh}">
+            <mesh filename="${mesh}"
+              scale="1 1 1" />
+          </xacro:if>
+          <xacro:unless value="${use_own_mesh}">
+            <mesh filename="package://rotors_description/meshes/propeller_${direction}.dae"
+              scale="${radius_propeller} ${radius_propeller} ${radius_propeller}" /> <!-- The propeller meshes have a radius of 1m -->
+          </xacro:unless>
+        </geometry>
+      </visual>
+      <collision>
+        <geometry>
+          <cylinder length="0.005" radius="0.1" /> <!-- [m] -->
+        </geometry>
+      </collision>
+    </link>
+
+    <gazebo>
+      <plugin name="${robot_namespace}_propeller" filename="librotors_gazebo_motor_model.so">
+        <robotNamespace>${robot_namespace}</robotNamespace>
+        <jointName>${robot_namespace}/propeller_joint</jointName>
+        <linkName>${robot_namespace}/propeller</linkName>
+        <turningDirection>${direction}</turningDirection>
+        <timeConstantUp>${time_constant_up}</timeConstantUp>
+        <timeConstantDown>${time_constant_down}</timeConstantDown>
+        <maxRotVelocity>${max_propeller_velocity}</maxRotVelocity>
+        <motorConstant>${motor_constant}</motorConstant>
+        <momentConstant>${moment_constant}</momentConstant>
+        <commandSubTopic>gazebo/command/motor_speed</commandSubTopic>
+        <motorNumber>${motor_number}</motorNumber>
+        <rotorDragCoefficient>${rotor_drag_coefficient}</rotorDragCoefficient>
+        <rollingMomentCoefficient>${rolling_moment_coefficient}</rollingMomentCoefficient>
+        <motorSpeedPubTopic>motor_speed/${motor_number}</motorSpeedPubTopic>
+        <rotorVelocitySlowdownSim>${propeller_velocity_slowdown_sim}</rotorVelocitySlowdownSim>
+      </plugin>
+    </gazebo>
+    <gazebo reference="${robot_namespace}/propeller">
+      <material>Gazebo/${color}</material>
     </gazebo>
   </xacro:macro>
 </robot>
