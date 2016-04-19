@@ -103,8 +103,13 @@ void HilControlInterface::MavlinkCallback(const mavros_msgs::MavlinkConstPtr& ma
     //act_msg.angles.push_back(rudder_angle);
     //act_msg.normalized.push_back(throttle);
 
+    //
+    // TODO ... make a parameter
+    //
     float max_rotor_velocity = 838.0f;
     act_msg.angular_velocities.push_back(hil_controls.throttle * max_rotor_velocity);
+
+    act_msg.angles.push_back(hil_controls.yaw_rudder);
 
     act_msg.header.seq = 1;
     act_msg.header.stamp.sec = current_time.sec;

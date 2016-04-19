@@ -77,6 +77,7 @@
   <xacro:property name="rudder_length" value="0.1" /> <!-- [m] -->
   <xacro:property name="rudder_width" value="${tail_width}" /> <!-- [m] -->
   <xacro:property name="rudder_height" value="${tail_height}" /> <!-- [m] -->
+  <xacro:property name="rudder_velocity_gain" value="1.0" />
   <xacro:property name="rudder_min_angle" value="-0.55" /> <!-- [rad] -->
   <xacro:property name="rudder_max_angle" value="0.55" /> <!-- [rad] -->
 
@@ -303,8 +304,10 @@
     surface_name="rudder"
     parent="${namespace}/tail"
     mass_surface="${mass_rudder}"
+    velocity_gain="${rudder_velocity_gain}"
     min_angle="${rudder_min_angle}"
     max_angle="${rudder_max_angle}"
+    channel="0"
     color="${body_color}"
     use_mesh="false"
     mesh=""

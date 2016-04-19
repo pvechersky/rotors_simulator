@@ -31,8 +31,7 @@ namespace gazebo {
 
 GazeboFixedWingBasePlugin::GazeboFixedWingBasePlugin()
     : ModelPlugin(),
-      node_handle_(0),
-      ref_thrust_(0.0) {
+      node_handle_(0) {
 }
 
 GazeboFixedWingBasePlugin::~GazeboFixedWingBasePlugin() {
@@ -66,42 +65,26 @@ void GazeboFixedWingBasePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _
   if (link_ == NULL)
     gzthrow("[gazebo_fixedwing_base_plugin] Couldn't find specified link \"" << link_name << "\".");
 
-  std::string actuators_topic;
   std::string reset_topic;
-  getSdfParam<std::string>(_sdf, "actuatorsTopic", actuators_topic,
-                           kDefaultActuatorsSubTopic);
   getSdfParam<std::string>(_sdf, "resetTopic", reset_topic,
                            kDefaultResetSubTopic);
-  getSdfParam<double>(_sdf, "maxThrust", max_thrust_, kDefaultMaxThrust);
 
   // Listen to the update event. This event is broadcast every simulation iteration
   this->updateConnection_ =
       event::Events::ConnectWorldUpdateBegin(
           boost::bind(&GazeboFixedWingBasePlugin::OnUpdate, this, _1));
 
-  actuators_sub_ = node_handle_->subscribe(actuators_topic, 1, &GazeboFixedWingBasePlugin::actuatorsCallback, this);
   reset_sub_ = node_handle_->subscribe(reset_topic, 1, &GazeboFixedWingBasePlugin::resetCallback, this);
 }
 
 void GazeboFixedWingBasePlugin::OnUpdate(const common::UpdateInfo& _info) {
-  math::Vector3 thrust = math::Vector3(ref_thrust_, 0.0, 0.0);
+  //math::Vector3 thrust = math::Vector3(ref_thrust_, 0.0, 0.0);
 
   // Rotate the thrust force into the frame of the plane
-  math::Pose pose = model_->GetWorldPose();
-  thrust = pose.rot.RotateVectorReverse(thrust);
+  //math::Pose pose = model_->GetWorldPose();
+  //thrust = pose.rot.RotateVectorReverse(thrust);
 
   //link_->AddForce(thrust);
-
-  //std::cout << thrust.x << ", " << thrust.y << ", " << thrust.z << std::endl;
-}
-
-void GazeboFixedWingBasePlugin::actuatorsCallback(const mav_msgs::ActuatorsConstPtr& act_msg) {
-  ref_thrust_ = (act_msg->normalized.at(0) * 0.5 + 0.5) * max_thrust_;
-
-  /*std::cout << "New thrust command: " << ref_thrust_ << std::endl;
-  std::cout << "New aileron angle: " << act_msg->angles[0] << std::endl;
-  std::cout << "New elevator angle: " << act_msg->angles[1] << std::endl;
-  std::cout << "New rudder angle: " << act_msg->angles[2] << std::endl << std::endl;*/
 }
 
 void GazeboFixedWingBasePlugin::resetCallback(const std_msgs::BoolConstPtr& reset_msg) {

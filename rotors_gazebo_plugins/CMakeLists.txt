@@ -75,9 +75,9 @@ add_library(rotors_gazebo_multirotor_base_plugin src/gazebo_multirotor_base_plug
 target_link_libraries(rotors_gazebo_multirotor_base_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
 add_dependencies(rotors_gazebo_multirotor_base_plugin ${catkin_EXPORTED_TARGETS})
 
-#add_library(rotors_gazebo_fixedwing_base_plugin src/gazebo_fixedwing_base_plugin.cpp)
-#target_link_libraries(rotors_gazebo_fixedwing_base_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
-#add_dependencies(rotors_gazebo_fixedwing_base_plugin ${catkin_EXPORTED_TARGETS})
+add_library(rotors_gazebo_fixedwing_base_plugin src/gazebo_fixedwing_base_plugin.cpp)
+target_link_libraries(rotors_gazebo_fixedwing_base_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+add_dependencies(rotors_gazebo_fixedwing_base_plugin ${catkin_EXPORTED_TARGETS})
 
 add_library(rotors_gazebo_gps_plugin src/gazebo_gps_plugin.cpp)
 target_link_libraries(rotors_gazebo_gps_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
@@ -91,9 +91,9 @@ add_library(rotors_gazebo_pressure_plugin src/gazebo_pressure_plugin.cpp)
 target_link_libraries(rotors_gazebo_pressure_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
 add_dependencies(rotors_gazebo_pressure_plugin ${catkin_EXPORTED_TARGETS})
 
-add_library(rotors_gazebo_control_surface_plugin src/gazebo_control_surface_plugin.cpp)
-target_link_libraries(rotors_gazebo_control_surface_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
-add_dependencies(rotors_gazebo_control_surface_plugin ${catkin_EXPORTED_TARGETS})
+add_library(rotors_gazebo_servo_plugin src/gazebo_servo_plugin.cpp)
+target_link_libraries(rotors_gazebo_servo_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+add_dependencies(rotors_gazebo_servo_plugin ${catkin_EXPORTED_TARGETS})
 
 #add_library(rotors_gazebo_lift_drag_plugin src/gazebo_lift_drag_plugin.cpp)
 #target_link_libraries(rotors_gazebo_lift_drag_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
@@ -110,11 +110,11 @@ install(
     rotors_gazebo_wind_plugin
     rotors_gazebo_octomap_plugin
     rotors_gazebo_multirotor_base_plugin
-    #rotors_gazebo_fixedwing_base_plugin
+    rotors_gazebo_fixedwing_base_plugin
     rotors_gazebo_gps_plugin
     rotors_gazebo_magnetometer_plugin
     rotors_gazebo_pressure_plugin
-    rotors_gazebo_control_surface_plugin
+    rotors_gazebo_servo_plugin
     #rotors_gazebo_lift_drag_plugin
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}

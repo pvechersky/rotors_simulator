@@ -18,26 +18,34 @@
  * limitations under the License.
  */
 
-#ifndef ROTORS_GAZEBO_PLUGINS_GAZEBO_FIXEDWING_BASE_PLUGIN_H
-#define ROTORS_GAZEBO_PLUGINS_GAZEBO_FIXEDWING_BASE_PLUGIN_H
+#ifndef ROTORS_GAZEBO_PLUGINS_SERVO_PLUGIN_H
+#define ROTORS_GAZEBO_PLUGINS_SERVO_PLUGIN_H
 
-#include <ros/ros.h>
+#include <Eigen/Core>
 #include <gazebo/common/common.hh>
 #include <gazebo/common/Plugin.hh>
 #include <gazebo/gazebo.hh>
 #include <gazebo/physics/physics.hh>
-#include <std_msgs/Bool.h>
+#include <mav_msgs/Actuators.h>
+#include <ros/ros.h>
 
 #include "rotors_gazebo_plugins/common.h"
 
 namespace gazebo {
 // Default values
-static const std::string kDefaultResetSubTopic = "reset";
+static const std::string kDefaultCommandSubTopic = "gazebo/command/motor_speed";
+static constexpr double kDefaultVelocityGain = 1.0;
+static constexpr double kDefaultMinAngle = -M_PI * 0.25;
+static constexpr double kDefaultMaxAngle = M_PI * 0.25;
+static constexpr int kDefaultChannel = 0;
 
-class GazeboFixedWingBasePlugin : public ModelPlugin {
+class GazeboServoPlugin : public ModelPlugin {
  public:
-  GazeboFixedWingBasePlugin();
-  virtual ~GazeboFixedWingBasePlugin();
+
+  GazeboServoPlugin();
+  ~GazeboServoPlugin();
+
+  void AngleCallback(const mav_msgs::ActuatorsConstPtr& servo_angles);
 
  protected:
   void Load(physics::ModelPtr _model, sdf::ElementPtr _sdf);
@@ -45,20 +53,25 @@ class GazeboFixedWingBasePlugin : public ModelPlugin {
 
  private:
   std::string namespace_;
+  std::string joint_name_;
   ros::NodeHandle* node_handle_;
-  ros::Subscriber reset_sub_;
+  ros::Subscriber command_sub_;
 
   // Pointer to the world
   physics::WorldPtr world_;
   // Pointer to the model
   physics::ModelPtr model_;
   // Pointer to the link
-  physics::LinkPtr link_;
+  physics::JointPtr joint_;
   // Pointer to the update event connection
   event::ConnectionPtr updateConnection_;
 
-  void resetCallback(const std_msgs::BoolConstPtr& reset_msg);
+  double velocity_gain_;
+  double ref_angle_;
+  double min_angle_;
+  double max_angle_;
+  int channel_;
 };
 }
 
-#endif // ROTORS_GAZEBO_PLUGINS_GAZEBO_FIXEDWING_BASE_PLUGIN_H
+#endif // ROTORS_GAZEBO_PLUGINS_SERVO_PLUGIN_H

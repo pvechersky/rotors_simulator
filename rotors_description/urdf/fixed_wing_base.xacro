@@ -80,6 +80,12 @@
       </collision>
     </link>
 
+    <gazebo>
+      <plugin name="${robot_namespace}_base" filename="librotors_gazebo_fixedwing_base_plugin.so">
+        <robotNamespace>${robot_namespace}</robotNamespace>
+        <linkName>${robot_namespace}/base_link</linkName>
+      </plugin>
+    </gazebo>
     <gazebo reference="${robot_namespace}/base_link">
       <material>Gazebo/${color}</material>
     </gazebo>
@@ -353,9 +359,9 @@
 
   <!-- Control surface joint and link -->
   <xacro:macro name="control_surface"
-    params="robot_namespace surface_name parent mass_surface min_angle 
-      max_angle color use_mesh mesh surface_length surface_width surface_height
-      *axis *joint_origin *link_origin *inertia">
+    params="robot_namespace surface_name parent mass_surface velocity_gain 
+      min_angle max_angle channel color use_mesh mesh surface_length surface_width 
+      surface_height *axis *joint_origin *link_origin *inertia">
 
     <joint name="${robot_namespace}/${surface_name}_joint" type="revolute">
       <xacro:insert_block name="joint_origin" />
@@ -391,6 +397,17 @@
       </collision>
     </link>
 
+    <gazebo>
+      <plugin name="${robot_namespace}_${surface_name}" filename="librotors_gazebo_servo_plugin.so">
+        <robotNamespace>${robot_namespace}</robotNamespace>
+        <jointName>${robot_namespace}/${surface_name}_joint</jointName>
+        <commandSubTopic>gazebo/command/motor_speed</commandSubTopic>
+        <velocityGain>${velocity_gain}</velocityGain>
+        <minAngle>${min_angle}</minAngle>
+        <maxAngle>${max_angle}</maxAngle>
+        <channel>${channel}</channel>
+      </plugin>
+    </gazebo>
     <gazebo reference="${robot_namespace}/${surface_name}">
       <material>Gazebo/${color}</material>
     </gazebo>

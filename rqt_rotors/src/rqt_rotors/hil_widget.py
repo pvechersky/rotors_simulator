@@ -37,7 +37,6 @@ class HilWidget(QWidget):
   STR_MAV_STATUS_SUB_TOPIC = 'mav_status'
   STR_SET_MODE_PUB_TOPIC = 'set_mode'
   STR_RESET_MODEL_PUB_TOPIC = 'reset'
-  STR_THROTTLE_PUB_TOPIC = 'gui_throttle'
 
   def __init__(self):
     # Init QWidget
@@ -52,7 +51,6 @@ class HilWidget(QWidget):
     self.button_set_hil_mode.setEnabled(False)
     self.button_arm.setEnabled(False)
     self.text_state.setText(self.STR_UNKNOWN)
-    self.vertical_slider_throttle.setValue(0)
     self.clearMavMode()
 
     # Initialize class variables
@@ -66,14 +64,12 @@ class HilWidget(QWidget):
     self.button_set_hil_mode.pressed.connect(self.on_set_hil_mode_button_pressed)
     self.button_arm.pressed.connect(self.on_arm_button_pressed)
     self.button_reset_model.pressed.connect(self.on_reset_model_button_pressed)
-    self.vertical_slider_throttle.valueChanged.connect(self.on_throttle_value_changed)
     
     # Initialize ROS subscribers and publishers
     self.mav_mode_sub = rospy.Subscriber(self.STR_MAV_MODE_SUB_TOPIC, UInt8, self.mavModeCallback, queue_size=1)
     self.mav_status_sub = rospy.Subscriber(self.STR_MAV_STATUS_SUB_TOPIC, UInt8, self.mavStatusCallback, queue_size=1)
     self.set_mode_pub = rospy.Publisher(self.STR_SET_MODE_PUB_TOPIC, UInt8, queue_size=1)
     self.reset_pub = rospy.Publisher(self.STR_RESET_MODEL_PUB_TOPIC, Bool, queue_size=1)
-    self.throttle_pub = rospy.Publisher(self.STR_THROTTLE_PUB_TOPIC, UInt8, queue_size=1)
 
   def on_set_hil_mode_button_pressed(self):
     new_mode = self.mav_mode | self.MAV_MODE_FLAG_HIL_ENABLED
@@ -85,9 +81,6 @@ class HilWidget(QWidget):
 
   def on_reset_model_button_pressed(self):
     self.reset_pub.publish(True)
-
-  def on_throttle_value_changed(self):
-    self.throttle_pub.publish(self.vertical_slider_throttle.value())
     
   def mavModeCallback(self, msg):
     if not(self.received_heartbeat):
