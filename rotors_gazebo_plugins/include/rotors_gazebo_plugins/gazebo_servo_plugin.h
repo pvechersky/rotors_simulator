@@ -31,6 +31,11 @@
 
 #include "rotors_gazebo_plugins/common.h"
 
+namespace positive_direction {
+const static int CCW = 1;
+const static int CW = -1;
+}
+
 namespace gazebo {
 // Default values
 static const std::string kDefaultCommandSubTopic = "gazebo/command/motor_speed";
@@ -53,7 +58,6 @@ class GazeboServoPlugin : public ModelPlugin {
 
  private:
   std::string namespace_;
-  std::string joint_name_;
   ros::NodeHandle* node_handle_;
   ros::Subscriber command_sub_;
 
@@ -61,16 +65,21 @@ class GazeboServoPlugin : public ModelPlugin {
   physics::WorldPtr world_;
   // Pointer to the model
   physics::ModelPtr model_;
-  // Pointer to the link
+  // Pointer to the joint
   physics::JointPtr joint_;
+  // Pointer to the child link
+  physics::LinkPtr child_link_;
   // Pointer to the update event connection
   event::ConnectionPtr updateConnection_;
+
+  math::Vector3 axis_;
 
   double velocity_gain_;
   double ref_angle_;
   double min_angle_;
   double max_angle_;
   int channel_;
+  int positive_direction_;
 };
 }
 

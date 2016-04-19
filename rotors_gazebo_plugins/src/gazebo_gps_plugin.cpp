@@ -99,6 +99,11 @@ void GazeboGpsPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
   gps_message_.longitude = ref_lon_;
   gps_message_.altitude = ref_alt_;
   gps_message_.position_covariance.fill(0.0);
+
+  double temp = 1.0 / (1.0 - excentrity2 * sin(ref_lat_ * M_PI / 180.0) * sin(ref_lat_ * M_PI / 180.0));
+  double prime_vertical_radius = kEquatorialRadius * sqrt(temp);
+  radius_north_ = prime_vertical_radius * (1 - excentrity2) * temp;
+  radius_east_  = prime_vertical_radius * cos(ref_lat_ * M_PI / 180.0);
 }
 
 void GazeboGpsPlugin::OnUpdate(const common::UpdateInfo& _info) {
@@ -108,9 +113,13 @@ void GazeboGpsPlugin::OnUpdate(const common::UpdateInfo& _info) {
   math::Vector3 position = model_->GetWorldPose().pos;
 
   // Update the GPS coordinates
-  gps_message_.latitude += (position.x * cos(ref_heading_) + position.y * sin(ref_heading_)) / earth_radius_;
-  gps_message_.longitude -= (-position.x * sin(ref_heading_) + position.y * cos(ref_heading_)) / earth_radius_;
-  gps_message_.altitude = position.z + ref_alt_;
+  //gps_message_.latitude += (position.x * cos(ref_heading_) + position.y * sin(ref_heading_)) / earth_radius_;
+  //gps_message_.longitude -= (-position.x * sin(ref_heading_) + position.y * cos(ref_heading_)) / earth_radius_;
+  //gps_message_.altitude = position.z + ref_alt_;
+
+  gps_message_.latitude = ref_lat_ + (cos(ref_heading_) * position.x + sin(ref_heading_) * position.y) / radius_north_ * 180.0 / M_PI;
+  gps_message_.longitude = ref_lon_ - (-sin(ref_heading_) * position.x + cos(ref_heading_) * position.y) / radius_east_ * 180.0 / M_PI;
+  gps_message_.altitude = ref_alt_ + position.z;
 
   // Fill GPS message
   gps_message_.header.seq = gps_sequence_;

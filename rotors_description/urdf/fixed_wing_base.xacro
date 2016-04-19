@@ -173,15 +173,14 @@
 
     <gazebo>
       <plugin name="${robot_namespace}_${suffix}_lift_drag" filename="libLiftDragPlugin.so">
-      <!--<plugin name="${robot_namespace}_${suffix}_lift_drag" filename="librotors_gazebo_lift_drag_plugin.so">-->
         <a0>${alpha_0}</a0>
         <cla>${c_L_alpha}</cla>
-        <cda>0.01</cda>
-        <cma>0.00</cma>
+        <cda>0.1</cda>
+        <cma>-0.1</cma>
         <alpha_stall>${alpha_stall}</alpha_stall>
-        <cla_stall>0.0</cla_stall>
-        <cda_stall>0.01</cda_stall>
-        <cma_stall>0.0</cma_stall>
+        <cla_stall>-0.1</cla_stall>
+        <cda_stall>0.1</cda_stall>
+        <cma_stall>-0.2</cma_stall>
         <cp>0.0 0.0 0.0</cp>
         <area>${wing_length * wing_width}</area>
         <air_density>${air_density}</air_density>
@@ -274,15 +273,14 @@
 
     <gazebo>
       <plugin name="${robot_namespace}_${suffix}_rear_lift_drag" filename="libLiftDragPlugin.so">
-      <!--<plugin name="${robot_namespace}_${suffix}_lift_drag" filename="librotors_gazebo_lift_drag_plugin.so">-->
         <a0>${alpha_0}</a0>
         <cla>${c_L_alpha}</cla>
-        <cda>0.01</cda>
-        <cma>0.00</cma>
+        <cda>0.1</cda>
+        <cma>-0.1</cma>
         <alpha_stall>${alpha_stall}</alpha_stall>
-        <cla_stall>0.0</cla_stall>
-        <cda_stall>0.01</cda_stall>
-        <cma_stall>0.0</cma_stall>
+        <cla_stall>-0.1</cla_stall>
+        <cda_stall>0.1</cda_stall>
+        <cma_stall>-0.2</cma_stall>
         <cp>0.0 0.0 0.0</cp>
         <area>${rear_wing_length * rear_wing_width}</area>
         <air_density>1.225</air_density>
@@ -360,8 +358,9 @@
   <!-- Control surface joint and link -->
   <xacro:macro name="control_surface"
     params="robot_namespace surface_name parent mass_surface velocity_gain 
-      min_angle max_angle channel color use_mesh mesh surface_length surface_width 
-      surface_height *axis *joint_origin *link_origin *inertia">
+      positive_direction min_angle max_angle channel color use_mesh mesh 
+      surface_length surface_width surface_height *axis *joint_origin 
+      *link_origin *inertia">
 
     <joint name="${robot_namespace}/${surface_name}_joint" type="revolute">
       <xacro:insert_block name="joint_origin" />
@@ -372,6 +371,7 @@
     </joint>
 
     <link name="${robot_namespace}/${surface_name}">
+      <gravity>0</gravity>
       <inertial>
         <xacro:insert_block name="link_origin" />
         <mass value="${mass_surface}" /> <!-- [kg] -->
@@ -401,7 +401,9 @@
       <plugin name="${robot_namespace}_${surface_name}" filename="librotors_gazebo_servo_plugin.so">
         <robotNamespace>${robot_namespace}</robotNamespace>
         <jointName>${robot_namespace}/${surface_name}_joint</jointName>
+        <childLinkName>${robot_namespace}/${surface_name}</childLinkName>
         <commandSubTopic>gazebo/command/motor_speed</commandSubTopic>
+        <positiveDirection>${positive_direction}</positiveDirection>
         <velocityGain>${velocity_gain}</velocityGain>
         <minAngle>${min_angle}</minAngle>
         <maxAngle>${max_angle}</maxAngle>

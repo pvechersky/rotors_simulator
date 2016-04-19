@@ -45,6 +45,9 @@ void GazeboServoPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
   // default params
   namespace_.clear();
 
+  std::string joint_name;
+  std::string command_sub_topic;
+
   if (_sdf->HasElement("robotNamespace"))
     namespace_ = _sdf->GetElement("robotNamespace")->Get<std::string>();
   else
@@ -52,20 +55,37 @@ void GazeboServoPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
   node_handle_ = new ros::NodeHandle(namespace_);
 
   if (_sdf->HasElement("jointName"))
-    joint_name_ = _sdf->GetElement("jointName")->Get<std::string>();
+    joint_name = _sdf->GetElement("jointName")->Get<std::string>();
   else
     gzerr << "[gazebo_servo_plugin] Please specify a jointName.\n";
-  // Get the pointer to the link
-  joint_ = model_->GetJoint(joint_name_);
+  // Get the pointer to the joint
+  joint_ = model_->GetJoint(joint_name);
   if (joint_ == NULL)
-    gzthrow("[gazebo_servo_plugin] Couldn't find specified joint \"" << joint_name_ << "\".");
+    gzthrow("[gazebo_servo_plugin] Couldn't find specified joint \"" << joint_name << "\".");
 
-  std::string command_sub_topic;
+  if (_sdf->HasElement("positiveDirection")) {
+    std::string positive_direction = _sdf->GetElement("positiveDirection")->Get<std::string>();
+    if (positive_direction == "cw")
+      positive_direction_ = positive_direction::CW;
+    else if (positive_direction == "ccw")
+      positive_direction_ = positive_direction::CCW;
+    else
+      gzerr << "[gazebo_servo_plugin] Please only use 'cw' or 'ccw' as positiveDirection.\n";
+  }
+  else
+    gzerr << "[gazebo_servo_plugin] Please specify a positive direction ('cw' or 'ccw').\n";
+
   getSdfParam<std::string>(_sdf, "commandSubTopic", command_sub_topic, kDefaultCommandSubTopic);
   getSdfParam<double>(_sdf, "velocityGain", velocity_gain_, kDefaultVelocityGain);
   getSdfParam<double>(_sdf, "minAngle", min_angle_, kDefaultMinAngle);
   getSdfParam<double>(_sdf, "maxAngle", max_angle_, kDefaultMaxAngle);
   getSdfParam<int>(_sdf, "channel", channel_, kDefaultChannel);
+
+  // Disable gravity for the child link
+  child_link_ = joint_->GetChild();
+  child_link_->SetGravityMode(0);
+
+  axis_ = joint_->GetLocalAxis(0);
 
   // Listen to the update event. This event is broadcast every
   // simulation iteration.
@@ -80,14 +100,16 @@ void GazeboServoPlugin::AngleCallback(const mav_msgs::ActuatorsConstPtr& servo_a
   ROS_ASSERT_MSG(servo_angles->angles.size() > channel_,
                  "You tried to access index %d of the Angles message array which is of size %d.",
                  channel_, servo_angles->angles.size());
-  ref_angle_ = (max_angle_ + min_angle_) * 0.5 + (max_angle_ - min_angle_) * 0.5 * servo_angles->angles.at(channel_);
+  ref_angle_ = positive_direction_ *
+          ((max_angle_ + min_angle_) * 0.5 + (max_angle_ - min_angle_) * 0.5 * servo_angles->angles.at(channel_));
 }
 
 // This gets called by the world update start event.
 void GazeboServoPlugin::OnUpdate(const common::UpdateInfo& _info) {
   double current_angle = joint_->GetAngle(0).Radian();
   double err = ref_angle_ - current_angle;
-  joint_->SetVelocity(0, err * velocity_gain_);
+  //joint_->SetVelocity(0, err * velocity_gain_);
+  joint_->SetForce(0, err * velocity_gain_);
 }
 
 GZ_REGISTER_MODEL_PLUGIN(GazeboServoPlugin);

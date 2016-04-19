@@ -35,6 +35,8 @@
 namespace gazebo {
 // WGS84 constants
 static constexpr double kEquatorialRadius = 6378137.0;
+static constexpr double flattening = 1.0 / 298.257223563;
+static constexpr double excentrity2 = 2 * flattening - flattening * flattening;
 static constexpr double kPolarRadius = 6356752.3;
 
 // Default reference values (Zurich: lat=+47.3667degN, lon=+8.5500degE, h=+500m, WGS84)
@@ -75,6 +77,8 @@ class GazeboGpsPlugin : public ModelPlugin {
   double ref_alt_;
   double ref_heading_;
   double earth_radius_;
+  double radius_north_;
+  double radius_east_;
 
   sensor_msgs::NavSatFix gps_message_;
 };
