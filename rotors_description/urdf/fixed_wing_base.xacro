@@ -238,7 +238,7 @@
   <!-- Rear wing joint and link -->
   <xacro:macro name="rear_wing"
     params="robot_namespace suffix parent mass_rear_wing rear_wing_length rear_wing_width 
-      rear_wing_height color use_mesh mesh alpha_0 alpha_stall c_L_alpha *origin *inertia">
+      rear_wing_height color use_mesh mesh alpha_0 alpha_stall c_L_alpha air_density *origin *inertia">
 
     <joint name="${robot_namespace}/rear_wing_${suffix}_joint" type="revolute">
       <xacro:insert_block name="origin" />
@@ -283,7 +283,7 @@
         <cma_stall>-0.2</cma_stall>
         <cp>0.0 0.0 0.0</cp>
         <area>${rear_wing_length * rear_wing_width}</area>
-        <air_density>1.225</air_density>
+        <air_density>${air_density}</air_density>
         <forward>1 0 0</forward>
         <upward>0 0 1</upward>
         <link_name>${robot_namespace}/rear_wing_${suffix}</link_name>
@@ -359,8 +359,8 @@
   <xacro:macro name="control_surface"
     params="robot_namespace surface_name parent mass_surface velocity_gain 
       positive_direction min_angle max_angle channel color use_mesh mesh 
-      surface_length surface_width surface_height *axis *joint_origin 
-      *link_origin *inertia">
+      surface_length surface_width surface_height area forward_x forward_y
+      forward_z up_x up_y up_z c_L_alpha alpha_stall *axis *joint_origin *link_origin *inertia">
 
     <joint name="${robot_namespace}/${surface_name}_joint" type="revolute">
       <xacro:insert_block name="joint_origin" />
@@ -398,7 +398,7 @@
     </link>
 
     <gazebo>
-      <plugin name="${robot_namespace}_${surface_name}" filename="librotors_gazebo_servo_plugin.so">
+      <plugin name="${robot_namespace}_${surface_name}_servo" filename="librotors_gazebo_servo_plugin.so">
         <robotNamespace>${robot_namespace}</robotNamespace>
         <jointName>${robot_namespace}/${surface_name}_joint</jointName>
         <childLinkName>${robot_namespace}/${surface_name}</childLinkName>
@@ -408,6 +408,24 @@
         <minAngle>${min_angle}</minAngle>
         <maxAngle>${max_angle}</maxAngle>
         <channel>${channel}</channel>
+      </plugin>
+    </gazebo>
+    <gazebo>
+      <plugin name="${robot_namespace}_${surface_name}_lift_drag" filename="libLiftDragPlugin.so">
+        <a0>0.0</a0>
+        <cla>${c_L_alpha}</cla>
+        <cda>0.1</cda>
+        <cma>-0.1</cma>
+        <alpha_stall>${alpha_stall}</alpha_stall>
+        <cla_stall>-0.1</cla_stall>
+        <cda_stall>0.1</cda_stall>
+        <cma_stall>-0.2</cma_stall>
+        <cp>0.0 0.0 0.0</cp>
+        <area>${area}</area>
+        <air_density>1.225</air_density>
+        <forward>${forward_x} ${forward_y} ${forward_z}</forward>
+        <upward>${up_x} ${up_y} ${up_z}</upward>
+        <link_name>${robot_namespace}/${surface_name}</link_name>
       </plugin>
     </gazebo>
     <gazebo reference="${robot_namespace}/${surface_name}">

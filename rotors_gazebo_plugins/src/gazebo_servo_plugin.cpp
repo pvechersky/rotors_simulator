@@ -108,8 +108,8 @@ void GazeboServoPlugin::AngleCallback(const mav_msgs::ActuatorsConstPtr& servo_a
 void GazeboServoPlugin::OnUpdate(const common::UpdateInfo& _info) {
   double current_angle = joint_->GetAngle(0).Radian();
   double err = ref_angle_ - current_angle;
-  //joint_->SetVelocity(0, err * velocity_gain_);
-  joint_->SetForce(0, err * velocity_gain_);
+  joint_->SetVelocity(0, err * velocity_gain_);
+  //joint_->SetForce(0, err * velocity_gain_);
 }
 
 GZ_REGISTER_MODEL_PLUGIN(GazeboServoPlugin);

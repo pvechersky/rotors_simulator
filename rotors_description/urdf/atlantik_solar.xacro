@@ -30,12 +30,13 @@
   <xacro:property name="mass_fuselage" value="3.0" /> <!-- [kg] -->
   <xacro:property name="mass_wheel" value="0.05" /> <!-- [kg] -->
   <xacro:property name="mass_front_wing" value="1.0" /> <!-- [kg] -->
+  <xacro:property name="mass_small_wing" value="${0.3 * mass_front_wing}" /> <!-- [kg] -->
   <xacro:property name="mass_tail" value="0.5" /> <!-- [kg] -->
   <xacro:property name="mass_rear_wing" value="0.2" /> <!-- [kg] -->
   <xacro:property name="mass_propeller" value="0.01" /> <!-- [kg] -->
   <xacro:property name="mass_aileron" value="0.2" /> <!-- [kg] -->
-  <xacro:property name="mass_elevator" value="0.2" /> <!-- [kg] -->
-  <xacro:property name="mass_rudder" value="0.2" /> <!-- [kg] -->
+  <xacro:property name="mass_elevator" value="0.1" /> <!-- [kg] -->
+  <xacro:property name="mass_rudder" value="0.1" /> <!-- [kg] -->
 
   <!-- Fuselage properties -->
   <xacro:property name="body_length" value="3.0" /> <!-- [m] -->
@@ -76,7 +77,7 @@
 
   <!-- Aileron properties -->
   <xacro:property name="aileron_length" value="${0.5 * root_chord}" /> <!-- [m] -->
-  <xacro:property name="aileron_width" value="${0.5 * front_wing_length - 0.05}" /> <!-- [m] -->
+  <xacro:property name="aileron_width" value="${0.5 * front_wing_width}" /> <!-- [m] -->
   <xacro:property name="aileron_height" value="0.02" /> <!-- [m] -->
   <xacro:property name="aileron_velocity_gain" value="1.0" />
   <xacro:property name="aileron_min_angle" value="-0.55" /> <!-- [rad] -->
@@ -84,8 +85,8 @@
   <xacro:property name="aileron_channel" value="0" />
 
   <!-- Elevator properties -->
-  <xacro:property name="elevator_length" value="${0.5 * root_chord}" /> <!-- [m] -->
-  <xacro:property name="elevator_width" value="${0.5 * front_wing_length - 0.05}" /> <!-- [m] -->
+  <xacro:property name="elevator_length" value="0.15" /> <!-- [m] -->
+  <xacro:property name="elevator_width" value="${rear_wing_width}" /> <!-- [m] -->
   <xacro:property name="elevator_height" value="0.02" /> <!-- [m] -->
   <xacro:property name="elevator_velocity_gain" value="1.0" />
   <xacro:property name="elevator_min_angle" value="-0.55" /> <!-- [rad] -->
@@ -105,10 +106,10 @@
   <xacro:property name="PI" value="3.1415926535897931" />
 
   <!-- Front wing length -->
-  <xacro:property name="front_wing_length" value="${0.5 * (wingspan - body_width)}" />
+  <xacro:property name="front_wing_width" value="${0.5 * (wingspan - body_width)}" />
 
   <!-- Rear wing length -->
-  <xacro:property name="rear_wing_length" value="${0.5 * (rear_wingspan - tail_width)}" />
+  <xacro:property name="rear_wing_width" value="${0.5 * (rear_wingspan - tail_width)}" />
 
   <!-- Inertia of the fuselage -->
   <xacro:property name="body_inertia">
@@ -122,7 +123,12 @@
 
   <!-- Inertia of a single front wing, assuming it is a cuboid -->
   <xacro:property name="front_wing_inertia">
-    <xacro:box_inertia x="${root_chord}" y="${front_wing_length}" z="${front_wing_height}" mass="${mass_front_wing}" />
+    <xacro:box_inertia x="${root_chord}" y="${front_wing_width}" z="${front_wing_height}" mass="${mass_front_wing}" />
+  </xacro:property>
+
+  <!-- Inertia of a single small front wing, assuming it is a cuboid -->
+  <xacro:property name="small_wing_inertia">
+    <xacro:box_inertia x="${aileron_length}" y="${front_wing_width - aileron_width}" z="${front_wing_height}" mass="${0.3 * mass_small_wing}" />
   </xacro:property>
 
   <!-- Inertia of the tail, assuming it is a cuboid -->
@@ -132,7 +138,7 @@
 
   <!-- Inertia of a single rear wing, assuming it is a cuboid -->
   <xacro:property name="rear_wing_inertia">
-    <xacro:box_inertia x="${tail_length}" y="${rear_wing_length}" z="${rear_wing_height}" mass="${mass_rear_wing}" />
+    <xacro:box_inertia x="${tail_length - elevator_length}" y="${rear_wing_width}" z="${rear_wing_height}" mass="${mass_rear_wing}" />
   </xacro:property>
 
   <!-- Inertia of the propeller, assuming it is a cuboid. Height=3mm, width=40mm -->
@@ -217,11 +223,11 @@
   <!-- Instantiate wings -->
   <xacro:wing
     robot_namespace="${namespace}"
-    suffix="left"
+    suffix="left_big"
     parent="${namespace}/base_link"
     mass_wing="${mass_front_wing}"
     wing_length="${root_chord}"
-    wing_width="${front_wing_length}"
+    wing_width="${front_wing_width}"
     wing_height="${front_wing_height}"
     color="${body_color}"
     use_mesh="false"
@@ -230,17 +236,17 @@
     alpha_stall="${alpha_stall}"
     c_L_alpha="${c_L_alpha}"
     air_density="${air_density}">
-    <origin xyz="0.5 ${0.25 * (wingspan + body_width)} 0.1" rpy="0.0 0.0 0.0" />
+    <origin xyz="0.5 ${0.5 * (body_width + front_wing_width)} 0.1" rpy="0.0 0.0 0.0" />
     <xacro:insert_block name="front_wing_inertia" />
   </xacro:wing>-->
 
   <xacro:wing
     robot_namespace="${namespace}"
-    suffix="right"
+    suffix="right_big"
     parent="${namespace}/base_link"
     mass_wing="${mass_front_wing}"
     wing_length="${root_chord}"
-    wing_width="${front_wing_length}"
+    wing_width="${front_wing_width}"
     wing_height="${front_wing_height}"
     color="${body_color}"
     use_mesh="false"
@@ -249,8 +255,46 @@
     alpha_stall="${alpha_stall}"
     c_L_alpha="${c_L_alpha}"
     air_density="${air_density}">
-    <origin xyz="0.5 ${-0.25 * (wingspan + body_width)} 0.1" rpy="0.0 0.0 0.0" />
+    <origin xyz="0.5 ${-0.5 * (body_width + front_wing_width)} 0.1" rpy="0.0 0.0 0.0" />
     <xacro:insert_block name="front_wing_inertia" />
+  </xacro:wing>
+
+  <xacro:wing
+    robot_namespace="${namespace}"
+    suffix="left_small"
+    parent="${namespace}/base_link"
+    mass_wing="${mass_small_wing}"
+    wing_length="${aileron_length}"
+    wing_width="${front_wing_width - aileron_width}"
+    wing_height="${front_wing_height}"
+    color="${body_color}"
+    use_mesh="false"
+    mesh=""
+    alpha_0="${alpha_0}"
+    alpha_stall="${alpha_stall}"
+    c_L_alpha="${c_L_alpha}"
+    air_density="${air_density}">
+    <origin xyz="${0.5 * (1 - root_chord - aileron_length)} ${0.5 * (body_width + front_wing_width - aileron_width)} 0.1" rpy="0.0 0.0 0.0" />
+    <xacro:insert_block name="small_wing_inertia" />
+  </xacro:wing>
+
+  <xacro:wing
+    robot_namespace="${namespace}"
+    suffix="right_small"
+    parent="${namespace}/base_link"
+    mass_wing="${mass_small_wing}"
+    wing_length="${aileron_length}"
+    wing_width="${front_wing_width - aileron_width}"
+    wing_height="${front_wing_height}"
+    color="${body_color}"
+    use_mesh="false"
+    mesh=""
+    alpha_0="${alpha_0}"
+    alpha_stall="${alpha_stall}"
+    c_L_alpha="${c_L_alpha}"
+    air_density="${air_density}">
+    <origin xyz="${0.5 * (1 - root_chord - aileron_length)} ${-0.5 * (body_width + front_wing_width - aileron_width)} 0.1" rpy="0.0 0.0 0.0" />
+    <xacro:insert_block name="small_wing_inertia" />
   </xacro:wing>
 
   <!-- Instantiate the tail -->
@@ -274,16 +318,17 @@
     suffix="left"
     parent="${namespace}/tail"
     mass_rear_wing="${mass_rear_wing}"
-    rear_wing_length="${tail_length}"
-    rear_wing_width="${rear_wing_length}"
+    rear_wing_length="${tail_length - elevator_length}"
+    rear_wing_width="${rear_wing_width}"
     rear_wing_height="${rear_wing_height}"
     color="${body_color}"
     use_mesh="false"
     mesh=""
     alpha_0="${alpha_0}"
     alpha_stall="${alpha_stall}"
-    c_L_alpha="${c_L_alpha}">
-    <origin xyz="0.0 ${0.25 * (rear_wingspan + tail_width)} ${0.5 * (tail_height - rear_wing_height)}" rpy="0.0 0.0 0.0" />
+    c_L_alpha="${c_L_alpha}"
+    air_density="${air_density}">
+    <origin xyz="${0.5 * elevator_length} ${0.5 * (tail_width + rear_wing_width)} ${0.5 * (tail_height - rear_wing_height)}" rpy="0.0 0.0 0.0" />
     <xacro:insert_block name="rear_wing_inertia" />
   </xacro:rear_wing>
 
@@ -292,16 +337,17 @@
     suffix="right"
     parent="${namespace}/tail"
     mass_rear_wing="${mass_rear_wing}"
-    rear_wing_length="${tail_length}"
-    rear_wing_width="${rear_wing_length}"
+    rear_wing_length="${tail_length - elevator_length}"
+    rear_wing_width="${rear_wing_width}"
     rear_wing_height="${rear_wing_height}"
     color="${body_color}"
     use_mesh="false"
     mesh=""
     alpha_0="${alpha_0}"
     alpha_stall="${alpha_stall}"
-    c_L_alpha="${c_L_alpha}">
-    <origin xyz="0.0 ${-0.25 * (rear_wingspan + tail_width)} ${0.5 * (tail_height - rear_wing_height)}" rpy="0.0 0.0 0.0" />
+    c_L_alpha="${c_L_alpha}"
+    air_density="${air_density}">
+    <origin xyz="${0.5 * elevator_length} ${-0.5 * (tail_width + rear_wing_width)} ${0.5 * (tail_height - rear_wing_height)}" rpy="0.0 0.0 0.0" />
     <xacro:insert_block name="rear_wing_inertia" />
   </xacro:rear_wing>
 
@@ -331,7 +377,7 @@
   <xacro:control_surface
     robot_namespace="${namespace}"
     surface_name="aileron_left"
-    parent="${namespace}/wing_left"
+    parent="${namespace}/wing_left_big"
     mass_surface="${mass_aileron}"
     velocity_gain="${aileron_velocity_gain}"
     positive_direction="ccw"
@@ -343,9 +389,18 @@
     mesh=""
     surface_length="${aileron_length}"
     surface_width="${aileron_width}"
-    surface_height="${aileron_height}">
+    surface_height="${aileron_height}"
+    area="${aileron_length * aileron_width}"
+    forward_x="1"
+    forward_y="0"
+    forward_z="0"
+    up_x="0"
+    up_y="0"
+    up_z="1"
+    c_L_alpha="${c_L_alpha}"
+    alpha_stall="${alpha_stall}">
     <axis xyz="0 1 0" />
-    <origin xyz="${-0.5 * root_chord} ${-0.25 * front_wing_length} 0.0" rpy="0.0 0.0 0.0" /> <!-- Joint origin -->
+    <origin xyz="${-0.5 * root_chord} ${0.25 * front_wing_width} 0.0" rpy="0.0 0.0 0.0" /> <!-- Joint origin -->
     <origin xyz="${-0.5 * aileron_length} 0.0 0.0" rpy="0.0 0.0 0.0" /> <!-- Link origin -->
     <xacro:insert_block name="aileron_inertia" />
   </xacro:control_surface>
@@ -353,7 +408,7 @@
   <xacro:control_surface
     robot_namespace="${namespace}"
     surface_name="aileron_right"
-    parent="${namespace}/wing_right"
+    parent="${namespace}/wing_right_big"
     mass_surface="${mass_aileron}"
     velocity_gain="${aileron_velocity_gain}"
     positive_direction="cw"
@@ -365,9 +420,18 @@
     mesh=""
     surface_length="${aileron_length}"
     surface_width="${aileron_width}"
-    surface_height="${aileron_height}">
+    surface_height="${aileron_height}"
+    area="${aileron_length * aileron_width}"
+    forward_x="1"
+    forward_y="0"
+    forward_z="0"
+    up_x="0"
+    up_y="0"
+    up_z="1"
+    c_L_alpha="${c_L_alpha}"
+    alpha_stall="${alpha_stall}">
     <axis xyz="0 1 0" />
-    <origin xyz="${-0.5 * root_chord} ${0.25 * front_wing_length} 0.0" rpy="0.0 0.0 0.0" /> <!-- Joint origin -->
+    <origin xyz="${-0.5 * root_chord} ${-0.25 * front_wing_width} 0.0" rpy="0.0 0.0 0.0" /> <!-- Joint origin -->
     <origin xyz="${-0.5 * aileron_length} 0.0 0.0" rpy="0.0 0.0 0.0" /> <!-- Link origin -->
     <xacro:insert_block name="aileron_inertia" />
   </xacro:control_surface>
@@ -375,7 +439,7 @@
   <xacro:control_surface
     robot_namespace="${namespace}"
     surface_name="elevator_left"
-    parent="${namespace}/wing_left"
+    parent="${namespace}/rear_wing_left"
     mass_surface="${mass_elevator}"
     velocity_gain="${elevator_velocity_gain}"
     positive_direction="ccw"
@@ -387,9 +451,18 @@
     mesh=""
     surface_length="${elevator_length}"
     surface_width="${elevator_width}"
-    surface_height="${elevator_height}">
+    surface_height="${elevator_height}"
+    area="${elevator_length * elevator_width}"
+    forward_x="1"
+    forward_y="0"
+    forward_z="0"
+    up_x="0"
+    up_y="0"
+    up_z="1"
+    c_L_alpha="${c_L_alpha}"
+    alpha_stall="${alpha_stall}">
     <axis xyz="0 1 0" />
-    <origin xyz="${-0.5 * root_chord} ${0.25 * front_wing_length} 0.0" rpy="0.0 0.0 0.0" /> <!-- Joint origin -->
+    <origin xyz="${-0.5 * (tail_length - elevator_length)} 0.0 0.0" rpy="0.0 0.0 0.0" /> <!-- Joint origin -->
     <origin xyz="${-0.5 * elevator_length} 0.0 0.0" rpy="0.0 0.0 0.0" /> <!-- Link origin -->
     <xacro:insert_block name="elevator_inertia" />
   </xacro:control_surface>
@@ -397,7 +470,7 @@
   <xacro:control_surface
     robot_namespace="${namespace}"
     surface_name="elevator_right"
-    parent="${namespace}/wing_right"
+    parent="${namespace}/rear_wing_right"
     mass_surface="${mass_elevator}"
     velocity_gain="${elevator_velocity_gain}"
     positive_direction="ccw"
@@ -409,9 +482,18 @@
     mesh=""
     surface_length="${elevator_length}"
     surface_width="${elevator_width}"
-    surface_height="${elevator_height}">
+    surface_height="${elevator_height}"
+    area="${elevator_length * elevator_width}"
+    forward_x="1"
+    forward_y="0"
+    forward_z="0"
+    up_x="0"
+    up_y="0"
+    up_z="1"
+    c_L_alpha="${c_L_alpha}"
+    alpha_stall="${alpha_stall}">
     <axis xyz="0 1 0" />
-    <origin xyz="${-0.5 * root_chord} ${-0.25 * front_wing_length} 0.0" rpy="0.0 0.0 0.0" /> <!-- Joint origin -->
+    <origin xyz="${-0.5 * (tail_length - elevator_length)} 0.0 0.0" rpy="0.0 0.0 0.0" /> <!-- Joint origin -->
     <origin xyz="${-0.5 * elevator_length} 0.0 0.0" rpy="0.0 0.0 0.0" /> <!-- Link origin -->
     <xacro:insert_block name="elevator_inertia" />
   </xacro:control_surface>
@@ -431,7 +513,16 @@
     mesh=""
     surface_length="${rudder_length}"
     surface_width="${rudder_width}"
-    surface_height="${rudder_height}">
+    surface_height="${rudder_height}"
+    area="0.0"
+    forward_x="0"
+    forward_y="0"
+    forward_z="0"
+    up_x="0"
+    up_y="0"
+    up_z="0"
+    c_L_alpha="0.0"
+    alpha_stall="0.0">
     <axis xyz="0 0 1" />
     <origin xyz="${-0.5 * tail_length} 0.0 0.0" rpy="0.0 0.0 0.0" /> <!-- Joint origin -->
     <origin xyz="${-0.5 * rudder_length} 0.0 0.0" rpy="0.0 0.0 0.0" /> <!-- Link origin -->
