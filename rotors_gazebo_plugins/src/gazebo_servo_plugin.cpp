@@ -81,12 +81,6 @@ void GazeboServoPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
   getSdfParam<double>(_sdf, "maxAngle", max_angle_, kDefaultMaxAngle);
   getSdfParam<int>(_sdf, "channel", channel_, kDefaultChannel);
 
-  // Disable gravity for the child link
-  child_link_ = joint_->GetChild();
-  child_link_->SetGravityMode(0);
-
-  axis_ = joint_->GetLocalAxis(0);
-
   // Listen to the update event. This event is broadcast every
   // simulation iteration.
   this->updateConnection_ =

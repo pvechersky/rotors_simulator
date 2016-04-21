@@ -25,6 +25,7 @@
     <node name="hil_sensors_interface" pkg="rotors_hil_interface" type="rotors_hil_sensors_interface" output="screen">
       <param name="gps_topic" value="gps" />
       <param name="imu_topic" value="imu" />
+      <param name="odometry_topic" value="ground_truth/odometry" />
       <param name="hil_mode_topic" value="hil_mode" />
       <param name="mavlink_pub_topic" value="/mavlink/to" />
     </node>

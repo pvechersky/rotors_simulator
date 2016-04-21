@@ -34,15 +34,6 @@
       izz="${0.5 * mass * r * r}" />
   </xacro:macro>
 
-  <!-- Macro for the inertial properties of a box -->
-  <xacro:macro name="box_inertial" params="x y z mass *origin">
-    <inertial>
-      <mass value="${mass}" />
-      <xacro:insert_block name="origin" />
-      <xacro:box_inertia x="${x}" y="${y}" z="${z}" mass="${mass}" />
-    </inertial>
-  </xacro:macro>
-
   <!-- Fixed-wing fuselage link -->
   <xacro:macro name="fixed_wing_base_macro"
     params="robot_namespace mass body_length body_width body_height 
@@ -58,7 +49,7 @@
     <link name="${robot_namespace}/base_link_inertia">
       <inertial>
         <mass value="${mass}" />  <!-- [kg] -->
-        <origin xyz="0 0 0" />
+        <origin xyz="0.7 0 0" rpy="0 0 0" />
         <xacro:insert_block name="inertia" />
       </inertial>
       <visual>
@@ -96,7 +87,7 @@
     params="robot_namespace suffix parent mass_wheel color use_mesh mesh 
       wheel_radius wheel_width *origin *inertia">
 
-    <joint name="${robot_namespace}/wheel_${suffix}_joint" type="revolute">
+    <joint name="${robot_namespace}/wheel_${suffix}_joint" type="fixed">
       <xacro:insert_block name="origin" />
       <axis xyz="0 1 0" />
       <parent link="${parent}" />
@@ -106,6 +97,7 @@
 
     <link name="${robot_namespace}/wheel_${suffix}">
       <inertial>
+        <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0" />
         <mass value="${mass_wheel}" /> <!-- [kg] -->
         <xacro:insert_block name="inertia" />
       </inertial>
@@ -135,10 +127,11 @@
   <!-- Wing joint and link -->
   <xacro:macro name="wing"
     params="robot_namespace suffix parent mass_wing wing_length wing_width wing_height 
-      color use_mesh mesh alpha_0 alpha_stall c_L_alpha air_density *origin *inertia">
+      color use_mesh mesh alpha_0 alpha_stall c_L_alpha air_density cp_x cp_y cp_z *joint_origin 
+      *link_origin *inertia">
 
     <joint name="${robot_namespace}/wing_${suffix}_joint" type="revolute">
-      <xacro:insert_block name="origin" />
+      <xacro:insert_block name="joint_origin" />
       <axis xyz="1 0 0" />
       <parent link="${parent}" />
       <child link="${robot_namespace}/wing_${suffix}" />
@@ -147,12 +140,12 @@
 
     <link name="${robot_namespace}/wing_${suffix}">
       <inertial>
-        <origin xyz="0 0 0" rpy="0 0 0" />
+        <xacro:insert_block name="link_origin" />
         <mass value="${mass_wing}" /> <!-- [kg] -->
         <xacro:insert_block name="inertia" />
       </inertial>
       <visual>
-        <origin xyz="0 0 0" rpy="0 0 0" />
+        <xacro:insert_block name="link_origin" />
         <geometry>
           <xacro:if value="${use_mesh}">
             <mesh filename="${mesh}"
@@ -164,15 +157,16 @@
         </geometry>
       </visual>
       <collision>
-        <origin xyz="0 0 0" rpy="0 0 0" />
+        <xacro:insert_block name="link_origin" />
         <geometry>
-          <box size="${wing_length} ${wing_width} ${wing_height}"/> <!-- [m] [m] [m] -->
+          <box size="${wing_length - 0.01} ${wing_width - 0.01} ${wing_height - 0.01}"/> <!-- [m] [m] [m] -->
         </geometry>
       </collision>
     </link>
 
     <gazebo>
       <plugin name="${robot_namespace}_${suffix}_lift_drag" filename="libLiftDragPlugin.so">
+      <!--<plugin name="${robot_namespace}_${suffix}_lift_drag" filename="librotors_gazebo_lift_drag_plugin.so">-->
         <a0>${alpha_0}</a0>
         <cla>${c_L_alpha}</cla>
         <cda>0.1</cda>
@@ -181,7 +175,7 @@
         <cla_stall>-0.1</cla_stall>
         <cda_stall>0.1</cda_stall>
         <cma_stall>-0.2</cma_stall>
-        <cp>0.0 0.0 0.0</cp>
+        <cp>${cp_x} ${cp_y} ${cp_z}</cp>
         <area>${wing_length * wing_width}</area>
         <air_density>${air_density}</air_density>
         <forward>1 0 0</forward>
@@ -209,6 +203,7 @@
 
     <link name="${robot_namespace}/tail">
       <inertial>
+        <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0" />
         <mass value="${mass_tail}" /> <!-- [kg] -->
         <xacro:insert_block name="inertia" />
       </inertial>
@@ -235,65 +230,6 @@
     </gazebo>
   </xacro:macro>
 
-  <!-- Rear wing joint and link -->
-  <xacro:macro name="rear_wing"
-    params="robot_namespace suffix parent mass_rear_wing rear_wing_length rear_wing_width 
-      rear_wing_height color use_mesh mesh alpha_0 alpha_stall c_L_alpha air_density *origin *inertia">
-
-    <joint name="${robot_namespace}/rear_wing_${suffix}_joint" type="revolute">
-      <xacro:insert_block name="origin" />
-      <axis xyz="0 0 1" />
-      <parent link="${parent}" />
-      <child link="${robot_namespace}/rear_wing_${suffix}" />
-      <limit upper="0" lower="0" effort="0" velocity="0" />
-    </joint>
-
-    <link name="${robot_namespace}/rear_wing_${suffix}">
-      <inertial>
-        <mass value="${mass_rear_wing}" /> <!-- [kg] -->
-        <xacro:insert_block name="inertia" />
-      </inertial>
-      <visual>
-        <geometry>
-          <xacro:if value="${use_mesh}">
-            <mesh filename="${mesh}"
-              scale="1 1 1" />
-          </xacro:if>
-          <xacro:unless value="${use_mesh}">
-            <box size="${rear_wing_length} ${rear_wing_width} ${rear_wing_height}"/> <!-- [m] [m] [m] -->
-          </xacro:unless>
-        </geometry>
-      </visual>
-      <collision>
-        <geometry>
-          <box size="${rear_wing_length} ${rear_wing_width} ${rear_wing_height}"/> <!-- [m] [m] [m] -->
-        </geometry>
-      </collision>
-    </link>
-
-    <gazebo>
-      <plugin name="${robot_namespace}_${suffix}_rear_lift_drag" filename="libLiftDragPlugin.so">
-        <a0>${alpha_0}</a0>
-        <cla>${c_L_alpha}</cla>
-        <cda>0.1</cda>
-        <cma>-0.1</cma>
-        <alpha_stall>${alpha_stall}</alpha_stall>
-        <cla_stall>-0.1</cla_stall>
-        <cda_stall>0.1</cda_stall>
-        <cma_stall>-0.2</cma_stall>
-        <cp>0.0 0.0 0.0</cp>
-        <area>${rear_wing_length * rear_wing_width}</area>
-        <air_density>${air_density}</air_density>
-        <forward>1 0 0</forward>
-        <upward>0 0 1</upward>
-        <link_name>${robot_namespace}/rear_wing_${suffix}</link_name>
-      </plugin>
-    </gazebo>
-    <gazebo reference="${robot_namespace}/rear_wing_${suffix}">
-      <material>Gazebo/${color}</material>
-    </gazebo>
-  </xacro:macro>
-
   <!-- Propeller joint and link -->
   <xacro:macro name="propeller"
     params="robot_namespace direction motor_constant moment_constant parent mass_propeller 
@@ -309,6 +245,7 @@
 
     <link name="${robot_namespace}/propeller">
       <inertial>
+        <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0" />
         <mass value="${mass_propeller}" /> <!-- [kg] -->
         <xacro:insert_block name="inertia" />
       </inertial>
@@ -360,14 +297,16 @@
     params="robot_namespace surface_name parent mass_surface velocity_gain 
       positive_direction min_angle max_angle channel color use_mesh mesh 
       surface_length surface_width surface_height area forward_x forward_y
-      forward_z up_x up_y up_z c_L_alpha alpha_stall *axis *joint_origin *link_origin *inertia">
+      forward_z up_x up_y up_z c_L_alpha alpha_stall *axis *joint_origin 
+      *link_origin *inertia">
 
     <joint name="${robot_namespace}/${surface_name}_joint" type="revolute">
       <xacro:insert_block name="joint_origin" />
       <xacro:insert_block name="axis" />
       <parent link="${parent}" />
       <child link="${robot_namespace}/${surface_name}" />
-      <limit upper="${max_angle}" lower="${min_angle}" effort="100.0" velocity="3.0" />
+      <limit upper="${max_angle}" lower="${min_angle}" effort="200.0" velocity="3.0" />
+      <dynamics friction="${9.8 * mass_surface}" damping="${9.8 * mass_surface}" />
     </joint>
 
     <link name="${robot_namespace}/${surface_name}">
@@ -392,7 +331,7 @@
       <collision>
         <xacro:insert_block name="link_origin" />
         <geometry>
-          <box size="${surface_length} ${surface_width} ${surface_height}"/> <!-- [m] [m] [m] -->
+          <box size="${surface_length - 0.01} ${surface_width - 0.01} ${surface_height - 0.01}"/> <!-- [m] [m] [m] -->
         </geometry>
       </collision>
     </link>
@@ -410,7 +349,7 @@
         <channel>${channel}</channel>
       </plugin>
     </gazebo>
-    <gazebo>
+<!--    <gazebo>
       <plugin name="${robot_namespace}_${surface_name}_lift_drag" filename="libLiftDragPlugin.so">
         <a0>0.0</a0>
         <cla>${c_L_alpha}</cla>
@@ -427,7 +366,7 @@
         <upward>${up_x} ${up_y} ${up_z}</upward>
         <link_name>${robot_namespace}/${surface_name}</link_name>
       </plugin>
-    </gazebo>
+    </gazebo>-->
     <gazebo reference="${robot_namespace}/${surface_name}">
       <material>Gazebo/${color}</material>
     </gazebo>

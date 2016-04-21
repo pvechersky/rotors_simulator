@@ -167,7 +167,7 @@ void LiftDragPlugin::OnUpdate()
   // this->velSmooth = e*velI + (1.0 - e)*velSmooth;
   // velI = this->velSmooth;
 
-  if (velI.GetLength() <= 0.01)
+  if (velI.GetLength() <= 0.01 || velI.x < 0.1)
     return;
 
   // pose of body
@@ -389,5 +389,10 @@ void LiftDragPlugin::OnUpdate()
 
   // apply forces at cg (with torques for position shift)
   this->link->AddForceAtRelativePosition(force, this->cp);
+
+  std::cout << this->link->GetName() << " force: " << force.x << ", " << force.y << ", " << force.z << std::endl;
+
   this->link->AddTorque(torque);
+
+  std::cout << this->link->GetName() << " torque: " << torque.x << ", " << torque.y << ", " << torque.z << std::endl;
 }

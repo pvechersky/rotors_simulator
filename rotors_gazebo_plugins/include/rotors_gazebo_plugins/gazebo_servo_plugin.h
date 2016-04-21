@@ -67,12 +67,8 @@ class GazeboServoPlugin : public ModelPlugin {
   physics::ModelPtr model_;
   // Pointer to the joint
   physics::JointPtr joint_;
-  // Pointer to the child link
-  physics::LinkPtr child_link_;
   // Pointer to the update event connection
   event::ConnectionPtr updateConnection_;
-
-  math::Vector3 axis_;
 
   double velocity_gain_;
   double ref_angle_;
