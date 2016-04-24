@@ -32,7 +32,7 @@
           <script>
             <uri>model://zurich/materials/scripts</uri>
             <uri>model://zurich/materials/textures</uri>
-            <name>Zurich</name>
+            <name>Zurich/Center</name>
           </script>
         </material>
       </visual>
