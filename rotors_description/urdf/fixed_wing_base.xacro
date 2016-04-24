@@ -36,8 +36,9 @@
 
   <!-- Fixed-wing fuselage link -->
   <xacro:macro name="fixed_wing_base_macro"
-    params="robot_namespace mass body_length body_width body_height 
-      color use_mesh_file mesh_file *inertia">
+    params="robot_namespace mass body_length body_width body_height color
+      use_mesh_file mesh_file reset_topic total_wing_area air_density
+      alpha_stall *inertia">
     <link name="${robot_namespace}/base_link"></link>
 
     <joint name="${robot_namespace}/base_joint" type="fixed">
@@ -75,6 +76,10 @@
       <plugin name="${robot_namespace}_base" filename="librotors_gazebo_fixedwing_base_plugin.so">
         <robotNamespace>${robot_namespace}</robotNamespace>
         <linkName>${robot_namespace}/base_link</linkName>
+	<totalWingArea>${total_wing_area}</totalWingArea>
+	<resetTopic>${reset_topic}</resetTopic>
+	<airDensity>${air_density}</airDensity>
+	<alphaStall>${alpha_stall}</alphaStall>
       </plugin>
     </gazebo>
     <gazebo reference="${robot_namespace}/base_link">
@@ -127,8 +132,7 @@
   <!-- Wing joint and link -->
   <xacro:macro name="wing"
     params="robot_namespace suffix parent mass_wing wing_length wing_width wing_height 
-      color use_mesh mesh alpha_0 alpha_stall c_L_alpha air_density cp_x cp_y cp_z *joint_origin 
-      *link_origin *inertia">
+      color use_mesh mesh *joint_origin *link_origin *inertia">
 
     <joint name="${robot_namespace}/wing_${suffix}_joint" type="revolute">
       <xacro:insert_block name="joint_origin" />
@@ -164,25 +168,6 @@
       </collision>
     </link>
 
-    <gazebo>
-      <plugin name="${robot_namespace}_${suffix}_lift_drag" filename="libLiftDragPlugin.so">
-      <!--<plugin name="${robot_namespace}_${suffix}_lift_drag" filename="librotors_gazebo_lift_drag_plugin.so">-->
-        <a0>${alpha_0}</a0>
-        <cla>${c_L_alpha}</cla>
-        <cda>0.1</cda>
-        <cma>-0.1</cma>
-        <alpha_stall>${alpha_stall}</alpha_stall>
-        <cla_stall>-0.1</cla_stall>
-        <cda_stall>0.1</cda_stall>
-        <cma_stall>-0.2</cma_stall>
-        <cp>${cp_x} ${cp_y} ${cp_z}</cp>
-        <area>${wing_length * wing_width}</area>
-        <air_density>${air_density}</air_density>
-        <forward>1 0 0</forward>
-        <upward>0 0 1</upward>
-        <link_name>${robot_namespace}/wing_${suffix}</link_name>
-      </plugin>
-    </gazebo>
     <gazebo reference="${robot_namespace}/wing_${suffix}">
       <material>Gazebo/${color}</material>
     </gazebo>
@@ -294,10 +279,9 @@
 
   <!-- Control surface joint and link -->
   <xacro:macro name="control_surface"
-    params="robot_namespace surface_name parent mass_surface velocity_gain 
+    params="robot_namespace surface_name parent mass_surface gain 
       positive_direction min_angle max_angle channel color use_mesh mesh 
-      surface_length surface_width surface_height area forward_x forward_y
-      forward_z up_x up_y up_z c_L_alpha alpha_stall *axis *joint_origin 
+      surface_length surface_width surface_height *axis *joint_origin 
       *link_origin *inertia">
 
     <joint name="${robot_namespace}/${surface_name}_joint" type="revolute">
@@ -343,30 +327,13 @@
         <childLinkName>${robot_namespace}/${surface_name}</childLinkName>
         <commandSubTopic>gazebo/command/motor_speed</commandSubTopic>
         <positiveDirection>${positive_direction}</positiveDirection>
-        <velocityGain>${velocity_gain}</velocityGain>
+        <gain>${gain}</gain>
         <minAngle>${min_angle}</minAngle>
         <maxAngle>${max_angle}</maxAngle>
         <channel>${channel}</channel>
       </plugin>
     </gazebo>
-<!--    <gazebo>
-      <plugin name="${robot_namespace}_${surface_name}_lift_drag" filename="libLiftDragPlugin.so">
-        <a0>0.0</a0>
-        <cla>${c_L_alpha}</cla>
-        <cda>0.1</cda>
-        <cma>-0.1</cma>
-        <alpha_stall>${alpha_stall}</alpha_stall>
-        <cla_stall>-0.1</cla_stall>
-        <cda_stall>0.1</cda_stall>
-        <cma_stall>-0.2</cma_stall>
-        <cp>0.0 0.0 0.0</cp>
-        <area>${area}</area>
-        <air_density>1.225</air_density>
-        <forward>${forward_x} ${forward_y} ${forward_z}</forward>
-        <upward>${up_x} ${up_y} ${up_z}</upward>
-        <link_name>${robot_namespace}/${surface_name}</link_name>
-      </plugin>
-    </gazebo>-->
+
     <gazebo reference="${robot_namespace}/${surface_name}">
       <material>Gazebo/${color}</material>
     </gazebo>

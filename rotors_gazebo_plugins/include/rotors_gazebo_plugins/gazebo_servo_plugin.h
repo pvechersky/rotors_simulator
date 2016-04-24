@@ -39,7 +39,7 @@ const static int CW = -1;
 namespace gazebo {
 // Default values
 static const std::string kDefaultCommandSubTopic = "gazebo/command/motor_speed";
-static constexpr double kDefaultVelocityGain = 1.0;
+static constexpr double kDefaultGain = 1.0;
 static constexpr double kDefaultMinAngle = -M_PI * 0.25;
 static constexpr double kDefaultMaxAngle = M_PI * 0.25;
 static constexpr int kDefaultChannel = 0;
@@ -70,10 +70,13 @@ class GazeboServoPlugin : public ModelPlugin {
   // Pointer to the update event connection
   event::ConnectionPtr updateConnection_;
 
-  double velocity_gain_;
   double ref_angle_;
   double min_angle_;
   double max_angle_;
+
+  double gain_;
+  double damping_;
+
   int channel_;
   int positive_direction_;
 };

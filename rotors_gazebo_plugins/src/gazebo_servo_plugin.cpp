@@ -76,10 +76,12 @@ void GazeboServoPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
     gzerr << "[gazebo_servo_plugin] Please specify a positive direction ('cw' or 'ccw').\n";
 
   getSdfParam<std::string>(_sdf, "commandSubTopic", command_sub_topic, kDefaultCommandSubTopic);
-  getSdfParam<double>(_sdf, "velocityGain", velocity_gain_, kDefaultVelocityGain);
+  getSdfParam<double>(_sdf, "gain", gain_, kDefaultGain);
   getSdfParam<double>(_sdf, "minAngle", min_angle_, kDefaultMinAngle);
   getSdfParam<double>(_sdf, "maxAngle", max_angle_, kDefaultMaxAngle);
   getSdfParam<int>(_sdf, "channel", channel_, kDefaultChannel);
+
+  damping_ = joint_->GetDamping(0);
 
   // Listen to the update event. This event is broadcast every
   // simulation iteration.
@@ -102,8 +104,8 @@ void GazeboServoPlugin::AngleCallback(const mav_msgs::ActuatorsConstPtr& servo_a
 void GazeboServoPlugin::OnUpdate(const common::UpdateInfo& _info) {
   double current_angle = joint_->GetAngle(0).Radian();
   double err = ref_angle_ - current_angle;
-  joint_->SetVelocity(0, err * velocity_gain_);
-  //joint_->SetForce(0, err * velocity_gain_);
+  //joint_->SetVelocity(0, err * gain_);
+  joint_->SetForce(0, damping_ + err * gain_);
 }
 
 GZ_REGISTER_MODEL_PLUGIN(GazeboServoPlugin);

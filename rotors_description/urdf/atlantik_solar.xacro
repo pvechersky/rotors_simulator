@@ -79,7 +79,7 @@
   <xacro:property name="aileron_length" value="${0.5 * root_chord}" /> <!-- [m] -->
   <xacro:property name="aileron_width" value="${0.5 * front_wing_width}" /> <!-- [m] -->
   <xacro:property name="aileron_height" value="0.02" /> <!-- [m] -->
-  <xacro:property name="aileron_velocity_gain" value="1.0" />
+  <xacro:property name="aileron_gain" value="2.0" />
   <xacro:property name="aileron_min_angle" value="-0.55" /> <!-- [rad] -->
   <xacro:property name="aileron_max_angle" value="0.55" /> <!-- [rad] -->
   <xacro:property name="aileron_channel" value="0" />
@@ -88,7 +88,7 @@
   <xacro:property name="elevator_length" value="0.15" /> <!-- [m] -->
   <xacro:property name="elevator_width" value="${rear_wing_width}" /> <!-- [m] -->
   <xacro:property name="elevator_height" value="0.02" /> <!-- [m] -->
-  <xacro:property name="elevator_velocity_gain" value="1.0" />
+  <xacro:property name="elevator_gain" value="2.0" />
   <xacro:property name="elevator_min_angle" value="-0.55" /> <!-- [rad] -->
   <xacro:property name="elevator_max_angle" value="0.55" /> <!-- [rad] -->
   <xacro:property name="elevator_channel" value="1" />
@@ -97,7 +97,7 @@
   <xacro:property name="rudder_length" value="0.1" /> <!-- [m] -->
   <xacro:property name="rudder_width" value="${tail_width}" /> <!-- [m] -->
   <xacro:property name="rudder_height" value="${tail_height}" /> <!-- [m] -->
-  <xacro:property name="rudder_velocity_gain" value="1.0" />
+  <xacro:property name="rudder_gain" value="2.0" />
   <xacro:property name="rudder_min_angle" value="-0.55" /> <!-- [rad] -->
   <xacro:property name="rudder_max_angle" value="0.55" /> <!-- [rad] -->
   <xacro:property name="rudder_channel" value="2" />
@@ -110,6 +110,11 @@
 
   <!-- Rear wing length -->
   <xacro:property name="rear_wing_width" value="${0.5 * (rear_wingspan - tail_width)}" />
+
+  <!-- Total area of the wings -->
+  <xacro:property name="total_wing_area"
+    value="${2.0 * (front_wing_width * root_chord + (front_wing_width - aileron_width) * aileron_length)}" >
+  </xacro:property>
 
   <!-- Inertia of the fuselage -->
   <xacro:property name="body_inertia">
@@ -173,7 +178,11 @@
     body_height="${body_height}"
     color="${body_color}"
     use_mesh_file="${use_mesh_file}"
-    mesh_file="${mesh_file}">
+    mesh_file="${mesh_file}"
+    reset_topic="reset"
+    total_wing_area="${total_wing_area}"
+    air_density="${air_density}"
+    alpha_stall="${alpha_stall}">
     <xacro:insert_block name="body_inertia" />
   </xacro:fixed_wing_base_macro>
 
@@ -253,14 +262,7 @@
     wing_height="${front_wing_height}"
     color="${body_color}"
     use_mesh="false"
-    mesh=""
-    alpha_0="${alpha_0}"
-    alpha_stall="${alpha_stall}"
-    c_L_alpha="${c_L_alpha}"
-    air_density="${air_density}"
-    cp_x="0.0"
-    cp_y="${0.5 * front_wing_width}"
-    cp_z="0.0">
+    mesh="">
     <origin xyz="0.5 ${0.5 * body_width} 0.0" rpy="0.0 0.0 0.0" />
     <origin xyz="0.0 ${0.5 * front_wing_width} 0.0" rpy="0.0 0.0 0.0" />
     <xacro:insert_block name="front_wing_inertia" />
@@ -276,14 +278,7 @@
     wing_height="${front_wing_height}"
     color="${body_color}"
     use_mesh="false"
-    mesh=""
-    alpha_0="${alpha_0}"
-    alpha_stall="${alpha_stall}"
-    c_L_alpha="${c_L_alpha}"
-    air_density="${air_density}"
-    cp_x="0.0"
-    cp_y="${-0.5 * front_wing_width}"
-    cp_z="0.0">
+    mesh="">
     <origin xyz="0.5 ${-0.5 * body_width} 0.0" rpy="0.0 0.0 0.0" />
     <origin xyz="0.0 ${-0.5 * front_wing_width} 0.0" rpy="0.0 0.0 0.0" />
     <xacro:insert_block name="front_wing_inertia" />
@@ -299,14 +294,7 @@
     wing_height="${front_wing_height}"
     color="${body_color}"
     use_mesh="false"
-    mesh=""
-    alpha_0="${alpha_0}"
-    alpha_stall="${alpha_stall}"
-    c_L_alpha="${c_L_alpha}"
-    air_density="${air_density}"
-    cp_x="0.0"
-    cp_y="${0.5 * (front_wing_width - aileron_width)}"
-    cp_z="0.0">
+    mesh="">
     <origin xyz="${0.5 * (1 - root_chord - aileron_length)} ${0.5 * body_width} 0.0" rpy="0.0 0.0 0.0" />
     <origin xyz="0.0 ${0.5 * (front_wing_width - aileron_width)} 0.0" rpy="0.0 0.0 0.0" />
     <xacro:insert_block name="small_wing_inertia" />
@@ -322,14 +310,7 @@
     wing_height="${front_wing_height}"
     color="${body_color}"
     use_mesh="false"
-    mesh=""
-    alpha_0="${alpha_0}"
-    alpha_stall="${alpha_stall}"
-    c_L_alpha="${c_L_alpha}"
-    air_density="${air_density}"
-    cp_x="0.0"
-    cp_y="${-0.5 * (front_wing_width - aileron_width)}"
-    cp_z="0.0">
+    mesh="">
     <origin xyz="${0.5 * (1 - root_chord - aileron_length)} ${-0.5 * body_width} 0.0" rpy="0.0 0.0 0.0" />
     <origin xyz="0.0 ${-0.5 * (front_wing_width - aileron_width)} 0.0" rpy="0.0 0.0 0.0" />
     <xacro:insert_block name="small_wing_inertia" />
@@ -361,14 +342,7 @@
     wing_height="${rear_wing_height}"
     color="${body_color}"
     use_mesh="false"
-    mesh=""
-    alpha_0="${alpha_0}"
-    alpha_stall="${alpha_stall}"
-    c_L_alpha="${c_L_alpha}"
-    air_density="${air_density}"
-    cp_x="0.0"
-    cp_y="${0.5 * rear_wing_width}"
-    cp_z="0.0">
+    mesh="">
     <origin xyz="${0.5 * elevator_length} ${0.5 * tail_width} ${0.5 * (tail_height - rear_wing_height)}" rpy="0.0 0.0 0.0" />
     <origin xyz="0.0 ${0.5 * rear_wing_width} 0.0" rpy="0.0 0.0 0.0" />
     <xacro:insert_block name="rear_wing_inertia" />
@@ -384,14 +358,7 @@
     wing_height="${rear_wing_height}"
     color="${body_color}"
     use_mesh="false"
-    mesh=""
-    alpha_0="${alpha_0}"
-    alpha_stall="${alpha_stall}"
-    c_L_alpha="${c_L_alpha}"
-    air_density="${air_density}"
-    cp_x="0.0"
-    cp_y="${-0.5 * rear_wing_width}"
-    cp_z="0.0">
+    mesh="">
     <origin xyz="${0.5 * elevator_length} ${-0.5 * tail_width} ${0.5 * (tail_height - rear_wing_height)}" rpy="0.0 0.0 0.0" />
     <origin xyz="0.0 ${-0.5 * rear_wing_width} 0.0" rpy="0.0 0.0 0.0" />
     <xacro:insert_block name="rear_wing_inertia" />
@@ -403,7 +370,7 @@
     surface_name="aileron_left"
     parent="${namespace}/wing_left_big"
     mass_surface="${mass_aileron}"
-    velocity_gain="${aileron_velocity_gain}"
+    gain="${aileron_gain}"
     positive_direction="ccw"
     min_angle="${aileron_min_angle}"
     max_angle="${aileron_max_angle}"
@@ -413,16 +380,7 @@
     mesh=""
     surface_length="${aileron_length}"
     surface_width="${aileron_width}"
-    surface_height="${aileron_height}"
-    area="${aileron_length * aileron_width}"
-    forward_x="1"
-    forward_y="0"
-    forward_z="0"
-    up_x="0"
-    up_y="0"
-    up_z="1"
-    c_L_alpha="${c_L_alpha}"
-    alpha_stall="${alpha_stall}">
+    surface_height="${aileron_height}">
     <axis xyz="0 1 0" />
     <origin xyz="${-0.5 * root_chord} ${front_wing_width - 0.5 * aileron_width} 0.0" rpy="0.0 0.0 0.0" />
     <origin xyz="${-0.5 * aileron_length} 0.0 0.0" rpy="0.0 0.0 0.0" />
@@ -434,7 +392,7 @@
     surface_name="aileron_right"
     parent="${namespace}/wing_right_big"
     mass_surface="${mass_aileron}"
-    velocity_gain="${aileron_velocity_gain}"
+    gain="${aileron_gain}"
     positive_direction="cw"
     min_angle="${aileron_min_angle}"
     max_angle="${aileron_max_angle}"
@@ -444,16 +402,7 @@
     mesh=""
     surface_length="${aileron_length}"
     surface_width="${aileron_width}"
-    surface_height="${aileron_height}"
-    area="${aileron_length * aileron_width}"
-    forward_x="1"
-    forward_y="0"
-    forward_z="0"
-    up_x="0"
-    up_y="0"
-    up_z="1"
-    c_L_alpha="${c_L_alpha}"
-    alpha_stall="${alpha_stall}">
+    surface_height="${aileron_height}">
     <axis xyz="0 1 0" />
     <origin xyz="${-0.5 * root_chord} ${-(front_wing_width - 0.5 * aileron_width)} 0.0" rpy="0.0 0.0 0.0" />
     <origin xyz="${-0.5 * aileron_length} 0.0 0.0" rpy="0.0 0.0 0.0" />
@@ -465,7 +414,7 @@
     surface_name="elevator_left"
     parent="${namespace}/wing_rear_left"
     mass_surface="${mass_elevator}"
-    velocity_gain="${elevator_velocity_gain}"
+    gain="${elevator_gain}"
     positive_direction="ccw"
     min_angle="${elevator_min_angle}"
     max_angle="${elevator_max_angle}"
@@ -475,16 +424,7 @@
     mesh=""
     surface_length="${elevator_length}"
     surface_width="${elevator_width}"
-    surface_height="${elevator_height}"
-    area="${elevator_length * elevator_width}"
-    forward_x="1"
-    forward_y="0"
-    forward_z="0"
-    up_x="0"
-    up_y="0"
-    up_z="1"
-    c_L_alpha="${c_L_alpha}"
-    alpha_stall="${alpha_stall}">
+    surface_height="${elevator_height}">
     <axis xyz="0 1 0" />
     <origin xyz="${-0.5 * (tail_length - elevator_length)} ${0.5 * rear_wing_width} 0.0" rpy="0.0 0.0 0.0" />
     <origin xyz="${-0.5 * elevator_length} 0.0 0.0" rpy="0.0 0.0 0.0" />
@@ -496,7 +436,7 @@
     surface_name="elevator_right"
     parent="${namespace}/wing_rear_right"
     mass_surface="${mass_elevator}"
-    velocity_gain="${elevator_velocity_gain}"
+    gain="${elevator_gain}"
     positive_direction="ccw"
     min_angle="${elevator_min_angle}"
     max_angle="${elevator_max_angle}"
@@ -506,16 +446,7 @@
     mesh=""
     surface_length="${elevator_length}"
     surface_width="${elevator_width}"
-    surface_height="${elevator_height}"
-    area="${elevator_length * elevator_width}"
-    forward_x="1"
-    forward_y="0"
-    forward_z="0"
-    up_x="0"
-    up_y="0"
-    up_z="1"
-    c_L_alpha="${c_L_alpha}"
-    alpha_stall="${alpha_stall}">
+    surface_height="${elevator_height}">
     <axis xyz="0 1 0" />
     <origin xyz="${-0.5 * (tail_length - elevator_length)} ${-0.5 * rear_wing_width} 0.0" rpy="0.0 0.0 0.0" />
     <origin xyz="${-0.5 * elevator_length} 0.0 0.0" rpy="0.0 0.0 0.0" />
@@ -527,7 +458,7 @@
     surface_name="rudder"
     parent="${namespace}/tail"
     mass_surface="${mass_rudder}"
-    velocity_gain="${rudder_velocity_gain}"
+    gain="${rudder_gain}"
     positive_direction="cw"
     min_angle="${rudder_min_angle}"
     max_angle="${rudder_max_angle}"
@@ -537,16 +468,7 @@
     mesh=""
     surface_length="${rudder_length}"
     surface_width="${rudder_width}"
-    surface_height="${rudder_height}"
-    area="0.0"
-    forward_x="0"
-    forward_y="0"
-    forward_z="0"
-    up_x="0"
-    up_y="0"
-    up_z="0"
-    c_L_alpha="0.0"
-    alpha_stall="0.0">
+    surface_height="${rudder_height}">
     <axis xyz="0 0 1" />
     <origin xyz="${-0.5 * tail_length} 0.0 0.0" rpy="0.0 0.0 0.0" />
     <origin xyz="${-0.5 * rudder_length} 0.0 0.0" rpy="0.0 0.0 0.0" />

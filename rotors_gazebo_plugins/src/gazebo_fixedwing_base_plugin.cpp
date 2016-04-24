@@ -65,9 +65,16 @@ void GazeboFixedWingBasePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _
   if (link_ == NULL)
     gzthrow("[gazebo_fixedwing_base_plugin] Couldn't find specified link \"" << link_name << "\".");
 
+  // Get the total area of the wings
+  if (_sdf->HasElement("totalWingArea"))
+    total_wing_area_ = _sdf->GetElement("totalWingArea")->Get<double>();
+  else
+    gzerr << "[gazebo_fixedwing_base_plugin] Please specify the total wing area.\n";
+
   std::string reset_topic;
-  getSdfParam<std::string>(_sdf, "resetTopic", reset_topic,
-                           kDefaultResetSubTopic);
+  getSdfParam<std::string>(_sdf, "resetTopic", reset_topic, kDefaultResetSubTopic);
+  getSdfParam<double>(_sdf, "airDensity", air_density_, kDefaultAirDensity);
+  getSdfParam<double>(_sdf, "alphaStall", alpha_stall_, kDefaultAlphaStall);
 
   // Listen to the update event. This event is broadcast every simulation iteration
   this->updateConnection_ =
@@ -75,16 +82,54 @@ void GazeboFixedWingBasePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _
           boost::bind(&GazeboFixedWingBasePlugin::OnUpdate, this, _1));
 
   reset_sub_ = node_handle_->subscribe(reset_topic, 1, &GazeboFixedWingBasePlugin::resetCallback, this);
+
+  orientation_ = math::Quaternion(1.0, 0.0, 0.0, 0.0);
 }
 
 void GazeboFixedWingBasePlugin::OnUpdate(const common::UpdateInfo& _info) {
-  //math::Vector3 thrust = math::Vector3(ref_thrust_, 0.0, 0.0);
+  // Get the orientation of the airplane in world frame
+  orientation_ = link_->GetWorldPose().rot;
 
-  // Rotate the thrust force into the frame of the plane
-  //math::Pose pose = model_->GetWorldPose();
-  //thrust = pose.rot.RotateVectorReverse(thrust);
+  // Rotate the velocity from world frame into local frame
+  math::Vector3 global_vel = link_->GetWorldLinearVel();
+  math::Vector3 body_vel = orientation_.RotateVector(global_vel);
 
-  //link_->AddForce(thrust);
+  // Compute the forces and moments acting on the airplane
+  math::Vector3 forces = ComputeAerodynamicForces(body_vel);
+  math::Vector3 moments = ComputeAerodynamicMoments(body_vel);
+
+  // Apply forces and moments to the link
+  link_->AddForce(forces); // Or force at relative position?
+  link_->AddRelativeTorque(moments);
+}
+
+math::Vector3 GazeboFixedWingBasePlugin::ComputeAerodynamicForces(math::Vector3& vel) {
+  // Compute angle of attack
+  double alpha = -atan2(vel.z, vel.x);
+
+  // Get the coefficients of lift and drag
+  double c_L = 0.0;
+  double c_D = 0.0;
+
+  if (alpha < alpha_stall_) {
+    c_L = alpha * M_PI;
+    c_D = alpha * 0.1;
+  } else {
+    c_L = 2.0;
+    c_D = 0.5;
+  }
+
+  // Compute the magnitudes of the lift and drag forces
+  double lift = 0.5 * air_density_ * c_L * total_wing_area_ * (vel.z * vel.z + vel.x * vel.x);
+  double drag = 0.5 * air_density_ * c_D * total_wing_area_ * (vel.z * vel.z + vel.x * vel.x);
+
+  // Rotate the lift and drag forces into the body frame
+  math::Vector3 forces(-drag, 0.0, lift);
+  return orientation_.RotateVector(forces);
+}
+
+math::Vector3 GazeboFixedWingBasePlugin::ComputeAerodynamicMoments(math::Vector3& vel) {
+
 }
 
 void GazeboFixedWingBasePlugin::resetCallback(const std_msgs::BoolConstPtr& reset_msg) {

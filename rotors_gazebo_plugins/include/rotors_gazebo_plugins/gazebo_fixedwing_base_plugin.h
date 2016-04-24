@@ -33,6 +33,8 @@
 namespace gazebo {
 // Default values
 static const std::string kDefaultResetSubTopic = "reset";
+static constexpr double kDefaultAirDensity = 1.225;
+static constexpr double kDefaultAlphaStall = 0.3;
 
 class GazeboFixedWingBasePlugin : public ModelPlugin {
  public:
@@ -42,6 +44,9 @@ class GazeboFixedWingBasePlugin : public ModelPlugin {
  protected:
   void Load(physics::ModelPtr _model, sdf::ElementPtr _sdf);
   void OnUpdate(const common::UpdateInfo&);
+
+  math::Vector3 ComputeAerodynamicForces(math::Vector3& vel);
+  math::Vector3 ComputeAerodynamicMoments(math::Vector3& vel);
 
  private:
   std::string namespace_;
@@ -56,6 +61,12 @@ class GazeboFixedWingBasePlugin : public ModelPlugin {
   physics::LinkPtr link_;
   // Pointer to the update event connection
   event::ConnectionPtr updateConnection_;
+
+  double air_density_;
+  double alpha_stall_;
+  double total_wing_area_;
+
+  math::Quaternion orientation_;
 
   void resetCallback(const std_msgs::BoolConstPtr& reset_msg);
 };
