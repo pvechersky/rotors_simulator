@@ -42,27 +42,22 @@ void GazeboAeroSurfacePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sd
   model_ = _model;
   world_ = model_->GetWorld();
 
-  // Default params
-  namespace_.clear();
-
-  std::string joint_name;
-  std::string command_sub_topic;
-  double surface_area;
-
-  if (_sdf->HasElement("robotNamespace"))
+  if (_sdf->HasElement("robotNamespace")) {
     namespace_ = _sdf->GetElement("robotNamespace")->Get<std::string>();
+    node_handle_ = new ros::NodeHandle(namespace_);
+  }
   else
     gzerr << "[gazebo_aero_surface_plugin] Please specify a robotNamespace.\n";
-  node_handle_ = new ros::NodeHandle(namespace_);
 
-  if (_sdf->HasElement("jointName"))
-    joint_name = _sdf->GetElement("jointName")->Get<std::string>();
+  // Get the pointer to the joint
+  if (_sdf->HasElement("jointName")) {
+    std::string joint_name = _sdf->GetElement("jointName")->Get<std::string>();
+    joint_ = model_->GetJoint(joint_name);
+    if (joint_ == NULL)
+      gzthrow("[gazebo_aero_surface_plugin] Couldn't find specified joint \"" << joint_name << "\".");
+  }
   else
     gzerr << "[gazebo_aero_surface_plugin] Please specify a jointName.\n";
-  // Get the pointer to the joint
-  joint_ = model_->GetJoint(joint_name);
-  if (joint_ == NULL)
-    gzthrow("[gazebo_aero_surface_plugin] Couldn't find specified joint \"" << joint_name << "\".");
 
   if (_sdf->HasElement("surfaceType")) {
     std::string surface_type = _sdf->GetElement("surfaceType")->Get<std::string>();
@@ -91,6 +86,9 @@ void GazeboAeroSurfacePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sd
   }
   else
     gzerr << "[gazebo_aero_surface_plugin] Please specify a positive direction ('cw' or 'ccw').\n";
+
+  std::string command_sub_topic;
+  double surface_area;
 
   getSdfParam<std::string>(_sdf, "commandSubTopic", command_sub_topic, kDefaultCommandSubTopic);
   getSdfParam<double>(_sdf, "surfaceArea", surface_area, kDefaultSurfaceArea);
@@ -130,10 +128,11 @@ void GazeboAeroSurfacePlugin::AngleCallback(const mav_msgs::ActuatorsConstPtr& s
 
 // This gets called by the world update start event.
 void GazeboAeroSurfacePlugin::OnUpdate(const common::UpdateInfo& _info) {
-  double current_angle = joint_->GetAngle(0).Radian();
-  double err = ref_angle_ - current_angle;
+  //double current_angle = joint_->GetAngle(0).Radian();
+  //double err = ref_angle_ - current_angle;
   //joint_->SetVelocity(0, err * gain_);
-  joint_->SetForce(0, damping_ + err * gain_);
+  //joint_->SetForce(0, damping_ + err * gain_);
+  joint_->SetPosition(0, ref_angle_);
 }
 
 GZ_REGISTER_MODEL_PLUGIN(GazeboAeroSurfacePlugin);

@@ -86,35 +86,41 @@ void GazeboFixedWingBasePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _
 
 void GazeboFixedWingBasePlugin::OnUpdate(const common::UpdateInfo& _info) {
   // Get the orientation of the airplane in world frame
-  //orientation_ = link_->GetWorldPose().rot;
+  orientation_ = link_->GetWorldPose().rot;
 
   // Rotate the velocity from world frame into local frame
-  //math::Vector3 global_vel = link_->GetWorldLinearVel();
-  //math::Vector3 body_vel = orientation_.RotateVector(global_vel);
+  math::Vector3 global_vel = link_->GetWorldLinearVel();
+  math::Vector3 body_vel = orientation_.RotateVector(global_vel);
 
   // Compute the forces and moments acting on the airplane
-  //math::Vector3 forces = ComputeAerodynamicForces(body_vel);
-  //math::Vector3 moments = ComputeAerodynamicMoments(body_vel);
+  math::Vector3 forces = ComputeAerodynamicForces(body_vel);
+  math::Vector3 moments = ComputeAerodynamicMoments(body_vel);
 
   // Apply forces and moments to the link
-  //link_->AddForce(forces); // Or force at relative position?
-  //link_->AddRelativeTorque(moments);
-
-  std::cout << total_wing_area_ << std::endl;
+  link_->AddForce(forces); // Or force at relative position?
+  link_->AddRelativeTorque(moments);
 }
 
 bool GazeboFixedWingBasePlugin::RegisterAeroSurface(
         rotors_gazebo_plugins::RegisterAeroSurface::Request& req,
         rotors_gazebo_plugins::RegisterAeroSurface::Response& res) {
+  physics::LinkPtr surface_link;
+
   switch(req.surface_type) {
     case AERO_SURFACE_TYPE_WING:
       total_wing_area_ += req.surface_area;
       break;
     case AERO_SURFACE_TYPE_AILERON:
+      surface_link = model_->GetLink(req.link_name);
+      ailerons_.push_back(surface_link->GetParentJoints().at(0));
       break;
     case AERO_SURFACE_TYPE_ELEVATOR:
+      surface_link = model_->GetLink(req.link_name);
+      elevators_.push_back(surface_link->GetParentJoints().at(0));
       break;
     case AERO_SURFACE_TYPE_RUDDER:
+      surface_link = model_->GetLink(req.link_name);
+      rudder_ = surface_link->GetParentJoints().at(0);
       break;
     default:
       res.success = false;
@@ -151,7 +157,7 @@ math::Vector3 GazeboFixedWingBasePlugin::ComputeAerodynamicForces(math::Vector3&
 }
 
 math::Vector3 GazeboFixedWingBasePlugin::ComputeAerodynamicMoments(math::Vector3& vel) {
-
+  return math::Vector3(0.0, 0.0, 0.0);
 }
 
 void GazeboFixedWingBasePlugin::resetCallback(const std_msgs::BoolConstPtr& reset_msg) {

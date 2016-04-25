@@ -254,7 +254,7 @@
   <!-- Instantiate wings -->
   <xacro:aero_surface
     robot_namespace="${namespace}"
-    surface_name="left_wing"
+    surface_name="wing_left"
     surface_type="wing"
     parent="${namespace}/base_link_inertia"
     mass_surface="${mass_front_wing}"
@@ -277,7 +277,7 @@
 
   <xacro:aero_surface
     robot_namespace="${namespace}"
-    surface_name="right_wing"
+    surface_name="wing_right"
     surface_type="wing"
     parent="${namespace}/base_link_inertia"
     mass_surface="${mass_front_wing}"
@@ -316,7 +316,7 @@
   <!-- Instantiate the rear wings-->
   <xacro:aero_surface
     robot_namespace="${namespace}"
-    surface_name="rear_left_wing"
+    surface_name="rear_wing_left"
     surface_type="wing"
     parent="${namespace}/tail"
     mass_surface="${mass_rear_wing}"
@@ -339,7 +339,7 @@
 
   <xacro:aero_surface
     robot_namespace="${namespace}"
-    surface_name="rear_right"
+    surface_name="rear_wing_right"
     surface_type="wing"
     parent="${namespace}/tail"
     mass_surface="${mass_rear_wing}"
@@ -360,13 +360,14 @@
     <xacro:insert_block name="rear_wing_inertia" />
   </xacro:aero_surface>
 
-  <!-- Instantiate the control surfaces -->
-<!--  <xacro:control_surface
+  <!-- Instantiate the ailerons -->
+  <xacro:aero_surface
     robot_namespace="${namespace}"
     surface_name="aileron_left"
-    parent="${namespace}/wing_left_big"
+    surface_type="aileron"
+    parent="${namespace}/wing_left"
     mass_surface="${mass_aileron}"
-    gain="${aileron_gain}"
+    joint_gain="${aileron_gain}"
     positive_direction="ccw"
     min_angle="${aileron_min_angle}"
     max_angle="${aileron_max_angle}"
@@ -381,14 +382,15 @@
     <origin xyz="${-0.5 * root_chord} ${front_wing_width - 0.5 * aileron_width} 0.0" rpy="0.0 0.0 0.0" />
     <origin xyz="${-0.5 * aileron_length} 0.0 0.0" rpy="0.0 0.0 0.0" />
     <xacro:insert_block name="aileron_inertia" />
-  </xacro:control_surface>
+  </xacro:aero_surface>
 
-  <xacro:control_surface
+  <xacro:aero_surface
     robot_namespace="${namespace}"
     surface_name="aileron_right"
-    parent="${namespace}/wing_right_big"
+    surface_type="aileron"
+    parent="${namespace}/wing_right"
     mass_surface="${mass_aileron}"
-    gain="${aileron_gain}"
+    joint_gain="${aileron_gain}"
     positive_direction="cw"
     min_angle="${aileron_min_angle}"
     max_angle="${aileron_max_angle}"
@@ -403,14 +405,16 @@
     <origin xyz="${-0.5 * root_chord} ${-(front_wing_width - 0.5 * aileron_width)} 0.0" rpy="0.0 0.0 0.0" />
     <origin xyz="${-0.5 * aileron_length} 0.0 0.0" rpy="0.0 0.0 0.0" />
     <xacro:insert_block name="aileron_inertia" />
-  </xacro:control_surface>
+  </xacro:aero_surface>
 
-  <xacro:control_surface
+  <!-- Instantiate the elevators -->
+  <xacro:aero_surface
     robot_namespace="${namespace}"
     surface_name="elevator_left"
-    parent="${namespace}/wing_rear_left"
+    surface_type="elevator"
+    parent="${namespace}/rear_wing_left"
     mass_surface="${mass_elevator}"
-    gain="${elevator_gain}"
+    joint_gain="${elevator_gain}"
     positive_direction="ccw"
     min_angle="${elevator_min_angle}"
     max_angle="${elevator_max_angle}"
@@ -425,14 +429,15 @@
     <origin xyz="${-0.5 * (tail_length - elevator_length)} ${0.5 * rear_wing_width} 0.0" rpy="0.0 0.0 0.0" />
     <origin xyz="${-0.5 * elevator_length} 0.0 0.0" rpy="0.0 0.0 0.0" />
     <xacro:insert_block name="elevator_inertia" />
-  </xacro:control_surface>
+  </xacro:aero_surface>
 
-  <xacro:control_surface
+  <xacro:aero_surface
     robot_namespace="${namespace}"
     surface_name="elevator_right"
-    parent="${namespace}/wing_rear_right"
+    surface_type="elevator"
+    parent="${namespace}/rear_wing_right"
     mass_surface="${mass_elevator}"
-    gain="${elevator_gain}"
+    joint_gain="${elevator_gain}"
     positive_direction="ccw"
     min_angle="${elevator_min_angle}"
     max_angle="${elevator_max_angle}"
@@ -447,14 +452,16 @@
     <origin xyz="${-0.5 * (tail_length - elevator_length)} ${-0.5 * rear_wing_width} 0.0" rpy="0.0 0.0 0.0" />
     <origin xyz="${-0.5 * elevator_length} 0.0 0.0" rpy="0.0 0.0 0.0" />
     <xacro:insert_block name="elevator_inertia" />
-  </xacro:control_surface>
+  </xacro:aero_surface>
 
-  <xacro:control_surface
+  <!-- Instantiate the rudder -->
+  <xacro:aero_surface
     robot_namespace="${namespace}"
     surface_name="rudder"
+    surface_type="rudder"
     parent="${namespace}/tail"
     mass_surface="${mass_rudder}"
-    gain="${rudder_gain}"
+    joint_gain="${rudder_gain}"
     positive_direction="cw"
     min_angle="${rudder_min_angle}"
     max_angle="${rudder_max_angle}"
@@ -469,6 +476,6 @@
     <origin xyz="${-0.5 * tail_length} 0.0 0.0" rpy="0.0 0.0 0.0" />
     <origin xyz="${-0.5 * rudder_length} 0.0 0.0" rpy="0.0 0.0 0.0" />
     <xacro:insert_block name="rudder_inertia" />
-  </xacro:control_surface>-->
+  </xacro:aero_surface>
 
 </robot>

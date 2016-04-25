@@ -68,6 +68,11 @@ class GazeboFixedWingBasePlugin : public ModelPlugin {
   // Pointer to the update event connection
   event::ConnectionPtr updateConnection_;
 
+  // Pointers to the control surfaces joints
+  std::vector<physics::JointPtr> ailerons_;
+  std::vector<physics::JointPtr> elevators_;
+  physics::JointPtr rudder_;
+
   double air_density_;
   double alpha_stall_;
   double total_wing_area_;
