@@ -29,6 +29,7 @@
 #include <std_msgs/Bool.h>
 
 #include "rotors_gazebo_plugins/common.h"
+#include "rotors_gazebo_plugins/RegisterAeroSurface.h"
 
 namespace gazebo {
 // Default values
@@ -41,16 +42,21 @@ class GazeboFixedWingBasePlugin : public ModelPlugin {
   GazeboFixedWingBasePlugin();
   virtual ~GazeboFixedWingBasePlugin();
 
- protected:
-  void Load(physics::ModelPtr _model, sdf::ElementPtr _sdf);
-  void OnUpdate(const common::UpdateInfo&);
+  bool RegisterAeroSurface(rotors_gazebo_plugins::RegisterAeroSurface::Request& req,
+                           rotors_gazebo_plugins::RegisterAeroSurface::Response& res);
 
   math::Vector3 ComputeAerodynamicForces(math::Vector3& vel);
   math::Vector3 ComputeAerodynamicMoments(math::Vector3& vel);
 
+ protected:
+  void Load(physics::ModelPtr _model, sdf::ElementPtr _sdf);
+  void OnUpdate(const common::UpdateInfo&);
+
  private:
   std::string namespace_;
+
   ros::NodeHandle* node_handle_;
+  ros::ServiceServer register_aero_surface_service_;
   ros::Subscriber reset_sub_;
 
   // Pointer to the world

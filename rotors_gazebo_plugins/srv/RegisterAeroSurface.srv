@@ -1,0 +1,5 @@
+string link_name
+float32 surface_area
+uint8 surface_type
+---
+bool success

@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   geometry_msgs
   mav_msgs
+  message_generation
   octomap_msgs
   octomap_ros
   rosbag
@@ -29,6 +30,16 @@ link_directories(${GAZEBO_LIBRARY_DIRS})
 include_directories(${GAZEBO_INCLUDE_DIRS})
 include_directories(${OpenCV_INCLUDE_DIRS})
 
+add_service_files(
+  FILES
+  RegisterAeroSurface.srv
+)
+
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+)
+
 catkin_package(
   INCLUDE_DIRS include ${Eigen_INCLUDE_DIRS}
   LIBRARIES rotors_gazebo_motor_model rotors_gazebo_controller_interface
@@ -42,10 +53,6 @@ include_directories(${Eigen_INCLUDE_DIRS})
 add_library(rotors_gazebo_motor_model src/gazebo_motor_model.cpp)
 target_link_libraries(rotors_gazebo_motor_model ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
 add_dependencies(rotors_gazebo_motor_model ${catkin_EXPORTED_TARGETS})
-
-add_library(rotors_gazebo_wing_model src/gazebo_wing_model.cpp)
-target_link_libraries(rotors_gazebo_wing_model ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
-add_dependencies(rotors_gazebo_wing_model ${catkin_EXPORTED_TARGETS})
 
 add_library(rotors_gazebo_odometry_plugin src/gazebo_odometry_plugin.cpp)
 target_link_libraries(rotors_gazebo_odometry_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES} ${OpenCV_LIBRARIES})
@@ -91,14 +98,13 @@ add_library(rotors_gazebo_pressure_plugin src/gazebo_pressure_plugin.cpp)
 target_link_libraries(rotors_gazebo_pressure_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
 add_dependencies(rotors_gazebo_pressure_plugin ${catkin_EXPORTED_TARGETS})
 
-add_library(rotors_gazebo_servo_plugin src/gazebo_servo_plugin.cpp)
-target_link_libraries(rotors_gazebo_servo_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
-add_dependencies(rotors_gazebo_servo_plugin ${catkin_EXPORTED_TARGETS})
+add_library(rotors_gazebo_aero_surface_plugin src/gazebo_aero_surface_plugin.cpp)
+target_link_libraries(rotors_gazebo_aero_surface_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+add_dependencies(rotors_gazebo_aero_surface_plugin ${catkin_EXPORTED_TARGETS})
 
 install(
   TARGETS
     rotors_gazebo_motor_model
-    rotors_gazebo_wing_model
     rotors_gazebo_odometry_plugin
     rotors_gazebo_imu_plugin
     rotors_gazebo_controller_interface
@@ -110,7 +116,7 @@ install(
     rotors_gazebo_gps_plugin
     rotors_gazebo_magnetometer_plugin
     rotors_gazebo_pressure_plugin
-    rotors_gazebo_servo_plugin
+    rotors_gazebo_aero_surface_plugin
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 )

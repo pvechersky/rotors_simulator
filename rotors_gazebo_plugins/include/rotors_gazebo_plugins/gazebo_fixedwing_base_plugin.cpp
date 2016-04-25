@@ -31,8 +31,7 @@ namespace gazebo {
 
 GazeboFixedWingBasePlugin::GazeboFixedWingBasePlugin()
     : ModelPlugin(),
-      node_handle_(0),
-      total_wing_area_(0.0) {
+      node_handle_(0) {
 }
 
 GazeboFixedWingBasePlugin::~GazeboFixedWingBasePlugin() {
@@ -66,6 +65,12 @@ void GazeboFixedWingBasePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _
   if (link_ == NULL)
     gzthrow("[gazebo_fixedwing_base_plugin] Couldn't find specified link \"" << link_name << "\".");
 
+  // Get the total area of the wings
+  if (_sdf->HasElement("totalWingArea"))
+    total_wing_area_ = _sdf->GetElement("totalWingArea")->Get<double>();
+  else
+    gzerr << "[gazebo_fixedwing_base_plugin] Please specify the total wing area.\n";
+
   std::string reset_topic;
   getSdfParam<std::string>(_sdf, "resetTopic", reset_topic, kDefaultResetSubTopic);
   getSdfParam<double>(_sdf, "airDensity", air_density_, kDefaultAirDensity);
@@ -78,37 +83,34 @@ void GazeboFixedWingBasePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _
 
   reset_sub_ = node_handle_->subscribe(reset_topic, 1, &GazeboFixedWingBasePlugin::resetCallback, this);
 
-  register_aero_surface_service_ =
-          node_handle_->advertiseService("register_aero_surface", &GazeboFixedWingBasePlugin::RegisterAeroSurface, this);
-
   orientation_ = math::Quaternion(1.0, 0.0, 0.0, 0.0);
 }
 
 void GazeboFixedWingBasePlugin::OnUpdate(const common::UpdateInfo& _info) {
   // Get the orientation of the airplane in world frame
-  //orientation_ = link_->GetWorldPose().rot;
+  orientation_ = link_->GetWorldPose().rot;
 
   // Rotate the velocity from world frame into local frame
-  //math::Vector3 global_vel = link_->GetWorldLinearVel();
-  //math::Vector3 body_vel = orientation_.RotateVector(global_vel);
+  math::Vector3 global_vel = link_->GetWorldLinearVel();
+  math::Vector3 body_vel = orientation_.RotateVector(global_vel);
 
   // Compute the forces and moments acting on the airplane
-  //math::Vector3 forces = ComputeAerodynamicForces(body_vel);
-  //math::Vector3 moments = ComputeAerodynamicMoments(body_vel);
+  math::Vector3 forces = ComputeAerodynamicForces(body_vel);
+  math::Vector3 moments = ComputeAerodynamicMoments(body_vel);
 
   // Apply forces and moments to the link
-  //link_->AddForce(forces); // Or force at relative position?
-  //link_->AddRelativeTorque(moments);
-
-  std::cout << total_wing_area_ << std::endl;
+  link_->AddForce(forces); // Or force at relative position?
+  link_->AddRelativeTorque(moments);
 }
 
 bool GazeboFixedWingBasePlugin::RegisterAeroSurface(
         rotors_gazebo_plugins::RegisterAeroSurface::Request& req,
         rotors_gazebo_plugins::RegisterAeroSurface::Response& res) {
-  switch(req.surface_type) {
+  // Get the pointer to the surface link
+
+
+  switch (req.surface_type) {
     case AERO_SURFACE_TYPE_WING:
-      total_wing_area_ += req.surface_area;
       break;
     case AERO_SURFACE_TYPE_AILERON:
       break;
@@ -124,6 +126,7 @@ bool GazeboFixedWingBasePlugin::RegisterAeroSurface(
   res.success = true;
   return true;
 }
+
 
 math::Vector3 GazeboFixedWingBasePlugin::ComputeAerodynamicForces(math::Vector3& vel) {
   // Compute angle of attack

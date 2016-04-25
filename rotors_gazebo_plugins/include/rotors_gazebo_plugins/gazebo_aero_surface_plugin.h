@@ -18,8 +18,8 @@
  * limitations under the License.
  */
 
-#ifndef ROTORS_GAZEBO_PLUGINS_SERVO_PLUGIN_H
-#define ROTORS_GAZEBO_PLUGINS_SERVO_PLUGIN_H
+#ifndef ROTORS_GAZEBO_PLUGINS_AERO_SURFACE_PLUGIN_H
+#define ROTORS_GAZEBO_PLUGINS_AERO_SURFACE_PLUGIN_H
 
 #include <Eigen/Core>
 #include <gazebo/common/common.hh>
@@ -30,25 +30,27 @@
 #include <ros/ros.h>
 
 #include "rotors_gazebo_plugins/common.h"
+#include "rotors_gazebo_plugins/RegisterAeroSurface.h"
 
 namespace positive_direction {
-const static int CCW = 1;
-const static int CW = -1;
+  const static int CCW = 1;
+  const static int CW = -1;
 }
 
 namespace gazebo {
 // Default values
 static const std::string kDefaultCommandSubTopic = "gazebo/command/motor_speed";
+static constexpr double kDefaultSurfaceArea = 1.0;
 static constexpr double kDefaultGain = 1.0;
 static constexpr double kDefaultMinAngle = -M_PI * 0.25;
 static constexpr double kDefaultMaxAngle = M_PI * 0.25;
 static constexpr int kDefaultChannel = 0;
 
-class GazeboServoPlugin : public ModelPlugin {
+class GazeboAeroSurfacePlugin : public ModelPlugin {
  public:
 
-  GazeboServoPlugin();
-  ~GazeboServoPlugin();
+  GazeboAeroSurfacePlugin();
+  ~GazeboAeroSurfacePlugin();
 
   void AngleCallback(const mav_msgs::ActuatorsConstPtr& servo_angles);
 
@@ -58,7 +60,9 @@ class GazeboServoPlugin : public ModelPlugin {
 
  private:
   std::string namespace_;
+
   ros::NodeHandle* node_handle_;
+  ros::ServiceClient register_aero_surface_client_;
   ros::Subscriber command_sub_;
 
   // Pointer to the world
@@ -79,7 +83,8 @@ class GazeboServoPlugin : public ModelPlugin {
 
   int channel_;
   int positive_direction_;
+  int surface_type_;
 };
 }
 
-#endif // ROTORS_GAZEBO_PLUGINS_SERVO_PLUGIN_H
+#endif // ROTORS_GAZEBO_PLUGINS_AERO_SURFACE_PLUGIN_H

@@ -130,7 +130,7 @@
   </xacro:macro>
 
   <!-- Wing joint and link -->
-  <xacro:macro name="wing"
+<!--  <xacro:macro name="wing"
     params="robot_namespace suffix parent mass_wing wing_length wing_width wing_height 
       color use_mesh mesh *joint_origin *link_origin *inertia">
 
@@ -145,7 +145,7 @@
     <link name="${robot_namespace}/wing_${suffix}">
       <inertial>
         <xacro:insert_block name="link_origin" />
-        <mass value="${mass_wing}" /> <!-- [kg] -->
+        <mass value="${mass_wing}" />
         <xacro:insert_block name="inertia" />
       </inertial>
       <visual>
@@ -156,14 +156,14 @@
               scale="1 1 1" />
           </xacro:if>
           <xacro:unless value="${use_mesh}">
-            <box size="${wing_length} ${wing_width} ${wing_height}"/> <!-- [m] [m] [m] -->
+            <box size="${wing_length} ${wing_width} ${wing_height}"/>
           </xacro:unless>
         </geometry>
       </visual>
       <collision>
         <xacro:insert_block name="link_origin" />
         <geometry>
-          <box size="${wing_length - 0.01} ${wing_width - 0.01} ${wing_height - 0.01}"/> <!-- [m] [m] [m] -->
+          <box size="${wing_length - 0.01} ${wing_width - 0.01} ${wing_height - 0.01}"/>
         </geometry>
       </collision>
     </link>
@@ -171,7 +171,7 @@
     <gazebo reference="${robot_namespace}/wing_${suffix}">
       <material>Gazebo/${color}</material>
     </gazebo>
-  </xacro:macro>
+  </xacro:macro>-->
 
   <!-- Tail joint and link -->
   <xacro:macro name="tail"
@@ -278,7 +278,7 @@
   </xacro:macro>
 
   <!-- Control surface joint and link -->
-  <xacro:macro name="control_surface"
+<!--  <xacro:macro name="control_surface"
     params="robot_namespace surface_name parent mass_surface gain 
       positive_direction min_angle max_angle channel color use_mesh mesh 
       surface_length surface_width surface_height *axis *joint_origin 
@@ -297,7 +297,7 @@
       <gravity>0</gravity>
       <inertial>
         <xacro:insert_block name="link_origin" />
-        <mass value="${mass_surface}" /> <!-- [kg] -->
+        <mass value="${mass_surface}" />
         <xacro:insert_block name="inertia" />
       </inertial>
       <visual>
@@ -308,14 +308,14 @@
               scale="1 1 1" />
           </xacro:if>
           <xacro:unless value="${use_mesh}">
-            <box size="${surface_length} ${surface_width} ${surface_height}"/> <!-- [m] [m] [m] -->
+            <box size="${surface_length} ${surface_width} ${surface_height}"/>
           </xacro:unless>
         </geometry>
       </visual>
       <collision>
         <xacro:insert_block name="link_origin" />
         <geometry>
-          <box size="${surface_length - 0.01} ${surface_width - 0.01} ${surface_height - 0.01}"/> <!-- [m] [m] [m] -->
+          <box size="${surface_length - 0.01} ${surface_width - 0.01} ${surface_height - 0.01}"/>
         </geometry>
       </collision>
     </link>
@@ -331,6 +331,67 @@
         <minAngle>${min_angle}</minAngle>
         <maxAngle>${max_angle}</maxAngle>
         <channel>${channel}</channel>
+      </plugin>
+    </gazebo>
+
+    <gazebo reference="${robot_namespace}/${surface_name}">
+      <material>Gazebo/${color}</material>
+    </gazebo>
+  </xacro:macro>-->
+
+  <!-- Aerodynamic surface joint and link -->
+  <xacro:macro name="aero_surface"
+    params="robot_namespace surface_name surface_type parent mass_surface joint_gain 
+      positive_direction channel min_angle max_angle color use_mesh mesh surface_length
+      surface_width surface_height *axis *joint_origin *link_origin *inertia">
+
+    <joint name="${robot_namespace}/${surface_name}_joint" type="revolute">
+      <xacro:insert_block name="joint_origin" />
+      <xacro:insert_block name="axis" />
+      <parent link="${parent}" />
+      <child link="${robot_namespace}/${surface_name}" />
+      <limit upper="${max_angle}" lower="${min_angle}" effort="200.0" velocity="3.0" />
+      <dynamics friction="${9.8 * mass_surface}" damping="${9.8 * mass_surface}" />
+    </joint>
+
+    <link name="${robot_namespace}/${surface_name}">
+      <inertial>
+        <xacro:insert_block name="link_origin" />
+        <mass value="${mass_surface}" />
+        <xacro:insert_block name="inertia" />
+      </inertial>
+      <visual>
+        <xacro:insert_block name="link_origin" />
+        <geometry>
+          <xacro:if value="${use_mesh}">
+            <mesh filename="${mesh}"
+              scale="1 1 1" />
+          </xacro:if>
+          <xacro:unless value="${use_mesh}">
+            <box size="${surface_length} ${surface_width} ${surface_height}"/>
+          </xacro:unless>
+        </geometry>
+      </visual>
+      <collision>
+        <xacro:insert_block name="link_origin" />
+        <geometry>
+          <box size="${surface_length - 0.01} ${surface_width - 0.01} ${surface_height - 0.01}"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <gazebo>
+      <plugin name="${robot_namespace}_${surface_name}" filename="librotors_gazebo_aero_surface_plugin.so">
+        <robotNamespace>${robot_namespace}</robotNamespace>
+        <jointName>${robot_namespace}/${surface_name}_joint</jointName>
+        <surfaceType>${surface_type}</surfaceType>
+        <positiveDirection>${positive_direction}</positiveDirection>
+        <commandSubTopic>gazebo/command/motor_speed</commandSubTopic>
+	<surfaceArea>${surface_length * surface_width}</surfaceArea>
+        <gain>${joint_gain}</gain>
+        <channel>${channel}</channel>
+        <minAngle>${min_angle}</minAngle>
+        <maxAngle>${max_angle}</maxAngle>
       </plugin>
     </gazebo>
 
