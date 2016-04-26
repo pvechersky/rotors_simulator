@@ -26,6 +26,9 @@
   <xacro:property name="use_mesh_file" value="false" />
   <xacro:property name="mesh_file" value="" />
 
+  <!-- Constants -->
+  <xacro:property name="PI" value="3.1415926535897931" />
+
   <!-- Component masses -->
   <xacro:property name="mass_fuselage" value="2.0" /> <!-- [kg] -->
   <xacro:property name="mass_wheel" value="0.05" /> <!-- [kg] -->
@@ -79,8 +82,8 @@
   <xacro:property name="aileron_width" value="${0.5 * wing_width}" /> <!-- [m] -->
   <xacro:property name="aileron_height" value="0.02" /> <!-- [m] -->
   <xacro:property name="aileron_gain" value="2.0" />
-  <xacro:property name="aileron_min_angle" value="-0.55" /> <!-- [rad] -->
-  <xacro:property name="aileron_max_angle" value="0.55" /> <!-- [rad] -->
+  <xacro:property name="aileron_min_angle" value="-0.349066" /> <!-- [rad] -->
+  <xacro:property name="aileron_max_angle" value="0.349066" /> <!-- [rad] -->
   <xacro:property name="aileron_channel" value="0" />
 
   <!-- Elevator properties -->
@@ -88,8 +91,8 @@
   <xacro:property name="elevator_width" value="${tail_width}" /> <!-- [m] -->
   <xacro:property name="elevator_height" value="0.02" /> <!-- [m] -->
   <xacro:property name="elevator_gain" value="2.0" />
-  <xacro:property name="elevator_min_angle" value="-0.55" /> <!-- [rad] -->
-  <xacro:property name="elevator_max_angle" value="0.55" /> <!-- [rad] -->
+  <xacro:property name="elevator_min_angle" value="-0.349066" /> <!-- [rad] -->
+  <xacro:property name="elevator_max_angle" value="0.349066" /> <!-- [rad] -->
   <xacro:property name="elevator_channel" value="1" />
 
   <!-- Rudder properties -->
@@ -97,12 +100,9 @@
   <xacro:property name="rudder_width" value="${vertical_stabilizer_width}" /> <!-- [m] -->
   <xacro:property name="rudder_height" value="${vertical_stabilizer_height}" /> <!-- [m] -->
   <xacro:property name="rudder_gain" value="2.0" />
-  <xacro:property name="rudder_min_angle" value="-0.55" /> <!-- [rad] -->
-  <xacro:property name="rudder_max_angle" value="0.55" /> <!-- [rad] -->
+  <xacro:property name="rudder_min_angle" value="-0.349066" /> <!-- [rad] -->
+  <xacro:property name="rudder_max_angle" value="0.349066" /> <!-- [rad] -->
   <xacro:property name="rudder_channel" value="2" />
-
-  <!-- Constants -->
-  <xacro:property name="PI" value="3.1415926535897931" />
 
   <!-- Front wing length -->
   <xacro:property name="wing_width" value="${0.5 * (wingspan - body_width)}" />
@@ -349,7 +349,7 @@
   </xacro:aero_surface>
 
   <!-- Instantiate the ailerons -->
-<!--  <xacro:aero_surface
+  <xacro:aero_surface
     robot_namespace="${namespace}"
     surface_name="aileron_left"
     surface_type="aileron"
@@ -393,10 +393,10 @@
     <origin xyz="${-0.5 * root_chord} ${-(wing_width - 0.5 * aileron_width)} 0.0" rpy="0.0 0.0 0.0" />
     <origin xyz="${-0.5 * aileron_length} 0.0 0.0" rpy="0.0 0.0 0.0" />
     <xacro:insert_block name="aileron_inertia" />
-  </xacro:aero_surface>-->
+  </xacro:aero_surface>
 
   <!-- Instantiate the elevators -->
-<!--  <xacro:aero_surface
+  <xacro:aero_surface
     robot_namespace="${namespace}"
     surface_name="elevator_left"
     surface_type="elevator"
@@ -440,10 +440,10 @@
     <origin xyz="${-0.5 * (vertical_stabilizer_length - elevator_length)} ${-0.5 * tail_width} 0.0" rpy="0.0 0.0 0.0" />
     <origin xyz="${-0.5 * elevator_length} 0.0 0.0" rpy="0.0 0.0 0.0" />
     <xacro:insert_block name="elevator_inertia" />
-  </xacro:aero_surface>-->
+  </xacro:aero_surface>
 
   <!-- Instantiate the rudder -->
-<!--  <xacro:aero_surface
+  <xacro:aero_surface
     robot_namespace="${namespace}"
     surface_name="rudder"
     surface_type="rudder"
@@ -464,6 +464,6 @@
     <origin xyz="${-0.5 * vertical_stabilizer_length} 0.0 0.0" rpy="0.0 0.0 0.0" />
     <origin xyz="${-0.5 * rudder_length} 0.0 0.0" rpy="0.0 0.0 0.0" />
     <xacro:insert_block name="rudder_inertia" />
-  </xacro:aero_surface>-->
+  </xacro:aero_surface>
 
 </robot>

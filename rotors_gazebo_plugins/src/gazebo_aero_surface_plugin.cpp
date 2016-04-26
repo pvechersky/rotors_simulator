@@ -142,7 +142,7 @@ void GazeboAeroSurfacePlugin::OnUpdate(const common::UpdateInfo& _info) {
   //double err = ref_angle_ - current_angle;
   //joint_->SetVelocity(0, err * gain_);
   //joint_->SetForce(0, damping_ + err * gain_);
-  //joint_->SetPosition(0, ref_angle_);
+  joint_->SetPosition(0, ref_angle_);
 }
 
 GZ_REGISTER_MODEL_PLUGIN(GazeboAeroSurfacePlugin);

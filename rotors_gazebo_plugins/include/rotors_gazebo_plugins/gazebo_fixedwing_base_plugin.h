@@ -37,6 +37,38 @@ static const std::string kDefaultResetSubTopic = "reset";
 static constexpr double kDefaultAirDensity = 1.225;
 static constexpr double kDefaultAlphaStall = 0.3;
 
+// Constants
+static constexpr double kCL0 = 0.2127;
+static constexpr double kCLa = 10.8060;
+static constexpr double kCLa2 = -46.8324;
+static constexpr double kCLa3 = 60.6017;
+
+static constexpr double kCD0 = 0.1360;
+static constexpr double kCDa = -0.6737;
+static constexpr double kCDa2 = -46.8324;
+
+static constexpr double kCYb = -0.3073;
+
+static constexpr double kClb = -0.0154;
+static constexpr double kClp = -0.1647;
+static constexpr double kClr = 0.0117;
+static constexpr double kClda = 0.0570;
+
+static constexpr double kCm0 = 0.0435;
+static constexpr double kCma = -2.9690;
+static constexpr double kCmq = -106.1541;
+static constexpr double kCmde = -6.1308;
+
+static constexpr double kCnb = 0.0430;
+static constexpr double kCnp = -0.0839;
+static constexpr double kCnr = -0.0827;
+static constexpr double kCndr = 0.06;
+
+static constexpr double kBWing = 2.59;
+static constexpr double kCChord = 0.18;
+static constexpr double kRhoAir = 1.18;
+static constexpr double kSWing = 0.47;
+
 class GazeboFixedWingBasePlugin : public ModelPlugin {
  public:
   GazeboFixedWingBasePlugin();
@@ -45,8 +77,7 @@ class GazeboFixedWingBasePlugin : public ModelPlugin {
   bool RegisterAeroSurface(rotors_gazebo_plugins::RegisterAeroSurface::Request& req,
                            rotors_gazebo_plugins::RegisterAeroSurface::Response& res);
 
-  void ComputeAerodynamicForcesAndMoments(math::Vector3& vel, math::Vector3& forces, math::Vector3& moments);
-  //math::Vector3 ComputeAerodynamicMoments(math::Vector3& vel);
+  void ComputeAerodynamicForcesAndMoments(math::Vector3& forces, math::Vector3& moments);
 
  protected:
   void Load(physics::ModelPtr _model, sdf::ElementPtr _sdf);

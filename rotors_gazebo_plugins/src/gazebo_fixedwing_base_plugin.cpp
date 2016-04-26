@@ -90,16 +90,16 @@ void GazeboFixedWingBasePlugin::OnUpdate(const common::UpdateInfo& _info) {
   //  return;
 
   // Get the orientation of the airplane in world frame
-  orientation_ = link_->GetWorldPose().rot;
+  //orientation_ = link_->GetWorldPose().rot;
 
   // Rotate the velocity from world frame into local frame
-  math::Vector3 global_vel = link_->GetWorldLinearVel();
-  math::Vector3 body_vel = orientation_.RotateVector(global_vel);
+  //math::Vector3 global_vel = link_->GetWorldLinearVel();
+  //math::Vector3 body_vel = orientation_.RotateVector(global_vel);
 
   // Compute the forces and moments acting on the airplane
   math::Vector3 forces;
   math::Vector3 moments;
-  ComputeAerodynamicForcesAndMoments(body_vel, forces, moments);
+  ComputeAerodynamicForcesAndMoments(forces, moments);
 
   //std::cout << " " << std::endl;
   //std::cout << "Forces: " << forces.x << ", " << forces.y << ", " << forces.z << std::endl;
@@ -144,68 +144,61 @@ bool GazeboFixedWingBasePlugin::RegisterAeroSurface(
   return true;
 }
 
-void GazeboFixedWingBasePlugin::ComputeAerodynamicForcesAndMoments(math::Vector3& vel, math::Vector3 &forces, math::Vector3 &moments) {
-  // Compute angle of attack
-  double alpha = -atan2(vel.z, vel.x);
+void GazeboFixedWingBasePlugin::ComputeAerodynamicForcesAndMoments(math::Vector3 &forces, math::Vector3 &moments) {
+  // Get the body frame linear and angular velocities
+  math::Vector3 lin_vel = link_->GetRelativeLinearVel();
+  math::Vector3 ang_vel = link_->GetRelativeAngularVel();
 
-  // Get the elevator deflection
-  //physics::JointPtr elevator = elevators_.at(0);
-  //double elev_def = elevator->GetAngle(0).Radian();
-  double elev_def = 0.0;
+  lin_vel = lin_vel.Normalize();
 
-  double alpha_0 = 0.02;
-  double elev_def_0 = 0.01;
+  double p = ang_vel.x;
+  double q = ang_vel.y;
+  double r = ang_vel.z;
 
-  // Get the coefficients of lift and drag
-  double c_L = 0.0;
-  double c_L_tail = 0.0;
-  double c_D = 0.0;
+  double V = lin_vel.x;
+  double beta = lin_vel.y;
+  double alpha = lin_vel.z;
 
-  double d_c_L_d_alpha = M_PI;
-  double d_c_L_tail_d_elev_def = -0.5 * M_PI;
-  if (alpha < alpha_stall_) {
-    c_L = (alpha_0 + alpha) * d_c_L_d_alpha;
-    c_L_tail = (elev_def_0 + elev_def) * d_c_L_tail_d_elev_def;
-    c_D = alpha * 0.1;
-  } else {
-    c_L = 2.0;
-    c_L_tail = 2.0;
-    c_D = 0.5;
-  }
+  double p_hat = p * kBWing / (2.0 * V);
+  double q_hat = q * kCChord / (2.0 * V);
+  double r_hat = r * kBWing / (2.0 * V);
 
-  // Compute the magnitudes of the lift and drag forces
-  double lift_wings = fabs(0.5 * air_density_ * c_L * total_wing_area_ * (vel.z * vel.z + vel.x * vel.x));
-  double lift_tails = fabs(0.5 * air_density_ * c_L_tail * total_tail_area_ * (vel.z * vel.z + vel.x * vel.x));
+  // Get the control surfaces deflections
+  double uE = elevators_.at(0)->GetAngle(0).Radian();
+  double uA = ailerons_.at(0)->GetAngle(0).Radian();
+  double uR = rudder_->GetAngle(0).Radian();
 
-  double drag = 0.5 * air_density_ * c_D * total_wing_area_ * (vel.z * vel.z + vel.x * vel.x);
+  double q_bar_S = 0.5 * kRhoAir * V * V * kSWing;
 
-  std::cout << "Wings lift: " << lift_wings << std::endl;
-  std::cout << "Tails lift: " << lift_tails << std::endl;
+  // Compute the moment coefficients
+  double cl_s = kClb * beta + kClp * p_hat + kClr * r_hat + kClda * uA;
+  double cm_s = kCm0 + kCma * alpha + kCmq * q_hat + kCmde * uE;
+  double cn_s = kCnb * beta + kCnp * p_hat + kCnr * r_hat + kCndr * uR;
 
-  link_->AddForceAtRelativePosition(math::Vector3(0.0, 0.0, 0.0), math::Vector3(0.5, 0.0, 0.0));
-  link_->AddForceAtRelativePosition(math::Vector3(0.0, 0.0, 0.0), math::Vector3(-1.5, 0.0, 0.0));
+  // Compute the moments
+  double Lm = q_bar_S * kBWing * cl_s;
+  double Mm = q_bar_S * kCChord * cm_s;
+  double Nm = q_bar_S * kBWing * cn_s;
 
-  // Rotate the lift and drag forces into the body frame
-  //forces = math::Vector3(orientation_.RotateVector(math::Vector3(-drag, 0.0, lift_wings - lift_tails)));
-  forces = math::Vector3(-drag, 0.0, lift_wings - lift_tails);
+  double ca = cos(alpha);
+  double sa = sin(alpha);
 
-  // Compute the magnitudes of the moments
-  double pitching_moment = lift_wings * 0.25 - lift_tails * 1.5;
+  math::Matrix3 H_W2B(ca, 0.0, -sa, 0.0, 1.0, 0.0, sa, 0.0, ca);
 
-  // Combine all the moments into one vector
-  moments = math::Vector3(0.0, pitching_moment, 0.0);
+  double cD = kCD0 + kCDa * alpha + kCDa2 * alpha * alpha;
+  double cY_s = kCYb * beta;
+  double cL = kCL0 + kCLa * alpha + kCLa2 * alpha * alpha + kCLa3 * alpha * alpha * alpha;
+
+  math::Vector3 cXYZ = H_W2B * math::Vector3(-cD, cY_s, -cL);
+
+  // Compute the forces
+  double X = q_bar_S * cXYZ.x;
+  double Y = q_bar_S * cXYZ.y;
+  double Z = q_bar_S * cXYZ.z;
+
+  forces = math::Vector3(X, Y, Z);
+  moments = math::Vector3(Lm, Mm, Nm);
 }
-
-/*math::Vector3 GazeboFixedWingBasePlugin::ComputeAerodynamicMoments(math::Vector3& vel) {
-  math::Vector3 moments(0.0, 0.0, 0.0);
-
-  // Computing the pitching moment
-  for (int i = 0; i < elevators_.size(); i++) {
-
-  }
-
-  return math::Vector3(0.0, 0.0, 0.0);
-}*/
 
 void GazeboFixedWingBasePlugin::resetCallback(const std_msgs::BoolConstPtr& reset_msg) {
   if (reset_msg->data) {
