@@ -32,7 +32,8 @@ namespace gazebo {
 GazeboFixedWingBasePlugin::GazeboFixedWingBasePlugin()
     : ModelPlugin(),
       node_handle_(0),
-      total_wing_area_(0.0) {
+      total_wing_area_(0.0),
+      total_tail_area_(0.0) {
 }
 
 GazeboFixedWingBasePlugin::~GazeboFixedWingBasePlugin() {
@@ -85,6 +86,9 @@ void GazeboFixedWingBasePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _
 }
 
 void GazeboFixedWingBasePlugin::OnUpdate(const common::UpdateInfo& _info) {
+  //if (elevators_.size() == 0)
+  //  return;
+
   // Get the orientation of the airplane in world frame
   orientation_ = link_->GetWorldPose().rot;
 
@@ -93,12 +97,18 @@ void GazeboFixedWingBasePlugin::OnUpdate(const common::UpdateInfo& _info) {
   math::Vector3 body_vel = orientation_.RotateVector(global_vel);
 
   // Compute the forces and moments acting on the airplane
-  math::Vector3 forces = ComputeAerodynamicForces(body_vel);
-  math::Vector3 moments = ComputeAerodynamicMoments(body_vel);
+  math::Vector3 forces;
+  math::Vector3 moments;
+  ComputeAerodynamicForcesAndMoments(body_vel, forces, moments);
+
+  //std::cout << " " << std::endl;
+  //std::cout << "Forces: " << forces.x << ", " << forces.y << ", " << forces.z << std::endl;
+  //std::cout << "Moments: " << moments.x << ", " << moments.y << ", " << moments.z << std::endl;
 
   // Apply forces and moments to the link
-  link_->AddForce(forces); // Or force at relative position?
-  link_->AddRelativeTorque(moments);
+  //link_->AddForce(forces);
+  //link_->AddForceAtRelativePosition(forces, math::Vector3(0.5, 0.0, 0.0));
+  //link_->AddRelativeTorque(moments);
 }
 
 bool GazeboFixedWingBasePlugin::RegisterAeroSurface(
@@ -109,6 +119,9 @@ bool GazeboFixedWingBasePlugin::RegisterAeroSurface(
   switch(req.surface_type) {
     case AERO_SURFACE_TYPE_WING:
       total_wing_area_ += req.surface_area;
+      break;
+    case AERO_SURFACE_TYPE_TAIL:
+      total_tail_area_ += req.surface_area;
       break;
     case AERO_SURFACE_TYPE_AILERON:
       surface_link = model_->GetLink(req.link_name);
@@ -131,34 +144,68 @@ bool GazeboFixedWingBasePlugin::RegisterAeroSurface(
   return true;
 }
 
-math::Vector3 GazeboFixedWingBasePlugin::ComputeAerodynamicForces(math::Vector3& vel) {
+void GazeboFixedWingBasePlugin::ComputeAerodynamicForcesAndMoments(math::Vector3& vel, math::Vector3 &forces, math::Vector3 &moments) {
   // Compute angle of attack
   double alpha = -atan2(vel.z, vel.x);
 
+  // Get the elevator deflection
+  //physics::JointPtr elevator = elevators_.at(0);
+  //double elev_def = elevator->GetAngle(0).Radian();
+  double elev_def = 0.0;
+
+  double alpha_0 = 0.02;
+  double elev_def_0 = 0.01;
+
   // Get the coefficients of lift and drag
   double c_L = 0.0;
+  double c_L_tail = 0.0;
   double c_D = 0.0;
 
+  double d_c_L_d_alpha = M_PI;
+  double d_c_L_tail_d_elev_def = -0.5 * M_PI;
   if (alpha < alpha_stall_) {
-    c_L = alpha * M_PI;
+    c_L = (alpha_0 + alpha) * d_c_L_d_alpha;
+    c_L_tail = (elev_def_0 + elev_def) * d_c_L_tail_d_elev_def;
     c_D = alpha * 0.1;
   } else {
     c_L = 2.0;
+    c_L_tail = 2.0;
     c_D = 0.5;
   }
 
   // Compute the magnitudes of the lift and drag forces
-  double lift = 0.5 * air_density_ * c_L * total_wing_area_ * (vel.z * vel.z + vel.x * vel.x);
+  double lift_wings = fabs(0.5 * air_density_ * c_L * total_wing_area_ * (vel.z * vel.z + vel.x * vel.x));
+  double lift_tails = fabs(0.5 * air_density_ * c_L_tail * total_tail_area_ * (vel.z * vel.z + vel.x * vel.x));
+
   double drag = 0.5 * air_density_ * c_D * total_wing_area_ * (vel.z * vel.z + vel.x * vel.x);
 
+  std::cout << "Wings lift: " << lift_wings << std::endl;
+  std::cout << "Tails lift: " << lift_tails << std::endl;
+
+  link_->AddForceAtRelativePosition(math::Vector3(0.0, 0.0, 0.0), math::Vector3(0.5, 0.0, 0.0));
+  link_->AddForceAtRelativePosition(math::Vector3(0.0, 0.0, 0.0), math::Vector3(-1.5, 0.0, 0.0));
+
   // Rotate the lift and drag forces into the body frame
-  math::Vector3 forces(-drag, 0.0, lift);
-  return orientation_.RotateVector(forces);
+  //forces = math::Vector3(orientation_.RotateVector(math::Vector3(-drag, 0.0, lift_wings - lift_tails)));
+  forces = math::Vector3(-drag, 0.0, lift_wings - lift_tails);
+
+  // Compute the magnitudes of the moments
+  double pitching_moment = lift_wings * 0.25 - lift_tails * 1.5;
+
+  // Combine all the moments into one vector
+  moments = math::Vector3(0.0, pitching_moment, 0.0);
 }
 
-math::Vector3 GazeboFixedWingBasePlugin::ComputeAerodynamicMoments(math::Vector3& vel) {
+/*math::Vector3 GazeboFixedWingBasePlugin::ComputeAerodynamicMoments(math::Vector3& vel) {
+  math::Vector3 moments(0.0, 0.0, 0.0);
+
+  // Computing the pitching moment
+  for (int i = 0; i < elevators_.size(); i++) {
+
+  }
+
   return math::Vector3(0.0, 0.0, 0.0);
-}
+}*/
 
 void GazeboFixedWingBasePlugin::resetCallback(const std_msgs::BoolConstPtr& reset_msg) {
   if (reset_msg->data) {

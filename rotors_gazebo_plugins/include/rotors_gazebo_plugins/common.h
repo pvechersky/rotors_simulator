@@ -34,6 +34,7 @@ static constexpr double kDefaultRotorVelocitySlowdownSim = 10.0;
 // Aerodynamic surface types enum
 enum AERO_SURFACE_TYPE {
   AERO_SURFACE_TYPE_WING = 1,
+  AERO_SURFACE_TYPE_TAIL,
   AERO_SURFACE_TYPE_AILERON,
   AERO_SURFACE_TYPE_ELEVATOR,
   AERO_SURFACE_TYPE_RUDDER

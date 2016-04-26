@@ -45,8 +45,8 @@ class GazeboFixedWingBasePlugin : public ModelPlugin {
   bool RegisterAeroSurface(rotors_gazebo_plugins::RegisterAeroSurface::Request& req,
                            rotors_gazebo_plugins::RegisterAeroSurface::Response& res);
 
-  math::Vector3 ComputeAerodynamicForces(math::Vector3& vel);
-  math::Vector3 ComputeAerodynamicMoments(math::Vector3& vel);
+  void ComputeAerodynamicForcesAndMoments(math::Vector3& vel, math::Vector3& forces, math::Vector3& moments);
+  //math::Vector3 ComputeAerodynamicMoments(math::Vector3& vel);
 
  protected:
   void Load(physics::ModelPtr _model, sdf::ElementPtr _sdf);
@@ -76,6 +76,7 @@ class GazeboFixedWingBasePlugin : public ModelPlugin {
   double air_density_;
   double alpha_stall_;
   double total_wing_area_;
+  double total_tail_area_;
 
   math::Quaternion orientation_;
 

@@ -75,15 +75,6 @@ void GazeboGpsPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
   getSdfParam<double>(_sdf, "referenceAltitude", ref_alt_, kDefaultRefAlt);
   getSdfParam<double>(_sdf, "referenceHeading", ref_heading_, kDefaultRefHeading);
 
-  // Compute the earth radius at the given reference latitude and convert heading to radians
-  double a = kEquatorialRadius;
-  double b = kPolarRadius;
-  double cos_lat = cos(ref_lat_ * M_PI / 180.0);
-  double sin_lat = sin(ref_lat_ * M_PI / 180.0);
-  earth_radius_ = sqrt((pow(a * a * cos_lat, 2.0) + pow(b * b * sin_lat, 2.0)) /
-                       (pow(a * cos_lat, 2.0) + pow(b * sin_lat, 2.0)));
-  ref_heading_ = ref_heading_ * M_PI / 180.0;
-
   // Listen to the update event. This event is broadcast every simulation iteration
   this->updateConnection_ =
       event::Events::ConnectWorldUpdateBegin(
@@ -100,10 +91,11 @@ void GazeboGpsPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
   gps_message_.altitude = ref_alt_;
   gps_message_.position_covariance.fill(0.0);
 
-  double temp = 1.0 / (1.0 - excentrity2 * sin(ref_lat_ * M_PI / 180.0) * sin(ref_lat_ * M_PI / 180.0));
+  double temp = 1.0 / (1.0 - kEccentrity2 * sin(ref_lat_ * M_PI / 180.0) * sin(ref_lat_ * M_PI / 180.0));
   double prime_vertical_radius = kEquatorialRadius * sqrt(temp);
-  radius_north_ = prime_vertical_radius * (1 - excentrity2) * temp;
+  radius_north_ = prime_vertical_radius * (1 - kEccentrity2) * temp;
   radius_east_  = prime_vertical_radius * cos(ref_lat_ * M_PI / 180.0);
+  ref_heading_ = ref_heading_ * M_PI / 180.0;
 }
 
 void GazeboGpsPlugin::OnUpdate(const common::UpdateInfo& _info) {
@@ -113,10 +105,6 @@ void GazeboGpsPlugin::OnUpdate(const common::UpdateInfo& _info) {
   math::Vector3 position = model_->GetWorldPose().pos;
 
   // Update the GPS coordinates
-  //gps_message_.latitude += (position.x * cos(ref_heading_) + position.y * sin(ref_heading_)) / earth_radius_;
-  //gps_message_.longitude -= (-position.x * sin(ref_heading_) + position.y * cos(ref_heading_)) / earth_radius_;
-  //gps_message_.altitude = position.z + ref_alt_;
-
   gps_message_.latitude = ref_lat_ + (cos(ref_heading_) * position.x + sin(ref_heading_) * position.y) / radius_north_ * 180.0 / M_PI;
   gps_message_.longitude = ref_lon_ - (-sin(ref_heading_) * position.x + cos(ref_heading_) * position.y) / radius_east_ * 180.0 / M_PI;
   gps_message_.altitude = ref_alt_ + position.z;

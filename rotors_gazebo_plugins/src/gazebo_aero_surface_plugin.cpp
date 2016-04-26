@@ -20,6 +20,11 @@
 
 #include "rotors_gazebo_plugins/gazebo_aero_surface_plugin.h"
 
+#include <chrono>
+#include <cmath>
+#include <iostream>
+#include <stdio.h>
+
 #include <boost/bind.hpp>
 
 namespace gazebo {
@@ -63,6 +68,8 @@ void GazeboAeroSurfacePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sd
     std::string surface_type = _sdf->GetElement("surfaceType")->Get<std::string>();
     if (surface_type == "wing")
       surface_type_ = AERO_SURFACE_TYPE_WING;
+    else if (surface_type == "tail")
+      surface_type_ = AERO_SURFACE_TYPE_TAIL;
     else if (surface_type == "aileron")
       surface_type_ = AERO_SURFACE_TYPE_AILERON;
     else if (surface_type == "elevator")
@@ -97,16 +104,6 @@ void GazeboAeroSurfacePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sd
   getSdfParam<double>(_sdf, "maxAngle", max_angle_, kDefaultMaxAngle);
   getSdfParam<int>(_sdf, "channel", channel_, kDefaultChannel);
 
-  damping_ = joint_->GetDamping(0);
-
-  // Listen to the update event. This event is broadcast every
-  // simulation iteration.
-  this->updateConnection_ =
-      event::Events::ConnectWorldUpdateBegin(
-          boost::bind(&GazeboAeroSurfacePlugin::OnUpdate, this, _1));
-
-  command_sub_ = node_handle_->subscribe(command_sub_topic, 1, &GazeboAeroSurfacePlugin::AngleCallback, this);
-
   register_aero_surface_client_ = node_handle_->serviceClient<rotors_gazebo_plugins::RegisterAeroSurface>("register_aero_surface");
 
   rotors_gazebo_plugins::RegisterAeroSurface aero_surface_info;
@@ -115,7 +112,20 @@ void GazeboAeroSurfacePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sd
   aero_surface_info.request.surface_type = surface_type_;
 
   if (!register_aero_surface_client_.call(aero_surface_info))
-    gzerr << "[gazebo_aero_surface_plugin] Unable to register the aerodynamic surface info.\n";;
+    gzerr << "[gazebo_aero_surface_plugin] Unable to register the aerodynamic surface info.\n";
+
+  if (surface_type_ == AERO_SURFACE_TYPE_AILERON || surface_type_ == AERO_SURFACE_TYPE_ELEVATOR  ||
+          surface_type_ == AERO_SURFACE_TYPE_RUDDER) {
+    damping_ = joint_->GetDamping(0);
+
+    // Listen to the update event. This event is broadcast every
+    // simulation iteration.
+    this->updateConnection_ =
+        event::Events::ConnectWorldUpdateBegin(
+            boost::bind(&GazeboAeroSurfacePlugin::OnUpdate, this, _1));
+
+    command_sub_ = node_handle_->subscribe(command_sub_topic, 1, &GazeboAeroSurfacePlugin::AngleCallback, this);
+  }
 }
 
 void GazeboAeroSurfacePlugin::AngleCallback(const mav_msgs::ActuatorsConstPtr& servo_angles) {
@@ -132,7 +142,7 @@ void GazeboAeroSurfacePlugin::OnUpdate(const common::UpdateInfo& _info) {
   //double err = ref_angle_ - current_angle;
   //joint_->SetVelocity(0, err * gain_);
   //joint_->SetForce(0, damping_ + err * gain_);
-  joint_->SetPosition(0, ref_angle_);
+  //joint_->SetPosition(0, ref_angle_);
 }
 
 GZ_REGISTER_MODEL_PLUGIN(GazeboAeroSurfacePlugin);

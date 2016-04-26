@@ -35,9 +35,9 @@
 namespace gazebo {
 // WGS84 constants
 static constexpr double kEquatorialRadius = 6378137.0;
-static constexpr double flattening = 1.0 / 298.257223563;
-static constexpr double excentrity2 = 2 * flattening - flattening * flattening;
 static constexpr double kPolarRadius = 6356752.3;
+static constexpr double kFlattening = 1.0 / 298.257223563;
+static constexpr double kEccentrity2 = 2 * kFlattening - kFlattening * kFlattening;
 
 // Default reference values (Zurich: lat=+47.3667degN, lon=+8.5500degE, h=+500m, WGS84)
 static constexpr double kDefaultRefLat = 47.3667;
