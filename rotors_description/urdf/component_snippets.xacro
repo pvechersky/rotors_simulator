@@ -387,35 +387,35 @@
       mass_gps_sensor reference_latitude reference_longitude reference_altitude
       reference_heading noise_normal_position noise_uniform_position
       *inertia *origin">
-  <!-- GPS link -->
-  <link name="${namespace}/gps${gps_suffix}_link">
-    <inertial>
-      <xacro:insert_block name="inertia" />
-      <mass value="${mass_gps_sensor}" />  <!-- [kg] -->
-      <origin xyz="0 0 0" rpy="0 0 0" />
-    </inertial>
-  </link>
-  <!-- GPS joint -->
-  <joint name="${namespace}/gps${gps_suffix}_joint" type="revolute">
-    <xacro:insert_block name="origin" />
-    <parent link="${parent_link}" />
-    <child link="${namespace}/gps${gps_suffix}_link" />
-    <limit upper="0" lower="0" effort="0" velocity="0" />
-  </joint>
-  <gazebo>
-    <plugin filename="librotors_gazebo_gps_plugin.so" name="rotors_gazebo_gps${gps_suffix}_plugin">
-      <robotNamespace>${namespace}</robotNamespace> <!-- (string, required): ros namespace in which the messages are published -->
-      <linkName>${namespace}/gps${gps_suffix}_link</linkName> <!-- (string, required): name of the body which holds the GPS sensor -->
-      <gpsTopic>${gps_topic}</gpsTopic> <!-- (string): name of the sensor output topic and prefix of service names (defaults to 'gps') -->
-      <groundSpeedTopic>${ground_speed_topic}</groundSpeedTopic> <!-- (string): name of the ground speed output topic (defaults to 'ground_speed') -->
-      <referenceLatitude>${reference_latitude}</referenceLatitude> <!-- the initial latitude [degrees [-90, 90]] -->
-      <referenceLongitude>${reference_longitude}</referenceLongitude> <!-- the initial longitude [degrees [-180, 180]] -->
-      <referenceAltitude>${reference_altitude}</referenceAltitude> <!-- the initial altitude [m] -->
-      <referenceHeading>${reference_heading}</referenceHeading> <!-- the initial degrees, measured from North [deg] -->
-      <noiseNormalPosition>${noise_normal_position}</noiseNormalPosition> <!-- standard deviation of additive white gaussian noise [m] -->
-      <noiseUniformPosition>${noise_uniform_position}</noiseUniformPosition> <!-- symmetric bounds of uniform noise [m] -->
-    </plugin>
-  </gazebo>
+    <!-- GPS link -->
+    <link name="${namespace}/gps${gps_suffix}_link">
+      <inertial>
+        <xacro:insert_block name="inertia" />
+        <mass value="${mass_gps_sensor}" />  <!-- [kg] -->
+        <origin xyz="0 0 0" rpy="0 0 0" />
+      </inertial>
+    </link>
+    <!-- GPS joint -->
+    <joint name="${namespace}/gps${gps_suffix}_joint" type="revolute">
+      <xacro:insert_block name="origin" />
+      <parent link="${parent_link}" />
+      <child link="${namespace}/gps${gps_suffix}_link" />
+      <limit upper="0" lower="0" effort="0" velocity="0" />
+    </joint>
+    <gazebo>
+      <plugin filename="librotors_gazebo_gps_plugin.so" name="rotors_gazebo_gps${gps_suffix}_plugin">
+        <robotNamespace>${namespace}</robotNamespace> <!-- (string, required): ros namespace in which the messages are published -->
+        <linkName>${namespace}/gps${gps_suffix}_link</linkName> <!-- (string, required): name of the body which holds the GPS sensor -->
+        <gpsTopic>${gps_topic}</gpsTopic> <!-- (string): name of the sensor output topic and prefix of service names (defaults to 'gps') -->
+        <groundSpeedTopic>${ground_speed_topic}</groundSpeedTopic> <!-- (string): name of the ground speed output topic (defaults to 'ground_speed') -->
+        <referenceLatitude>${reference_latitude}</referenceLatitude> <!-- the initial latitude [degrees [-90, 90]] -->
+        <referenceLongitude>${reference_longitude}</referenceLongitude> <!-- the initial longitude [degrees [-180, 180]] -->
+        <referenceAltitude>${reference_altitude}</referenceAltitude> <!-- the initial altitude [m] -->
+        <referenceHeading>${reference_heading}</referenceHeading> <!-- the initial degrees, measured from North [deg] -->
+        <noiseNormalPosition>${noise_normal_position}</noiseNormalPosition> <!-- standard deviation of additive white gaussian noise [m] -->
+        <noiseUniformPosition>${noise_uniform_position}</noiseUniformPosition> <!-- symmetric bounds of uniform noise [m] -->
+      </plugin>
+    </gazebo>
   </xacro:macro>
 
   <!-- Macro to add a magnetometer sensor. -->
@@ -423,67 +423,96 @@
     params="namespace magnetometer_suffix parent_link magnetometer_topic mass_magnetometer
       reference_magnetic_field_north reference_magnetic_field_east reference_magnetic_field_down
       noise_normal noise_uniform *inertia *origin">
-  <!-- Magnetometer link -->
-  <link name="${namespace}/magnetometer${magnetometer_suffix}_link">
-    <inertial>
-      <xacro:insert_block name="inertia" />
-      <mass value="${mass_magnetometer}" />  <!-- [kg] -->
-      <origin xyz="0 0 0" rpy="0 0 0" />
-    </inertial>
-  </link>
-  <!-- Magnetometer joint -->
-  <joint name="${namespace}/magnetometer${magnetometer_suffix}_joint" type="revolute">
-    <xacro:insert_block name="origin" />
-    <parent link="${parent_link}" />
-    <child link="${namespace}/magnetometer${magnetometer_suffix}_link" />
-    <limit upper="0" lower="0" effort="0" velocity="0" />
-  </joint>
-  <gazebo>
-    <plugin filename="librotors_gazebo_magnetometer_plugin.so" name="rotors_gazebo_magnetometer${magnetometer_suffix}_plugin">
-      <robotNamespace>${namespace}</robotNamespace> <!-- (string, required): ros namespace in which the messages are published -->
-      <linkName>${namespace}/magnetometer${magnetometer_suffix}_link</linkName> <!-- (string, required): name of the body which holds the magnetometer -->
-      <magnetometerTopic>${magnetometer_topic}</magnetometerTopic> <!-- (string): name of the sensor output topic and prefix of service names (defaults to 'magnetic_field') -->
-      <!-- [Tesla] Below are the North, East, and Down components of the Earth's magnetic field at the reference location.
-           The default reference location is Zurich (lat=+47.3667degN, lon=+8.5500degE, h=+500m, WGS84).
-	   You can obtain the magnetic field strength for your location using the World Magnetic Model: 
-           https://www.ngdc.noaa.gov/geomag/WMM/calculators.shtml -->
-      <referenceMagNorth>${reference_magnetic_field_north}</referenceMagNorth>
-      <referenceMagEast>${reference_magnetic_field_east}</referenceMagEast>
-      <referenceMagDown>${reference_magnetic_field_down}</referenceMagDown>
-      <noiseNormal>${noise_normal}</noiseNormal> <!-- standard deviation of additive white gaussian noise [rad] -->
-      <noiseUniform>${noise_uniform}</noiseUniform> <!-- symmetric bounds of uniform noise [rad] -->
-    </plugin>
-  </gazebo>
+    <!-- Magnetometer link -->
+    <link name="${namespace}/magnetometer${magnetometer_suffix}_link">
+      <inertial>
+        <xacro:insert_block name="inertia" />
+        <mass value="${mass_magnetometer}" />  <!-- [kg] -->
+        <origin xyz="0 0 0" rpy="0 0 0" />
+      </inertial>
+    </link>
+    <!-- Magnetometer joint -->
+    <joint name="${namespace}/magnetometer${magnetometer_suffix}_joint" type="revolute">
+      <xacro:insert_block name="origin" />
+      <parent link="${parent_link}" />
+      <child link="${namespace}/magnetometer${magnetometer_suffix}_link" />
+      <limit upper="0" lower="0" effort="0" velocity="0" />
+    </joint>
+    <gazebo>
+      <plugin filename="librotors_gazebo_magnetometer_plugin.so" name="rotors_gazebo_magnetometer${magnetometer_suffix}_plugin">
+        <robotNamespace>${namespace}</robotNamespace> <!-- (string, required): ros namespace in which the messages are published -->
+        <linkName>${namespace}/magnetometer${magnetometer_suffix}_link</linkName> <!-- (string, required): name of the body which holds the magnetometer -->
+        <magnetometerTopic>${magnetometer_topic}</magnetometerTopic> <!-- (string): name of the sensor output topic and prefix of service names (defaults to 'magnetic_field') -->
+        <!-- [Tesla] Below are the North, East, and Down components of the Earth's magnetic field at the reference location.
+             The default reference location is Zurich (lat=+47.3667degN, lon=+8.5500degE, h=+500m, WGS84).
+	     You can obtain the magnetic field strength for your location using the World Magnetic Model: 
+             https://www.ngdc.noaa.gov/geomag/WMM/calculators.shtml -->
+        <referenceMagNorth>${reference_magnetic_field_north}</referenceMagNorth>
+        <referenceMagEast>${reference_magnetic_field_east}</referenceMagEast>
+        <referenceMagDown>${reference_magnetic_field_down}</referenceMagDown>
+        <noiseNormal>${noise_normal}</noiseNormal> <!-- standard deviation of additive white gaussian noise [rad] -->
+        <noiseUniform>${noise_uniform}</noiseUniform> <!-- symmetric bounds of uniform noise [rad] -->
+      </plugin>
+    </gazebo>
   </xacro:macro>
 
   <!-- Macro to add an air pressure sensor. -->
   <xacro:macro name="pressure_sensor_plugin_macro"
     params="namespace pressure_sensor_suffix parent_link pressure_topic mass_pressure_sensor
       reference_altitude pressure_variance *inertia *origin">
-  <!-- Pressure sensor link -->
-  <link name="${namespace}/pressure_sensor${pressure_sensor_suffix}_link">
-    <inertial>
-      <xacro:insert_block name="inertia" />
-      <mass value="${mass_pressure_sensor}" />  <!-- [kg] -->
-      <origin xyz="0 0 0" rpy="0 0 0" />
-    </inertial>
-  </link>
-  <!-- Pressure sensor joint -->
-  <joint name="${namespace}/pressure_sensor${pressure_sensor_suffix}_joint" type="revolute">
-    <xacro:insert_block name="origin" />
-    <parent link="${parent_link}" />
-    <child link="${namespace}/pressure_sensor${pressure_sensor_suffix}_link" />
-    <limit upper="0" lower="0" effort="0" velocity="0" />
-  </joint>
-  <gazebo>
-    <plugin filename="librotors_gazebo_pressure_plugin.so" name="rotors_gazebo_pressure_sensor${pressure_sensor_suffix}_plugin">
-      <robotNamespace>${namespace}</robotNamespace> <!-- (string, required): ros namespace in which the messages are published -->
-      <linkName>${namespace}/pressure_sensor${pressure_sensor_suffix}_link</linkName> <!-- (string, required): name of the body which holds the pressure sensor -->
-      <pressureTopic>${pressure_topic}</pressureTopic> <!-- (string): name of the sensor output topic and prefix of service names (defaults to 'air_pressure') -->
-      <referenceAltitude>${reference_altitude}</referenceAltitude> <!-- the initial altitude [m] -->
-      <pressureVariance>${pressure_variance}</pressureVariance> <!-- the air pressure variance [Pa^2] -->
-    </plugin>
-  </gazebo>
+    <!-- Pressure sensor link -->
+    <link name="${namespace}/pressure_sensor${pressure_sensor_suffix}_link">
+      <inertial>
+        <xacro:insert_block name="inertia" />
+        <mass value="${mass_pressure_sensor}" />  <!-- [kg] -->
+        <origin xyz="0 0 0" rpy="0 0 0" />
+      </inertial>
+    </link>
+    <!-- Pressure sensor joint -->
+    <joint name="${namespace}/pressure_sensor${pressure_sensor_suffix}_joint" type="revolute">
+      <xacro:insert_block name="origin" />
+      <parent link="${parent_link}" />
+      <child link="${namespace}/pressure_sensor${pressure_sensor_suffix}_link" />
+      <limit upper="0" lower="0" effort="0" velocity="0" />
+    </joint>
+    <gazebo>
+      <plugin filename="librotors_gazebo_pressure_plugin.so" name="rotors_gazebo_pressure_sensor${pressure_sensor_suffix}_plugin">
+        <robotNamespace>${namespace}</robotNamespace> <!-- (string, required): ros namespace in which the messages are published -->
+        <linkName>${namespace}/pressure_sensor${pressure_sensor_suffix}_link</linkName> <!-- (string, required): name of the body which holds the pressure sensor -->
+        <pressureTopic>${pressure_topic}</pressureTopic> <!-- (string): name of the sensor output topic and prefix of service names (defaults to 'air_pressure') -->
+        <referenceAltitude>${reference_altitude}</referenceAltitude> <!-- the initial altitude [m] -->
+        <pressureVariance>${pressure_variance}</pressureVariance> <!-- the air pressure variance [Pa^2] -->
+      </plugin>
+    </gazebo>
+  </xacro:macro>
+
+  <!-- Macro to add an air speed sensor. -->
+  <xacro:macro name="air_speed_sensor_plugin_macro"
+    params="namespace parent_link mass_air_speed_sensor air_speed_topic
+      ground_speed_topic wind_speed_topic *inertia *origin">
+    <!-- Air speed sensor link -->
+    <link name="${namespace}/air_speed_sensor_link">
+      <inertial>
+        <xacro:insert_block name="inertia" />
+        <mass value="${mass_air_speed_sensor}" />  <!-- [kg] -->
+        <origin xyz="0 0 0" rpy="0 0 0" />
+      </inertial>
+    </link>
+    <!-- Air speed sensor joint -->
+    <joint name="${namespace}/air_speed_sensor_joint" type="revolute">
+      <xacro:insert_block name="origin" />
+      <parent link="${parent_link}" />
+      <child link="${namespace}/air_speed_sensor_link" />
+      <limit upper="0" lower="0" effort="0" velocity="0" />
+    </joint>
+    <gazebo>
+      <plugin filename="librotors_gazebo_air_speed_plugin.so" name="rotors_gazebo_air_speed_sensor_plugin">
+        <robotNamespace>${namespace}</robotNamespace> <!-- (string, required): ros namespace in which the messages are published -->
+        <airSpeedTopic>${air_speed_topic}</airSpeedTopic> <!-- (string): name of the topic for publishing air speed -->
+        <groundSpeedTopic>${ground_speed_topic}</groundSpeedTopic> <!-- (string): name of the topic for receiving ground speed data -->
+        <windSpeedTopic>${wind_speed_topic}</windSpeedTopic> <!-- (string): name of the topic for receiving wind speed data -->
+      </plugin>
+    </gazebo>
   </xacro:macro>
 
   <!-- VI sensor macros -->
@@ -826,6 +855,19 @@
       <inertia ixx="0.00001" ixy="0.0" ixz="0.0" iyy="0.00001" iyz="0.0" izz="0.00001" />
       <origin xyz="0 0 0" rpy="0 0 0" />
     </xacro:pressure_sensor_plugin_macro>
+  </xacro:macro>
+
+  <xacro:macro name="default_air_speed_sensor" params="namespace parent_link">
+    <xacro:air_speed_sensor_plugin_macro
+      namespace="${namespace}"
+      parent_link="${parent_link}"
+      mass_air_speed_sensor="0.015" 
+      air_speed_topic="air_speed"
+      ground_speed_topic="ground_speed"
+      wind_speed_topic="gazebo/wind_speed">
+      <inertia ixx="0.00001" ixy="0.0" ixz="0.0" iyy="0.00001" iyz="0.0" izz="0.00001" />
+      <origin xyz="0 0 0" rpy="0 0 0" />
+    </xacro:air_speed_sensor_plugin_macro>
   </xacro:macro>
 
 </robot>

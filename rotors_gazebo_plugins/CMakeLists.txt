@@ -102,6 +102,10 @@ add_library(rotors_gazebo_aero_surface_plugin src/gazebo_aero_surface_plugin.cpp
 target_link_libraries(rotors_gazebo_aero_surface_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
 add_dependencies(rotors_gazebo_aero_surface_plugin ${catkin_EXPORTED_TARGETS})
 
+add_library(rotors_gazebo_air_speed_plugin src/gazebo_air_speed_plugin.cpp)
+target_link_libraries(rotors_gazebo_air_speed_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+add_dependencies(rotors_gazebo_air_speed_plugin ${catkin_EXPORTED_TARGETS})
+
 install(
   TARGETS
     rotors_gazebo_motor_model
@@ -117,6 +121,7 @@ install(
     rotors_gazebo_magnetometer_plugin
     rotors_gazebo_pressure_plugin
     rotors_gazebo_aero_surface_plugin
+    rotors_gazebo_air_speed_plugin
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 )

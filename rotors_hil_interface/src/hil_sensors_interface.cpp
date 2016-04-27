@@ -23,6 +23,7 @@
 namespace rotors_hil {
 
 HilSensorsInterface::HilSensorsInterface():
+  received_air_speed_(false),
   received_gps_(false),
   received_ground_speed_(false),
   received_imu_(false),
@@ -39,6 +40,7 @@ HilSensorsInterface::HilSensorsInterface():
 {
   ros::NodeHandle pnh("~");
 
+  std::string air_speed_sub_topic;
   std::string gps_sub_topic;
   std::string ground_speed_sub_topic;
   std::string imu_sub_topic;
@@ -46,6 +48,7 @@ HilSensorsInterface::HilSensorsInterface():
   std::string pressure_sub_topic;
   std::string set_mode_sub_topic;
   std::string mavlink_pub_topic;
+  pnh.param("air_speed_topic", air_speed_sub_topic, kDefaultAirSpeedSubTopic);
   pnh.param("gps_topic", gps_sub_topic, std::string(mav_msgs::default_topics::GPS));
   pnh.param("ground_speed_topic", ground_speed_sub_topic, kDefaultGroundSpeedSubTopic);
   pnh.param("imu_topic", imu_sub_topic, std::string(mav_msgs::default_topics::IMU));
@@ -54,6 +57,7 @@ HilSensorsInterface::HilSensorsInterface():
   pnh.param("set_mode_topic", set_mode_sub_topic, kDefaultSetModeSubTopic);
   pnh.param("mavlink_pub_topic", mavlink_pub_topic, kDefaultMavlinkPubTopic);
 
+  air_speed_sub_ = nh_.subscribe(air_speed_sub_topic, 1, &HilSensorsInterface::AirSpeedCallback, this);
   gps_sub_ = nh_.subscribe(gps_sub_topic, 1, &HilSensorsInterface::GpsCallback, this);
   ground_speed_sub_ = nh_.subscribe(ground_speed_sub_topic, 1, &HilSensorsInterface::GroundSpeedCallback, this);
   imu_sub_ = nh_.subscribe(imu_sub_topic, 1, &HilSensorsInterface::ImuCallback, this);
@@ -86,6 +90,19 @@ void HilSensorsInterface::MainTask() {
   }
 }
 
+void HilSensorsInterface::AirSpeedCallback(const geometry_msgs::Vector3ConstPtr& air_speed_msg) {
+  double air_speed = sqrt(air_speed_msg->x * air_speed_msg->x +
+                          air_speed_msg->y * air_speed_msg->y +
+                          air_speed_msg->z * air_speed_msg->z);
+
+  // The same for now
+  ind_airspeed_ = air_speed * 100;
+  true_airspeed_ = air_speed * 100;
+
+  if (!received_air_speed_)
+    received_air_speed_ = true;
+}
+
 void HilSensorsInterface::GpsCallback(const sensor_msgs::NavSatFixConstPtr& gps_msg) {
   lat_ = gps_msg->latitude * 10000000;
   lon_ = gps_msg->longitude * 10000000;
@@ -107,12 +124,6 @@ void HilSensorsInterface::GroundSpeedCallback(const geometry_msgs::Vector3ConstP
   vd_ = ground_speed_msg->z * 100;
 
   vel_ = sqrt(vn_^2 + ve_^2 + vd_^2);
-
-  //
-  // Temporary
-  //
-  ind_airspeed_ = vel_;
-  true_airspeed_ = vel_;
 
   if (!received_ground_speed_)
     received_ground_speed_ = true;
@@ -255,8 +266,8 @@ void HilSensorsInterface::SendHilSensorData() {
   hil_state_qtrn_msg_.vx = vn_;                         // gps
   hil_state_qtrn_msg_.vy = ve_;                         // gps
   hil_state_qtrn_msg_.vz = vd_;                         // gps
-  hil_state_qtrn_msg_.ind_airspeed = ind_airspeed_;     // gps - FOR NOW
-  hil_state_qtrn_msg_.true_airspeed = true_airspeed_;   // gps - FOR NOW
+  hil_state_qtrn_msg_.ind_airspeed = ind_airspeed_;     // air speed sensor
+  hil_state_qtrn_msg_.true_airspeed = true_airspeed_;   // air speed sensor
   hil_state_qtrn_msg_.xacc = acc_x_;                    // imu
   hil_state_qtrn_msg_.yacc = acc_y_;                    // imu
   hil_state_qtrn_msg_.zacc = acc_z_;                    // imu
@@ -276,6 +287,7 @@ void HilSensorsInterface::SendHilSensorData() {
 }
 
 void HilSensorsInterface::ClearAllSensorsUpdateStatuses() {
+  received_air_speed_ = false;
   received_gps_ = false;
   received_ground_speed_ = false;
   received_imu_ = false;
@@ -284,7 +296,7 @@ void HilSensorsInterface::ClearAllSensorsUpdateStatuses() {
 }
 
 bool HilSensorsInterface::AreAllSensorsUpdated() {
-  return (received_gps_ && received_ground_speed_ && received_imu_ && received_mag_ && received_pressure_);
+  return (received_air_speed_ && received_gps_ && received_ground_speed_ && received_imu_ && received_mag_ && received_pressure_);
 }
 }
 

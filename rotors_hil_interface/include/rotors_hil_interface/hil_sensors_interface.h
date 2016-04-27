@@ -38,6 +38,7 @@ static constexpr int kAllFieldsUpdated = 4095;
 static constexpr double kDefaultGravityMagnitude = 9.8068;
 
 // Default values
+static const std::string kDefaultAirSpeedSubTopic = "air_speed";
 static const std::string kDefaultGroundSpeedSubTopic = "ground_speed";
 static const std::string kDefaultPressureSubTopic = "air_pressure";
 static const std::string kDefaultSetModeSubTopic = "set_mode";
@@ -51,6 +52,7 @@ class HilSensorsInterface {
   void MainTask();
 
   // Callbacks
+  void AirSpeedCallback(const geometry_msgs::Vector3ConstPtr& air_speed_msg);
   void GpsCallback(const sensor_msgs::NavSatFixConstPtr& gps_msg);
   void GroundSpeedCallback(const geometry_msgs::Vector3ConstPtr& ground_speed_msg);
   void ImuCallback(const sensor_msgs::ImuConstPtr& imu_msg);
@@ -66,6 +68,7 @@ class HilSensorsInterface {
  private:
   // ROS interface
   ros::NodeHandle nh_;
+  ros::Subscriber air_speed_sub_;
   ros::Subscriber gps_sub_;
   ros::Subscriber ground_speed_sub_;
   ros::Subscriber imu_sub_;
@@ -81,6 +84,7 @@ class HilSensorsInterface {
   mavlink_command_long_t cmd_msg_;
 
   // Sensor update trackers
+  bool received_air_speed_;
   bool received_gps_;
   bool received_ground_speed_;
   bool received_imu_;
@@ -109,8 +113,8 @@ class HilSensorsInterface {
   uint16_t epv_;                // GPS VDOP vertical dilution of position in cm (m*100). If unknown, set to: 65535
   uint16_t vel_;                // GPS ground speed (m/s * 100). If unknown, set to: 65535
   uint16_t cog_;                // Course over ground (NOT heading, but direction of movement) in degrees * 100. If unknown, set to: 65535
-  uint16_t ind_airspeed_;       //
-  uint16_t true_airspeed_;      //
+  uint16_t ind_airspeed_;       // Indicated airspeed, expressed as m/s * 100
+  uint16_t true_airspeed_;      // True airspeed, expressed as m/s * 100*/
   int16_t acc_x_;               // X acceleration (milli g's)
   int16_t acc_y_;               // Y acceleration (milli g's)
   int16_t acc_z_;               // Z acceleration (milli g's)
