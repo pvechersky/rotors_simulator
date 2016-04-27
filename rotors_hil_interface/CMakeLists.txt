@@ -4,19 +4,20 @@ project(rotors_hil_interface)
 add_definitions(-std=c++11)
 
 find_package(catkin REQUIRED COMPONENTS
-  roscpp
-  mavros
-  mav_msgs
-  std_msgs
-  mavros_msgs
-  sensor_msgs
   cmake_modules
+  geometry_msgs
+  mav_msgs
+  mavros
+  mavros_msgs
+  roscpp
+  sensor_msgs
+  std_msgs
 )
 
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES
-  CATKIN_DEPENDS roscpp mav_msgs mavros mavros_msgs sensor_msgs std_msgs
+  CATKIN_DEPENDS geometry_msgs mav_msgs mavros mavros_msgs roscpp sensor_msgs std_msgs
   DEPENDS
 )
 

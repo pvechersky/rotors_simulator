@@ -68,8 +68,13 @@ void GazeboGpsPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
 
   frame_id_ = link_name;
 
+
+  std::string gps_topic;
+  std::string ground_speed_topic;
+
   // Retrieve the rest of the SDF parameters
-  getSdfParam<std::string>(_sdf, "gpsTopic", gps_topic_, mav_msgs::default_topics::GPS);
+  getSdfParam<std::string>(_sdf, "gpsTopic", gps_topic, mav_msgs::default_topics::GPS);
+  getSdfParam<std::string>(_sdf, "groundSpeedTopic", ground_speed_topic, kDefaultGroundSpeedPubTopic);
   getSdfParam<double>(_sdf, "referenceLatitude", ref_lat_, kDefaultRefLat);
   getSdfParam<double>(_sdf, "referenceLongitude", ref_lon_, kDefaultRefLon);
   getSdfParam<double>(_sdf, "referenceAltitude", ref_alt_, kDefaultRefAlt);
@@ -80,9 +85,10 @@ void GazeboGpsPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
       event::Events::ConnectWorldUpdateBegin(
           boost::bind(&GazeboGpsPlugin::OnUpdate, this, _1));
 
-  gps_pub_ = node_handle_->advertise<sensor_msgs::NavSatFix>(gps_topic_, 1);
+  gps_pub_ = node_handle_->advertise<sensor_msgs::NavSatFix>(gps_topic, 1);
+  ground_speed_pub_ = node_handle_->advertise<geometry_msgs::Vector3>(ground_speed_topic, 1);
 
-  // Fill gps message
+  // Fill the GPS message
   gps_message_.header.frame_id = frame_id_;
   gps_message_.status.service = sensor_msgs::NavSatStatus::SERVICE_GPS;
   gps_message_.status.status = sensor_msgs::NavSatStatus::STATUS_FIX;
@@ -90,6 +96,11 @@ void GazeboGpsPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
   gps_message_.longitude = ref_lon_;
   gps_message_.altitude = ref_alt_;
   gps_message_.position_covariance.fill(0.0);
+
+  // Fill the ground speed message
+  ground_speed_msg_.x = 0.0;
+  ground_speed_msg_.y = 0.0;
+  ground_speed_msg_.z = 0.0;
 
   double temp = 1.0 / (1.0 - kEccentrity2 * sin(ref_lat_ * M_PI / 180.0) * sin(ref_lat_ * M_PI / 180.0));
   double prime_vertical_radius = kEquatorialRadius * sqrt(temp);
@@ -101,8 +112,9 @@ void GazeboGpsPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
 void GazeboGpsPlugin::OnUpdate(const common::UpdateInfo& _info) {
   common::Time current_time  = world_->GetSimTime();
 
-  // Get the current pose from Gazebo
+  // Get the current world pose and velocity from Gazebo
   math::Vector3 position = model_->GetWorldPose().pos;
+  math::Vector3 velocity = model_->GetWorldLinearVel();
 
   // Update the GPS coordinates
   gps_message_.latitude = ref_lat_ + (cos(ref_heading_) * position.x + sin(ref_heading_) * position.y) / radius_north_ * 180.0 / M_PI;
@@ -114,9 +126,17 @@ void GazeboGpsPlugin::OnUpdate(const common::UpdateInfo& _info) {
   gps_message_.header.stamp.sec = current_time.sec;
   gps_message_.header.stamp.nsec = current_time.nsec;
 
-  // Publish the message
+  // Publish the GPS message
   gps_pub_.publish(gps_message_);
   gps_sequence_++;
+
+  // Update the ground speed message
+  ground_speed_msg_.x = velocity.x;
+  ground_speed_msg_.y = velocity.y;
+  ground_speed_msg_.z = velocity.z;
+
+  // Publish the ground speed message
+  ground_speed_pub_.publish(ground_speed_msg_);
 }
 
 GZ_REGISTER_MODEL_PLUGIN(GazeboGpsPlugin);

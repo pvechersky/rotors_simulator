@@ -19,44 +19,45 @@
  */
 
 #include "rotors_hil_interface/hil_sensors_interface.h"
-//#include "rotors_simulator/rotors_hil_interface/include/rotors_hil_interface/hil_sensors_interface.h"
 
 namespace rotors_hil {
 
 HilSensorsInterface::HilSensorsInterface():
   received_gps_(false),
+  received_ground_speed_(false),
   received_imu_(false),
   received_mag_(false),
-  received_odometry_(false),
   received_pressure_(false),
   pressure_diff_(0.0),
   temperature_(15.0),
   eph_(100),
   epv_(100),
   cog_(65535),
+  ind_airspeed_(0),
+  true_airspeed_(0),
   satellites_visible_(5)
 {
   ros::NodeHandle pnh("~");
 
   std::string gps_sub_topic;
+  std::string ground_speed_sub_topic;
   std::string imu_sub_topic;
   std::string mag_sub_topic;
-  std::string odometry_sub_topic;
   std::string pressure_sub_topic;
   std::string set_mode_sub_topic;
   std::string mavlink_pub_topic;
   pnh.param("gps_topic", gps_sub_topic, std::string(mav_msgs::default_topics::GPS));
+  pnh.param("ground_speed_topic", ground_speed_sub_topic, kDefaultGroundSpeedSubTopic);
   pnh.param("imu_topic", imu_sub_topic, std::string(mav_msgs::default_topics::IMU));
   pnh.param("mag_topic", mag_sub_topic, std::string(mav_msgs::default_topics::MAGNETIC_FIELD));
-  pnh.param("odometry_topic", odometry_sub_topic, std::string(mav_msgs::default_topics::ODOMETRY));
   pnh.param("pressure_topic", pressure_sub_topic, kDefaultPressureSubTopic);
   pnh.param("set_mode_topic", set_mode_sub_topic, kDefaultSetModeSubTopic);
   pnh.param("mavlink_pub_topic", mavlink_pub_topic, kDefaultMavlinkPubTopic);
 
   gps_sub_ = nh_.subscribe(gps_sub_topic, 1, &HilSensorsInterface::GpsCallback, this);
+  ground_speed_sub_ = nh_.subscribe(ground_speed_sub_topic, 1, &HilSensorsInterface::GroundSpeedCallback, this);
   imu_sub_ = nh_.subscribe(imu_sub_topic, 1, &HilSensorsInterface::ImuCallback, this);
   mag_sub_ = nh_.subscribe(mag_sub_topic, 1, &HilSensorsInterface::MagCallback, this);
-  odometry_sub_ = nh_.subscribe(odometry_sub_topic, 1, &HilSensorsInterface::OdometryCallback, this);
   pressure_sub_ = nh_.subscribe(pressure_sub_topic, 1, &HilSensorsInterface::PressureCallback, this);
   set_mode_sub_ = nh_.subscribe(set_mode_sub_topic, 1, &HilSensorsInterface::SetModeCallback, this);
 
@@ -99,10 +100,33 @@ void HilSensorsInterface::GpsCallback(const sensor_msgs::NavSatFixConstPtr& gps_
     received_gps_ = true;
 }
 
+void HilSensorsInterface::GroundSpeedCallback(const geometry_msgs::Vector3ConstPtr& ground_speed_msg) {
+  // Ground speed in HIL_STATE_QUATERNION message is express in cm/s
+  vn_ = ground_speed_msg->x * 100;
+  ve_ = ground_speed_msg->y * 100;
+  vd_ = ground_speed_msg->z * 100;
+
+  vel_ = sqrt(vn_^2 + ve_^2 + vd_^2);
+
+  //
+  // Temporary
+  //
+  ind_airspeed_ = vel_;
+  true_airspeed_ = vel_;
+
+  if (!received_ground_speed_)
+    received_ground_speed_ = true;
+}
+
 void HilSensorsInterface::ImuCallback(const sensor_msgs::ImuConstPtr& imu_msg) {
-  acc_x_ = imu_msg->linear_acceleration.x;
-  acc_y_ = imu_msg->linear_acceleration.y;
-  acc_z_ = imu_msg->linear_acceleration.z;
+  acc_x_ = imu_msg->linear_acceleration.x * 1000.0 / kDefaultGravityMagnitude;
+  acc_y_ = imu_msg->linear_acceleration.y * 1000.0 / kDefaultGravityMagnitude;
+  acc_z_ = imu_msg->linear_acceleration.z * 1000.0 / kDefaultGravityMagnitude;
+
+  att_w_ = imu_msg->orientation.w;
+  att_x_ = imu_msg->orientation.x;
+  att_y_ = imu_msg->orientation.y;
+  att_z_ = imu_msg->orientation.z;
 
   gyro_x_ = imu_msg->angular_velocity.x;
   gyro_y_ = imu_msg->angular_velocity.y;
@@ -121,22 +145,6 @@ void HilSensorsInterface::MagCallback(const sensor_msgs::MagneticFieldConstPtr &
 
   if (!received_mag_)
     received_mag_ = true;
-}
-
-void HilSensorsInterface::OdometryCallback(const nav_msgs::OdometryConstPtr& odom_msg) {
-  att_w_ = odom_msg->pose.pose.orientation.w;
-  att_x_ = odom_msg->pose.pose.orientation.x;
-  att_y_ = odom_msg->pose.pose.orientation.y;
-  att_z_ = odom_msg->pose.pose.orientation.z;
-
-  vn_ = odom_msg->twist.twist.linear.x * 100;
-  ve_ = odom_msg->twist.twist.linear.y * 100;
-  vd_ = odom_msg->twist.twist.linear.z * 100;
-
-  vel_ = sqrt(vn_^2 + ve_^2 + vd_^2);
-
-  if (!received_odometry_)
-    received_odometry_ = true;
 }
 
 void HilSensorsInterface::PressureCallback(const sensor_msgs::FluidPressureConstPtr &pressure_msg) {
@@ -180,21 +188,6 @@ void HilSensorsInterface::SendHilSensorData() {
 
   // Encode and publish the hil_sensor message
   /*hil_sensor_msg_.time_usec = current_time.nsec * 1000;
-  hil_sensor_msg_.xacc = 0.0f;
-  hil_sensor_msg_.yacc = 0.0f;
-  hil_sensor_msg_.zacc = 9.81f;
-  hil_sensor_msg_.xgyro = 0.0f;
-  hil_sensor_msg_.ygyro = 0.0f;
-  hil_sensor_msg_.zgyro = 0.0f;
-  hil_sensor_msg_.xmag = 0.21475f;
-  hil_sensor_msg_.ymag = 0.00797f;
-  hil_sensor_msg_.zmag = 0.42817f;
-  hil_sensor_msg_.abs_pressure = 0.0;
-  hil_sensor_msg_.diff_pressure = 0.0;
-  hil_sensor_msg_.pressure_alt = 500.0f;
-  hil_sensor_msg_.temperature = 15.0f;
-  hil_sensor_msg_.fields_updated = 4095;*/
-  /*hil_sensor_msg_.time_usec = current_time.nsec * 1000;
   hil_sensor_msg_.xacc = acc_x_;
   hil_sensor_msg_.yacc = acc_y_;
   hil_sensor_msg_.zacc = acc_z_;
@@ -219,23 +212,10 @@ void HilSensorsInterface::SendHilSensorData() {
   rmsg_hil_sensor->header.stamp.nsec = current_time.nsec;
   mavros_msgs::mavlink::convert(*msg, *rmsg_hil_sensor);
 
-  mavlink_pub_.publish(rmsg_hil_sensor);*/
+  mavlink_pub_.publish(rmsg_hil_sensor);
 
   // Encode and publish the hil_gps message
-  /*hil_gps_msg_.time_usec = current_time.nsec * 1000;
-  hil_gps_msg_.fix_type = 3;
-  hil_gps_msg_.lat = 47.3667 * 10000000;
-  hil_gps_msg_.lon = 8.5500 * 10000000;
-  hil_gps_msg_.alt = 500 * 1000;
-  hil_gps_msg_.eph = 65535;
-  hil_gps_msg_.epv = 65535;
-  hil_gps_msg_.vel = 0;
-  hil_gps_msg_.vn = 0;
-  hil_gps_msg_.ve = 0;
-  hil_gps_msg_.vd = 0;
-  hil_gps_msg_.cog = 0;
-  hil_gps_msg_.satellites_visible = 5;*/
-  /*hil_gps_msg_.time_usec = current_time.nsec * 1000;
+  hil_gps_msg_.time_usec = current_time.nsec * 1000;
   hil_gps_msg_.fix_type = fix_type_;
   hil_gps_msg_.lat = lat_;
   hil_gps_msg_.lon = lon_;
@@ -261,44 +241,25 @@ void HilSensorsInterface::SendHilSensorData() {
   mavlink_pub_.publish(rmsg_hil_gps);*/
 
   // Encode and publish the hil_state_quaternion message
-  /*hil_state_qtrn_msg_.time_usec = current_time.nsec * 1000;
-  hil_state_qtrn_msg_.attitude_quaternion[0] = 1.0;
-  hil_state_qtrn_msg_.attitude_quaternion[1] = 0.0;
-  hil_state_qtrn_msg_.attitude_quaternion[2] = 0.0;
-  hil_state_qtrn_msg_.attitude_quaternion[3] = 0.0;
-  hil_state_qtrn_msg_.rollspeed = 0.0;
-  hil_state_qtrn_msg_.pitchspeed = 0.0;
-  hil_state_qtrn_msg_.yawspeed = 0.0;
-  hil_state_qtrn_msg_.lat = 47.3667 * 10000000;
-  hil_state_qtrn_msg_.lon = 8.5500 * 10000000;
-  hil_state_qtrn_msg_.alt = 500 * 1000;
-  hil_state_qtrn_msg_.vx = 0;
-  hil_state_qtrn_msg_.vy = 0;
-  hil_state_qtrn_msg_.vz = 0;
-  hil_state_qtrn_msg_.ind_airspeed = 0;
-  hil_state_qtrn_msg_.true_airspeed = 0;
-  hil_state_qtrn_msg_.xacc = 0;
-  hil_state_qtrn_msg_.yacc = 0;
-  hil_state_qtrn_msg_.zacc = 9.81f;*/
   hil_state_qtrn_msg_.time_usec = current_time.nsec * 1000;
-  hil_state_qtrn_msg_.attitude_quaternion[0] = att_w_;
-  hil_state_qtrn_msg_.attitude_quaternion[1] = att_x_;
-  hil_state_qtrn_msg_.attitude_quaternion[2] = att_y_;
-  hil_state_qtrn_msg_.attitude_quaternion[3] = att_z_;
-  hil_state_qtrn_msg_.rollspeed = gyro_x_;
-  hil_state_qtrn_msg_.pitchspeed = gyro_y_;
-  hil_state_qtrn_msg_.yawspeed = gyro_z_;
-  hil_state_qtrn_msg_.lat = lat_;
-  hil_state_qtrn_msg_.lon = lon_;
-  hil_state_qtrn_msg_.alt = alt_;
-  hil_state_qtrn_msg_.vx = vn_;
-  hil_state_qtrn_msg_.vy = ve_;
-  hil_state_qtrn_msg_.vz = vd_;
-  hil_state_qtrn_msg_.ind_airspeed = vel_; // FOR NOW
-  hil_state_qtrn_msg_.true_airspeed = vel_; // FOR NOW
-  hil_state_qtrn_msg_.xacc = acc_x_;
-  hil_state_qtrn_msg_.yacc = acc_y_;
-  hil_state_qtrn_msg_.zacc = acc_z_;
+  hil_state_qtrn_msg_.attitude_quaternion[0] = att_w_;  // imu
+  hil_state_qtrn_msg_.attitude_quaternion[1] = att_x_;  // imu
+  hil_state_qtrn_msg_.attitude_quaternion[2] = att_y_;  // imu
+  hil_state_qtrn_msg_.attitude_quaternion[3] = att_z_;  // imu
+  hil_state_qtrn_msg_.rollspeed = gyro_x_;              // imu
+  hil_state_qtrn_msg_.pitchspeed = gyro_y_;             // imu
+  hil_state_qtrn_msg_.yawspeed = gyro_z_;               // imu
+  hil_state_qtrn_msg_.lat = lat_;                       // gps
+  hil_state_qtrn_msg_.lon = lon_;                       // gps
+  hil_state_qtrn_msg_.alt = alt_;                       // gps
+  hil_state_qtrn_msg_.vx = vn_;                         // gps
+  hil_state_qtrn_msg_.vy = ve_;                         // gps
+  hil_state_qtrn_msg_.vz = vd_;                         // gps
+  hil_state_qtrn_msg_.ind_airspeed = ind_airspeed_;     // gps - FOR NOW
+  hil_state_qtrn_msg_.true_airspeed = true_airspeed_;   // gps - FOR NOW
+  hil_state_qtrn_msg_.xacc = acc_x_;                    // imu
+  hil_state_qtrn_msg_.yacc = acc_y_;                    // imu
+  hil_state_qtrn_msg_.zacc = acc_z_;                    // imu
 
   mavlink_hil_state_quaternion_t* hil_state_qtrn_msg_ptr = &hil_state_qtrn_msg_;
   mavlink_msg_hil_state_quaternion_encode(1, 0, &mmsg, hil_state_qtrn_msg_ptr);
@@ -316,14 +277,14 @@ void HilSensorsInterface::SendHilSensorData() {
 
 void HilSensorsInterface::ClearAllSensorsUpdateStatuses() {
   received_gps_ = false;
+  received_ground_speed_ = false;
   received_imu_ = false;
   received_mag_ = false;
-  received_odometry_ = false;
   received_pressure_ = false;
 }
 
 bool HilSensorsInterface::AreAllSensorsUpdated() {
-  return (received_gps_ && received_imu_ && received_mag_ && received_odometry_ && received_pressure_);
+  return (received_gps_ && received_ground_speed_ && received_imu_ && received_mag_ && received_pressure_);
 }
 }
 

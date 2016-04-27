@@ -32,6 +32,7 @@
     wind_gust_direction="1 1 0"
     wind_gust_duration="2"
     wind_gust_start="40"
-    wind_gust_force_mean="5">
+    wind_gust_force_mean="5"
+    object_drag_coefficient="1.4">
   </xacro:wind_plugin_macro>
 </robot>

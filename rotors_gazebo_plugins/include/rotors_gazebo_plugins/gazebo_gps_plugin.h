@@ -26,6 +26,7 @@
 #include <gazebo/common/Plugin.hh>
 #include <gazebo/gazebo.hh>
 #include <gazebo/physics/physics.hh>
+#include <geometry_msgs/Vector3.h>
 #include <mav_msgs/default_topics.h>
 #include <ros/ros.h>
 #include <sensor_msgs/NavSatFix.h>
@@ -45,6 +46,9 @@ static constexpr double kDefaultRefLon = 8.5500;
 static constexpr double kDefaultRefAlt = 500.0;
 static constexpr double kDefaultRefHeading = 0.0;
 
+// Default ground speed topic name
+static const std::string kDefaultGroundSpeedPubTopic = "ground_speed";
+
 class GazeboGpsPlugin : public ModelPlugin {
  public:
   GazeboGpsPlugin();
@@ -56,10 +60,11 @@ class GazeboGpsPlugin : public ModelPlugin {
 
  private:
   std::string namespace_;
-  std::string gps_topic_;
+  std::string frame_id_;
+
   ros::NodeHandle* node_handle_;
   ros::Publisher gps_pub_;
-  std::string frame_id_;
+  ros::Publisher ground_speed_pub_;
 
   // Pointer to the world
   physics::WorldPtr world_;
@@ -81,6 +86,7 @@ class GazeboGpsPlugin : public ModelPlugin {
   double radius_east_;
 
   sensor_msgs::NavSatFix gps_message_;
+  geometry_msgs::Vector3 ground_speed_msg_;
 };
 }
 

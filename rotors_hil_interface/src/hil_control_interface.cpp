@@ -19,7 +19,6 @@
  */
 
 #include "rotors_hil_interface/hil_control_interface.h"
-//#include "rotors_simulator/rotors_hil_interface/include/rotors_hil_interface/hil_control_interface.h"
 
 namespace rotors_hil {
 

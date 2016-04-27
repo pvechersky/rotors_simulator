@@ -37,20 +37,19 @@
   <!-- Fixed-wing fuselage link -->
   <xacro:macro name="fixed_wing_base_macro"
     params="robot_namespace mass length width height color use_mesh_file 
-      mesh_file reset_topic air_density alpha_stall *inertia">
-<!--    <link name="${robot_namespace}/base_link"></link>
+      mesh_file reset_topic air_density alpha_stall *cog *inertia">
+    <link name="${robot_namespace}/base_link"></link>
 
     <joint name="${robot_namespace}/base_joint" type="fixed">
-      <origin xyz="0 0 0.1" rpy="0 0 0" />
+      <origin xyz="0 0 0.0" rpy="0 0 0" />
       <parent link="${robot_namespace}/base_link" />
       <child link="${robot_namespace}/base_link_inertia" />
     </joint>-->
 
     <link name="${robot_namespace}/base_link_inertia">
-      <pose>0 0 0 0 0 0</pose>
       <inertial>
         <mass value="${mass}" />
-        <origin xyz="0.0 0 0" rpy="0 0 0" />
+        <xacro:insert_block name="cog" />
         <xacro:insert_block name="inertia" />
       </inertial>
       <visual>
@@ -75,13 +74,13 @@
     <gazebo>
       <plugin name="${robot_namespace}_base" filename="librotors_gazebo_fixedwing_base_plugin.so">
         <robotNamespace>${robot_namespace}</robotNamespace>
-        <linkName>${robot_namespace}/base_link_inertia</linkName>
+        <linkName>${robot_namespace}/base_link</linkName>
 	<resetTopic>${reset_topic}</resetTopic>
 	<airDensity>${air_density}</airDensity>
 	<alphaStall>${alpha_stall}</alphaStall>
       </plugin>
     </gazebo>
-    <gazebo reference="${robot_namespace}/base_link_inertia">
+    <gazebo reference="${robot_namespace}/base_link">
       <material>Gazebo/${color}</material>
     </gazebo>
   </xacro:macro>
@@ -236,12 +235,13 @@
       positive_direction channel min_angle max_angle color use_mesh mesh surface_length
       surface_width surface_height *axis *joint_origin *link_origin *inertia">
 
-    <joint name="${robot_namespace}/${surface_name}_joint" type="revolute">
+    <joint name="${robot_namespace}/${surface_name}_joint" type="fixed">
       <xacro:insert_block name="joint_origin" />
       <xacro:insert_block name="axis" />
       <parent link="${parent}" />
       <child link="${robot_namespace}/${surface_name}" />
-      <limit upper="${max_angle}" lower="${min_angle}" effort="200.0" velocity="1.0" />
+      <limit upper="0" lower="0" effort="0" velocity="0" />
+      <!--<limit upper="${max_angle}" lower="${min_angle}" effort="200.0" velocity="1.0" />-->
       <dynamics friction="${9.8 * mass_surface}" damping="${9.8 * mass_surface}" />
     </joint>
 
@@ -271,7 +271,7 @@
       </collision>
     </link>
 
-    <gazebo>
+<!--    <gazebo>
       <plugin name="${robot_namespace}_${surface_name}" filename="librotors_gazebo_aero_surface_plugin.so">
         <robotNamespace>${robot_namespace}</robotNamespace>
         <jointName>${robot_namespace}/${surface_name}_joint</jointName>
@@ -284,7 +284,7 @@
         <minAngle>${min_angle}</minAngle>
         <maxAngle>${max_angle}</maxAngle>
       </plugin>
-    </gazebo>
+    </gazebo>-->
 
     <gazebo reference="${robot_namespace}/${surface_name}">
       <material>Gazebo/${color}</material>

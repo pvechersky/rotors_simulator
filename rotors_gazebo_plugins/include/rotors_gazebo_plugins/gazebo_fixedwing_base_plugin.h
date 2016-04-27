@@ -26,6 +26,8 @@
 #include <gazebo/common/Plugin.hh>
 #include <gazebo/gazebo.hh>
 #include <gazebo/physics/physics.hh>
+#include <mav_msgs/Actuators.h>
+#include <nav_msgs/Odometry.h>
 #include <std_msgs/Bool.h>
 
 #include "rotors_gazebo_plugins/common.h"
@@ -33,6 +35,7 @@
 
 namespace gazebo {
 // Default values
+static const std::string kDefaultCommandSubTopic = "gazebo/command/motor_speed";
 static const std::string kDefaultResetSubTopic = "reset";
 static constexpr double kDefaultAirDensity = 1.225;
 static constexpr double kDefaultAlphaStall = 0.3;
@@ -45,7 +48,7 @@ static constexpr double kCLa3 = 60.6017;
 
 static constexpr double kCD0 = 0.1360;
 static constexpr double kCDa = -0.6737;
-static constexpr double kCDa2 = -46.8324;
+static constexpr double kCDa2 = 5.4546;
 
 static constexpr double kCYb = -0.3073;
 
@@ -69,6 +72,10 @@ static constexpr double kCChord = 0.18;
 static constexpr double kRhoAir = 1.18;
 static constexpr double kSWing = 0.47;
 
+// Temporary
+static constexpr double kDeflectionMin = -20.0 * M_PI / 180.0;
+static constexpr double kDeflectionMax = 20.0 * M_PI / 180.0;
+
 class GazeboFixedWingBasePlugin : public ModelPlugin {
  public:
   GazeboFixedWingBasePlugin();
@@ -88,6 +95,7 @@ class GazeboFixedWingBasePlugin : public ModelPlugin {
 
   ros::NodeHandle* node_handle_;
   ros::ServiceServer register_aero_surface_service_;
+  ros::Subscriber deflections_sub_;
   ros::Subscriber reset_sub_;
 
   // Pointer to the world
@@ -109,9 +117,14 @@ class GazeboFixedWingBasePlugin : public ModelPlugin {
   double total_wing_area_;
   double total_tail_area_;
 
+  double aileron_deflection_;
+  double elevator_deflection_;
+  double rudder_deflection_;
+
   math::Quaternion orientation_;
 
-  void resetCallback(const std_msgs::BoolConstPtr& reset_msg);
+  void DeflectionsCallback(const mav_msgs::ActuatorsConstPtr& deflections);
+  void ResetCallback(const std_msgs::BoolConstPtr& reset_msg);
 };
 }
 

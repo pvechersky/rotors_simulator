@@ -33,7 +33,10 @@ GazeboFixedWingBasePlugin::GazeboFixedWingBasePlugin()
     : ModelPlugin(),
       node_handle_(0),
       total_wing_area_(0.0),
-      total_tail_area_(0.0) {
+      total_tail_area_(0.0),
+      aileron_deflection_(0.0),
+      elevator_deflection_(0.0),
+      rudder_deflection_(0.0) {
 }
 
 GazeboFixedWingBasePlugin::~GazeboFixedWingBasePlugin() {
@@ -67,7 +70,9 @@ void GazeboFixedWingBasePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _
   if (link_ == NULL)
     gzthrow("[gazebo_fixedwing_base_plugin] Couldn't find specified link \"" << link_name << "\".");
 
+  std::string command_sub_topic;
   std::string reset_topic;
+  getSdfParam<std::string>(_sdf, "commandSubTopic", command_sub_topic, kDefaultCommandSubTopic);
   getSdfParam<std::string>(_sdf, "resetTopic", reset_topic, kDefaultResetSubTopic);
   getSdfParam<double>(_sdf, "airDensity", air_density_, kDefaultAirDensity);
   getSdfParam<double>(_sdf, "alphaStall", alpha_stall_, kDefaultAlphaStall);
@@ -77,7 +82,8 @@ void GazeboFixedWingBasePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _
       event::Events::ConnectWorldUpdateBegin(
           boost::bind(&GazeboFixedWingBasePlugin::OnUpdate, this, _1));
 
-  reset_sub_ = node_handle_->subscribe(reset_topic, 1, &GazeboFixedWingBasePlugin::resetCallback, this);
+  deflections_sub_ = node_handle_->subscribe(command_sub_topic, 1, &GazeboFixedWingBasePlugin::DeflectionsCallback, this);
+  reset_sub_ = node_handle_->subscribe(reset_topic, 1, &GazeboFixedWingBasePlugin::ResetCallback, this);
 
   register_aero_surface_service_ =
           node_handle_->advertiseService("register_aero_surface", &GazeboFixedWingBasePlugin::RegisterAeroSurface, this);
@@ -86,29 +92,31 @@ void GazeboFixedWingBasePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _
 }
 
 void GazeboFixedWingBasePlugin::OnUpdate(const common::UpdateInfo& _info) {
-  //if (elevators_.size() == 0)
-  //  return;
-
   // Get the orientation of the airplane in world frame
-  //orientation_ = link_->GetWorldPose().rot;
+  orientation_ = link_->GetWorldPose().rot;
 
   // Rotate the velocity from world frame into local frame
   //math::Vector3 global_vel = link_->GetWorldLinearVel();
   //math::Vector3 body_vel = orientation_.RotateVector(global_vel);
 
   // Compute the forces and moments acting on the airplane
-  math::Vector3 forces;
-  math::Vector3 moments;
+  math::Vector3 forces(0.0, 0.0, 0.0);
+  math::Vector3 moments(0.0, 0.0, 0.0);
   ComputeAerodynamicForcesAndMoments(forces, moments);
 
-  //std::cout << " " << std::endl;
-  //std::cout << "Forces: " << forces.x << ", " << forces.y << ", " << forces.z << std::endl;
-  //std::cout << "Moments: " << moments.x << ", " << moments.y << ", " << moments.z << std::endl;
+  std::cout << " " << std::endl;
+  std::cout << "Forces world: " << forces.x << ", " << forces.y << ", " << forces.z << std::endl;
+  std::cout << "Moments world: " << moments.x << ", " << moments.y << ", " << moments.z << std::endl;
+
+  math::Vector3 forces_body = orientation_.RotateVector(forces);
+  math::Vector3 moments_body = orientation_.RotateVector(moments);
+  std::cout << "Forces body: " << forces_body.x << ", " << forces_body.y << ", " << forces_body.z << std::endl;
+  std::cout << "Moments body: " << moments_body.x << ", " << moments_body.y << ", " << moments_body.z << std::endl;
 
   // Apply forces and moments to the link
-  //link_->AddForce(forces);
+  link_->AddForce(forces_body);
   //link_->AddForceAtRelativePosition(forces, math::Vector3(0.5, 0.0, 0.0));
-  //link_->AddRelativeTorque(moments);
+  link_->AddRelativeTorque(moments);
 }
 
 bool GazeboFixedWingBasePlugin::RegisterAeroSurface(
@@ -149,24 +157,40 @@ void GazeboFixedWingBasePlugin::ComputeAerodynamicForcesAndMoments(math::Vector3
   math::Vector3 lin_vel = link_->GetRelativeLinearVel();
   math::Vector3 ang_vel = link_->GetRelativeAngularVel();
 
-  lin_vel = lin_vel.Normalize();
-
   double p = ang_vel.x;
   double q = ang_vel.y;
   double r = ang_vel.z;
 
-  double V = lin_vel.x;
-  double beta = lin_vel.y;
-  double alpha = lin_vel.z;
+  //double V = lin_vel.x;
+  //double beta = lin_vel.y;
+  //double alpha = lin_vel.z;
+
+  std::cout << "Vel: " << lin_vel.x << ", " << lin_vel.y << ", " << lin_vel.z << std::endl;
+
+  double sum_squares = lin_vel.x * lin_vel.x + lin_vel.y * lin_vel.y + lin_vel.z * lin_vel.z;
+
+  if (sum_squares < 0.1)
+    return;
+
+  double V = sqrt(sum_squares);
+
+  double beta = asin(lin_vel.y / V);
+  double alpha = atan(lin_vel.z / lin_vel.x);
 
   double p_hat = p * kBWing / (2.0 * V);
   double q_hat = q * kCChord / (2.0 * V);
   double r_hat = r * kBWing / (2.0 * V);
 
   // Get the control surfaces deflections
-  double uE = elevators_.at(0)->GetAngle(0).Radian();
-  double uA = ailerons_.at(0)->GetAngle(0).Radian();
-  double uR = rudder_->GetAngle(0).Radian();
+  //double uE = elevators_.at(0)->GetAngle(0).Radian();
+  //double uA = ailerons_.at(0)->GetAngle(0).Radian();
+  //double uR = rudder_->GetAngle(0).Radian();
+  //double uE = elevator_deflection_;
+  //double uA = aileron_deflection_;
+  //double uR = rudder_deflection_;
+  double uE = elevator_deflection_;
+  double uA = 0.0;
+  double uR = 0.0;
 
   double q_bar_S = 0.5 * kRhoAir * V * V * kSWing;
 
@@ -200,7 +224,16 @@ void GazeboFixedWingBasePlugin::ComputeAerodynamicForcesAndMoments(math::Vector3
   moments = math::Vector3(Lm, Mm, Nm);
 }
 
-void GazeboFixedWingBasePlugin::resetCallback(const std_msgs::BoolConstPtr& reset_msg) {
+void GazeboFixedWingBasePlugin::DeflectionsCallback(const mav_msgs::ActuatorsConstPtr& deflections) {
+  aileron_deflection_ = (kDeflectionMax + kDeflectionMin) * 0.5 + (kDeflectionMax - kDeflectionMin) * 0.5 * deflections->angles.at(0);
+  elevator_deflection_ = (kDeflectionMax + kDeflectionMin) * 0.5 + (kDeflectionMax - kDeflectionMin) * 0.5 * deflections->angles.at(1);
+  rudder_deflection_ = (kDeflectionMax + kDeflectionMin) * 0.5 + (kDeflectionMax - kDeflectionMin) * 0.5 * deflections->angles.at(2);
+  //aileron_deflection_ = deflections->angles.at(0);
+  //elevator_deflection_ = deflections->angles.at(1);
+  //rudder_deflection_ = deflections->angles.at(2);
+}
+
+void GazeboFixedWingBasePlugin::ResetCallback(const std_msgs::BoolConstPtr& reset_msg) {
   if (reset_msg->data) {
     math::Pose pose = model_->GetWorldPose();
     pose.pos.x = 0.0;

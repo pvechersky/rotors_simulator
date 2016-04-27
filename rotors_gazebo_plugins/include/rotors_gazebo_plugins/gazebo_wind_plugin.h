@@ -30,12 +30,17 @@
 #include <gazebo/gazebo.hh>
 #include <gazebo/physics/physics.hh>
 
+#include "rotors_comm/WindSpeed.h"
 #include "rotors_gazebo_plugins/common.h"
 
 namespace gazebo {
+// Constants
+static constexpr double kAirDensity = 1.225;
+
 // Default values
 static const std::string kDefaultFrameId = "world";
 static const std::string kDefaultLinkName = "base_link";
+static const std::string kDefaultWindSpeedPubTopic = "gazebo/wind_speed";
 
 static constexpr double kDefaultWindForceMean = 0.0;
 static constexpr double kDefaultWindForceVariance = 0.0;
@@ -48,7 +53,7 @@ static constexpr double kDefaultWindGustDuration = 0.0;
 static const math::Vector3 kDefaultWindDirection = math::Vector3(1, 0, 0);
 static const math::Vector3 kDefaultWindGustDirection = math::Vector3(0, 1, 0);
 
-
+static constexpr double kDefaultObjectDragCoefficient = 1.4;
 
 /// \brief This gazebo plugin simulates wind acting on a model.
 class GazeboWindPlugin : public ModelPlugin {
@@ -57,17 +62,22 @@ class GazeboWindPlugin : public ModelPlugin {
       : ModelPlugin(),
         namespace_(kDefaultNamespace),
         wind_pub_topic_(mav_msgs::default_topics::WIND),
+        wind_speed_pub_topic_(kDefaultWindSpeedPubTopic),
         wind_force_mean_(kDefaultWindForceMean),
         wind_force_variance_(kDefaultWindForceVariance),
         wind_gust_force_mean_(kDefaultWindGustForceMean),
         wind_gust_force_variance_(kDefaultWindGustForceVariance),
         wind_direction_(kDefaultWindDirection),
         wind_gust_direction_(kDefaultWindGustDirection),
+        object_drag_coefficient_(kDefaultObjectDragCoefficient),
+        normal_surface_areas_(math::Vector3(0.0, 0.0, 0.0)),
         frame_id_(kDefaultFrameId),
         link_name_(kDefaultLinkName),
         node_handle_(NULL) {}
 
   virtual ~GazeboWindPlugin();
+
+  bool GetLinkGeometry();
 
  protected:
   /// \brief Load the plugin.
@@ -92,20 +102,26 @@ class GazeboWindPlugin : public ModelPlugin {
   std::string frame_id_;
   std::string link_name_;
   std::string wind_pub_topic_;
+  std::string wind_speed_pub_topic_;
 
   double wind_force_mean_;
   double wind_force_variance_;
   double wind_gust_force_mean_;
   double wind_gust_force_variance_;
 
+  double object_drag_coefficient_;
+
   math::Vector3 xyz_offset_;
   math::Vector3 wind_direction_;
   math::Vector3 wind_gust_direction_;
+
+  math::Vector3 normal_surface_areas_;
 
   common::Time wind_gust_end_;
   common::Time wind_gust_start_;
 
   ros::Publisher wind_pub_;
+  ros::Publisher wind_speed_pub_;
 
   ros::NodeHandle *node_handle_;
 };

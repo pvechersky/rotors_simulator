@@ -363,7 +363,7 @@
   <xacro:macro name="wind_plugin_macro"
     params="namespace xyz_offset wind_direction wind_force_mean
       wind_gust_direction wind_gust_duration wind_gust_start
-      wind_gust_force_mean">
+      wind_gust_force_mean object_drag_coefficient">
     <gazebo>
       <plugin filename="librotors_gazebo_wind_plugin.so" name="wind_plugin">
         <frameId>world</frameId>
@@ -376,14 +376,15 @@
         <windGustDuration>${wind_gust_duration}</windGustDuration> <!-- [s] -->
         <windGustStart>${wind_gust_start}</windGustStart> <!-- [s] -->
         <windGustForceMean>${wind_gust_force_mean}</windGustForceMean> <!-- [N] -->
+        <objectDragCoefficient>${object_drag_coefficient}</objectDragCoefficient>
       </plugin>
     </gazebo>
   </xacro:macro>
 
   <!-- Macro to add a GPS sensor. -->
   <xacro:macro name="gps_plugin_macro" 
-    params="namespace gps_suffix parent_link gps_topic mass_gps_sensor
-      reference_latitude reference_longitude reference_altitude
+    params="namespace gps_suffix parent_link gps_topic ground_speed_topic
+      mass_gps_sensor reference_latitude reference_longitude reference_altitude
       reference_heading noise_normal_position noise_uniform_position
       *inertia *origin">
   <!-- GPS link -->
@@ -406,6 +407,7 @@
       <robotNamespace>${namespace}</robotNamespace> <!-- (string, required): ros namespace in which the messages are published -->
       <linkName>${namespace}/gps${gps_suffix}_link</linkName> <!-- (string, required): name of the body which holds the GPS sensor -->
       <gpsTopic>${gps_topic}</gpsTopic> <!-- (string): name of the sensor output topic and prefix of service names (defaults to 'gps') -->
+      <groundSpeedTopic>${ground_speed_topic}</groundSpeedTopic> <!-- (string): name of the ground speed output topic (defaults to 'ground_speed') -->
       <referenceLatitude>${reference_latitude}</referenceLatitude> <!-- the initial latitude [degrees [-90, 90]] -->
       <referenceLongitude>${reference_longitude}</referenceLongitude> <!-- the initial longitude [degrees [-180, 180]] -->
       <referenceAltitude>${reference_altitude}</referenceAltitude> <!-- the initial altitude [m] -->
@@ -782,6 +784,7 @@
       gps_suffix=""
       parent_link="${parent_link}"
       gps_topic="gps"
+      ground_speed_topic="ground_speed"
       mass_gps_sensor="0.015"
       reference_latitude="47.3667"
       reference_longitude="8.5500"
