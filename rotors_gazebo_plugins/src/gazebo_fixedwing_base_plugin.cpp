@@ -70,8 +70,10 @@ void GazeboFixedWingBasePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _
   if (link_ == NULL)
     gzthrow("[gazebo_fixedwing_base_plugin] Couldn't find specified link \"" << link_name << "\".");
 
+  std::string air_speed_sub_topic;
   std::string command_sub_topic;
   std::string reset_topic;
+  getSdfParam<std::string>(_sdf, "airSpeedSubTopic", air_speed_sub_topic, kDefaultAirSpeedSubTopic);
   getSdfParam<std::string>(_sdf, "commandSubTopic", command_sub_topic, kDefaultCommandSubTopic);
   getSdfParam<std::string>(_sdf, "resetTopic", reset_topic, kDefaultResetSubTopic);
   getSdfParam<double>(_sdf, "airDensity", air_density_, kDefaultAirDensity);
@@ -82,6 +84,7 @@ void GazeboFixedWingBasePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _
       event::Events::ConnectWorldUpdateBegin(
           boost::bind(&GazeboFixedWingBasePlugin::OnUpdate, this, _1));
 
+  air_speed_sub_ = node_handle_->subscribe(air_speed_sub_topic, 1, &GazeboFixedWingBasePlugin::AirSpeedCallback, this);
   deflections_sub_ = node_handle_->subscribe(command_sub_topic, 1, &GazeboFixedWingBasePlugin::DeflectionsCallback, this);
   reset_sub_ = node_handle_->subscribe(reset_topic, 1, &GazeboFixedWingBasePlugin::ResetCallback, this);
 
@@ -89,6 +92,7 @@ void GazeboFixedWingBasePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _
           node_handle_->advertiseService("register_aero_surface", &GazeboFixedWingBasePlugin::RegisterAeroSurface, this);
 
   orientation_ = math::Quaternion(1.0, 0.0, 0.0, 0.0);
+  air_speed_ = math::Vector3(0.0, 0.0, 0.0);
 }
 
 void GazeboFixedWingBasePlugin::OnUpdate(const common::UpdateInfo& _info) {
@@ -104,18 +108,17 @@ void GazeboFixedWingBasePlugin::OnUpdate(const common::UpdateInfo& _info) {
   math::Vector3 moments(0.0, 0.0, 0.0);
   ComputeAerodynamicForcesAndMoments(forces, moments);
 
-  std::cout << " " << std::endl;
-  std::cout << "Forces world: " << forces.x << ", " << forces.y << ", " << forces.z << std::endl;
-  std::cout << "Moments world: " << moments.x << ", " << moments.y << ", " << moments.z << std::endl;
+  //std::cout << " " << std::endl;
+  //std::cout << "Forces world: " << forces.x << ", " << forces.y << ", " << forces.z << std::endl;
+  //std::cout << "Moments world: " << moments.x << ", " << moments.y << ", " << moments.z << std::endl;
 
-  math::Vector3 forces_body = orientation_.RotateVector(forces);
-  math::Vector3 moments_body = orientation_.RotateVector(moments);
-  std::cout << "Forces body: " << forces_body.x << ", " << forces_body.y << ", " << forces_body.z << std::endl;
-  std::cout << "Moments body: " << moments_body.x << ", " << moments_body.y << ", " << moments_body.z << std::endl;
+  //math::Vector3 forces_body = orientation_.RotateVector(forces);
+  //math::Vector3 moments_body = orientation_.RotateVector(moments);
+  //std::cout << "Forces body: " << forces_body.x << ", " << forces_body.y << ", " << forces_body.z << std::endl;
+  //std::cout << "Moments body: " << moments_body.x << ", " << moments_body.y << ", " << moments_body.z << std::endl;
 
   // Apply forces and moments to the link
-  link_->AddForce(forces_body);
-  //link_->AddForceAtRelativePosition(forces, math::Vector3(0.5, 0.0, 0.0));
+  link_->AddForce(forces);
   link_->AddRelativeTorque(moments);
 }
 
@@ -153,26 +156,21 @@ bool GazeboFixedWingBasePlugin::RegisterAeroSurface(
 }
 
 void GazeboFixedWingBasePlugin::ComputeAerodynamicForcesAndMoments(math::Vector3 &forces, math::Vector3 &moments) {
+  //math::Vector3 euler = orientation_.GetAsEuler();
+  //std::cout << "Roll: " << euler.x << ", pitch: " << euler.y << ", yaw: " << euler.z << std::endl;
+  //std::cout << "Air speed: " << air_speed_.x << ", " << air_speed_.y << ", " << air_speed_.z << std::endl;
+
   // Get the body frame linear and angular velocities
-  math::Vector3 lin_vel = link_->GetRelativeLinearVel();
+  math::Vector3 lin_vel = orientation_.RotateVector(air_speed_);
   math::Vector3 ang_vel = link_->GetRelativeAngularVel();
 
   double p = ang_vel.x;
   double q = ang_vel.y;
   double r = ang_vel.z;
 
-  //double V = lin_vel.x;
-  //double beta = lin_vel.y;
-  //double alpha = lin_vel.z;
-
-  std::cout << "Vel: " << lin_vel.x << ", " << lin_vel.y << ", " << lin_vel.z << std::endl;
-
-  double sum_squares = lin_vel.x * lin_vel.x + lin_vel.y * lin_vel.y + lin_vel.z * lin_vel.z;
-
-  if (sum_squares < 0.1)
+  double V = lin_vel.GetLength();
+  if (V < 0.1)
     return;
-
-  double V = sqrt(sum_squares);
 
   double beta = asin(lin_vel.y / V);
   double alpha = atan(lin_vel.z / lin_vel.x);
@@ -185,12 +183,9 @@ void GazeboFixedWingBasePlugin::ComputeAerodynamicForcesAndMoments(math::Vector3
   //double uE = elevators_.at(0)->GetAngle(0).Radian();
   //double uA = ailerons_.at(0)->GetAngle(0).Radian();
   //double uR = rudder_->GetAngle(0).Radian();
-  //double uE = elevator_deflection_;
-  //double uA = aileron_deflection_;
-  //double uR = rudder_deflection_;
   double uE = elevator_deflection_;
-  double uA = 0.0;
-  double uR = 0.0;
+  double uA = aileron_deflection_;
+  double uR = rudder_deflection_;
 
   double q_bar_S = 0.5 * kRhoAir * V * V * kSWing;
 
@@ -220,14 +215,20 @@ void GazeboFixedWingBasePlugin::ComputeAerodynamicForcesAndMoments(math::Vector3
   double Y = q_bar_S * cXYZ.y;
   double Z = q_bar_S * cXYZ.z;
 
-  forces = math::Vector3(X, Y, Z);
+  forces = math::Vector3(X, -Y, -Z);
   moments = math::Vector3(Lm, Mm, Nm);
 }
 
-void GazeboFixedWingBasePlugin::DeflectionsCallback(const mav_msgs::ActuatorsConstPtr& deflections) {
-  aileron_deflection_ = (kDeflectionMax + kDeflectionMin) * 0.5 + (kDeflectionMax - kDeflectionMin) * 0.5 * deflections->angles.at(0);
-  elevator_deflection_ = (kDeflectionMax + kDeflectionMin) * 0.5 + (kDeflectionMax - kDeflectionMin) * 0.5 * deflections->angles.at(1);
-  rudder_deflection_ = (kDeflectionMax + kDeflectionMin) * 0.5 + (kDeflectionMax - kDeflectionMin) * 0.5 * deflections->angles.at(2);
+void GazeboFixedWingBasePlugin::AirSpeedCallback(const geometry_msgs::Vector3ConstPtr& air_speed_msg) {
+  air_speed_.x = air_speed_msg->x * -1.0;
+  air_speed_.y = air_speed_msg->y * -1.0;
+  air_speed_.z = air_speed_msg->z * -1.0;
+}
+
+void GazeboFixedWingBasePlugin::DeflectionsCallback(const mav_msgs::ActuatorsConstPtr& deflections_msg) {
+  aileron_deflection_ = (kDeflectionMax + kDeflectionMin) * 0.5 + (kDeflectionMax - kDeflectionMin) * 0.5 * deflections_msg->angles.at(0);
+  elevator_deflection_ = (kDeflectionMax + kDeflectionMin) * 0.5 + (kDeflectionMax - kDeflectionMin) * 0.5 * deflections_msg->angles.at(1);
+  rudder_deflection_ = (kDeflectionMax + kDeflectionMin) * 0.5 + (kDeflectionMax - kDeflectionMin) * 0.5 * deflections_msg->angles.at(2);
   //aileron_deflection_ = deflections->angles.at(0);
   //elevator_deflection_ = deflections->angles.at(1);
   //rudder_deflection_ = deflections->angles.at(2);

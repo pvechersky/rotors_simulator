@@ -26,6 +26,7 @@
 #include <gazebo/common/Plugin.hh>
 #include <gazebo/gazebo.hh>
 #include <gazebo/physics/physics.hh>
+#include <geometry_msgs/Vector3.h>
 #include <mav_msgs/Actuators.h>
 #include <nav_msgs/Odometry.h>
 #include <std_msgs/Bool.h>
@@ -35,6 +36,7 @@
 
 namespace gazebo {
 // Default values
+static const std::string kDefaultAirSpeedSubTopic = "air_speed";
 static const std::string kDefaultCommandSubTopic = "gazebo/command/motor_speed";
 static const std::string kDefaultResetSubTopic = "reset";
 static constexpr double kDefaultAirDensity = 1.225;
@@ -95,6 +97,7 @@ class GazeboFixedWingBasePlugin : public ModelPlugin {
 
   ros::NodeHandle* node_handle_;
   ros::ServiceServer register_aero_surface_service_;
+  ros::Subscriber air_speed_sub_;
   ros::Subscriber deflections_sub_;
   ros::Subscriber reset_sub_;
 
@@ -122,8 +125,10 @@ class GazeboFixedWingBasePlugin : public ModelPlugin {
   double rudder_deflection_;
 
   math::Quaternion orientation_;
+  math::Vector3 air_speed_;
 
-  void DeflectionsCallback(const mav_msgs::ActuatorsConstPtr& deflections);
+  void AirSpeedCallback(const geometry_msgs::Vector3ConstPtr& air_speed_msg);
+  void DeflectionsCallback(const mav_msgs::ActuatorsConstPtr& deflections_msg);
   void ResetCallback(const std_msgs::BoolConstPtr& reset_msg);
 };
 }
