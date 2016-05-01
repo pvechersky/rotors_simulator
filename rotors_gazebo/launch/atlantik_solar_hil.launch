@@ -2,8 +2,9 @@
   <arg name="mav_name" default="atlantik_solar"/>
   <arg name="world_name" default="zurich"/>
   <arg name="enable_logging" default="false"/>
-  <arg name="enable_ground_truth" default="true"/>
+  <arg name="enable_ground_truth" default="false"/>
   <arg name="log_file" default="$(arg mav_name)"/>
+  <arg name="use_kinematics" default="true"/>
 
   <env name="GAZEBO_MODEL_PATH" value="$(find rotors_gazebo)/models"/>
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
@@ -13,12 +14,13 @@
   </include>
 
   <group ns="$(arg mav_name)">
-    <include file="$(find rotors_gazebo)/launch/spawn_mav.launch">
+    <include file="$(find rotors_gazebo)/launch/spawn_fixed_wing.launch">
       <arg name="mav_name" value="$(arg mav_name)" />
       <arg name="model" value="$(find rotors_description)/urdf/$(arg mav_name)_base.xacro" />
       <arg name="enable_logging" value="$(arg enable_logging)" />
       <arg name="enable_ground_truth" value="$(arg enable_ground_truth)" />
       <arg name="log_file" value="$(arg log_file)"/>
+      <arg name="use_kinematics" value="$(arg use_kinematics)"/>
     </include>
 
     <node name="hil_sensors_interface" pkg="rotors_hil_interface" type="rotors_hil_sensors_interface" output="screen">

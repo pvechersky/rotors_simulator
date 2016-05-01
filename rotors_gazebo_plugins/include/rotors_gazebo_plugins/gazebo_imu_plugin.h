@@ -27,7 +27,9 @@
 #include <gazebo/common/common.hh>
 #include <gazebo/common/Plugin.hh>
 #include <gazebo/gazebo.hh>
+#include <gazebo/msgs/msgs.hh>
 #include <gazebo/physics/physics.hh>
+#include <gazebo/transport/transport.hh>
 #include <mav_msgs/default_topics.h>
 #include <ros/callback_queue.h>
 #include <ros/ros.h>
@@ -55,6 +57,7 @@ static constexpr double kDefaultAdisAccelerometerTurnOnBiasSigma =
     20.0e-3 * 9.8;
 // Earth's gravity in Zurich (lat=+47.3667degN, lon=+8.5500degE, h=+500m, WGS84)
 static constexpr double kDefaultGravityMagnitude = 9.8068;
+static constexpr bool kDefaultUseKinematics = true;
 
 // A description of the parameters:
 // https://github.com/ethz-asl/kalibr/wiki/IMU-Noise-Model-and-Intrinsics
@@ -121,6 +124,9 @@ class GazeboImuPlugin : public ModelPlugin {
   std::string frame_id_;
   std::string link_name_;
 
+  transport::NodePtr gazebo_node_;
+  transport::SubscriberPtr linear_accel_sub_;
+
   std::default_random_engine random_generator_;
   std::normal_distribution<double> standard_normal_distribution_;
 
@@ -137,6 +143,7 @@ class GazeboImuPlugin : public ModelPlugin {
 
   sensor_msgs::Imu imu_message_;
 
+  math::Vector3 accel_linear_kin_;
   math::Vector3 gravity_W_;
   math::Vector3 velocity_prev_W_;
 
@@ -147,6 +154,10 @@ class GazeboImuPlugin : public ModelPlugin {
   Eigen::Vector3d accelerometer_turn_on_bias_;
 
   ImuParameters imu_parameters_;
+
+  bool use_kinematics_;
+
+  void LinearAccelCallback(ConstVector3dPtr& msg);
 };
 }
 

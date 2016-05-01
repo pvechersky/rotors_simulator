@@ -26,6 +26,7 @@
 #include <gazebo/common/Plugin.hh>
 #include <gazebo/gazebo.hh>
 #include <gazebo/physics/physics.hh>
+#include <gazebo/transport/transport.hh>
 #include <geometry_msgs/Vector3.h>
 #include <mav_msgs/Actuators.h>
 #include <nav_msgs/Odometry.h>
@@ -43,6 +44,8 @@ static constexpr double kDefaultAirDensity = 1.225;
 static constexpr double kDefaultAlphaStall = 0.3;
 
 // Constants
+static constexpr double kG = 9.81;
+
 static constexpr double kCL0 = 0.2127;
 static constexpr double kCLa = 10.8060;
 static constexpr double kCLa2 = -46.8324;
@@ -69,10 +72,21 @@ static constexpr double kCnp = -0.0839;
 static constexpr double kCnr = -0.0827;
 static constexpr double kCndr = 0.06;
 
+static constexpr double kCT0 = 0.0;
+static constexpr double kCT1 = 14.7217;
+static constexpr double kCT2 = 0.0;
+
+static constexpr double kMass = 2.65;
+static constexpr double kIxx = 0.1512*1.1;
+static constexpr double kIyy = 0.2785*1.4;
+static constexpr double kIzz = 0.3745*1.4;
+static constexpr double kIxz = 0.0755;
+
 static constexpr double kBWing = 2.59;
 static constexpr double kCChord = 0.18;
 static constexpr double kRhoAir = 1.18;
 static constexpr double kSWing = 0.47;
+static constexpr double kIThrust = 0.0;
 
 // Temporary
 static constexpr double kDeflectionMin = -20.0 * M_PI / 180.0;
@@ -86,7 +100,7 @@ class GazeboFixedWingBasePlugin : public ModelPlugin {
   bool RegisterAeroSurface(rotors_gazebo_plugins::RegisterAeroSurface::Request& req,
                            rotors_gazebo_plugins::RegisterAeroSurface::Response& res);
 
-  void ComputeAerodynamicForcesAndMoments(math::Vector3& forces, math::Vector3& moments);
+  void UpdateKinematics();
 
  protected:
   void Load(physics::ModelPtr _model, sdf::ElementPtr _sdf);
@@ -98,8 +112,11 @@ class GazeboFixedWingBasePlugin : public ModelPlugin {
   ros::NodeHandle* node_handle_;
   ros::ServiceServer register_aero_surface_service_;
   ros::Subscriber air_speed_sub_;
-  ros::Subscriber deflections_sub_;
+  ros::Subscriber command_sub_;
   ros::Subscriber reset_sub_;
+
+  transport::NodePtr gazebo_node_;
+  transport::PublisherPtr linear_accel_pub_;
 
   // Pointer to the world
   physics::WorldPtr world_;
@@ -120,6 +137,7 @@ class GazeboFixedWingBasePlugin : public ModelPlugin {
   double total_wing_area_;
   double total_tail_area_;
 
+  double throttle_;
   double aileron_deflection_;
   double elevator_deflection_;
   double rudder_deflection_;
@@ -128,8 +146,11 @@ class GazeboFixedWingBasePlugin : public ModelPlugin {
   math::Vector3 air_speed_;
 
   void AirSpeedCallback(const geometry_msgs::Vector3ConstPtr& air_speed_msg);
-  void DeflectionsCallback(const mav_msgs::ActuatorsConstPtr& deflections_msg);
+  void CommandCallback(const mav_msgs::ActuatorsConstPtr& command_msg);
   void ResetCallback(const std_msgs::BoolConstPtr& reset_msg);
+
+  common::Time last_time_;
+  common::Time last_sim_time_;
 };
 }
 

@@ -260,8 +260,8 @@
     use_mesh="false"
     mesh="">
     <axis xyz="1 0 0" />
-    <origin xyz="0.5 ${0.5 * body_width} 0.0" rpy="0.0 0.0 0.0" />
-    <origin xyz="0.0 ${0.5 * wing_width} 0.0" rpy="0.0 0.0 0.0" />
+    <origin xyz="0.5 ${-0.5 * body_width} 0.0" rpy="0.0 0.0 0.0" />
+    <origin xyz="0.0 ${-0.5 * wing_width} 0.0" rpy="0.0 0.0 0.0" />
     <xacro:insert_block name="wing_inertia" />
   </xacro:aero_surface>
 
@@ -283,8 +283,8 @@
     use_mesh="false"
     mesh="">
     <axis xyz="1 0 0" />
-    <origin xyz="0.5 ${-0.5 * body_width} 0.0" rpy="0.0 0.0 0.0" />
-    <origin xyz="0.0 ${-0.5 * wing_width} 0.0" rpy="0.0 0.0 0.0" />
+    <origin xyz="0.5 ${0.5 * body_width} 0.0" rpy="0.0 0.0 0.0" />
+    <origin xyz="0.0 ${0.5 * wing_width} 0.0" rpy="0.0 0.0 0.0" />
     <xacro:insert_block name="wing_inertia" />
   </xacro:aero_surface>
 
@@ -299,7 +299,7 @@
     color="${body_color}"
     use_mesh="false"
     mesh="">
-    <origin xyz="${-0.5*body_length + 0.5*vertical_stabilizer_length} 0.0 ${0.5*body_height + 0.5*vertical_stabilizer_height}" rpy="0.0 0.0 0.0" />
+    <origin xyz="${-0.5 * body_length + 0.5 * vertical_stabilizer_length} 0.0 ${-0.5 * (body_height + vertical_stabilizer_height)}" rpy="0.0 0.0 0.0" />
     <xacro:insert_block name="vertical_stabilizer_inertia" />
   </xacro:vertical_stabilizer>
 
@@ -322,8 +322,8 @@
     use_mesh="false"
     mesh="">
     <axis xyz="1 0 0" />
-    <origin xyz="${0.5 * elevator_length} ${0.5 * vertical_stabilizer_width} ${0.5 * (vertical_stabilizer_height - tail_height)}" rpy="0.0 0.0 0.0" />
-    <origin xyz="0.0 ${0.5 * tail_width} 0.0" rpy="0.0 0.0 0.0" />
+    <origin xyz="${0.5 * elevator_length} ${-0.5 * vertical_stabilizer_width} ${-0.5 * (vertical_stabilizer_height - tail_height)}" rpy="0.0 0.0 0.0" />
+    <origin xyz="0.0 ${-0.5 * tail_width} 0.0" rpy="0.0 0.0 0.0" />
     <xacro:insert_block name="tail_inertia" />
   </xacro:aero_surface>
 
@@ -345,8 +345,8 @@
     use_mesh="false"
     mesh="">
     <axis xyz="1 0 0" />
-    <origin xyz="${0.5 * elevator_length} ${-0.5 * vertical_stabilizer_width} ${0.5 * (vertical_stabilizer_height - tail_height)}" rpy="0.0 0.0 0.0" />
-    <origin xyz="0.0 ${-0.5 * tail_width} 0.0" rpy="0.0 0.0 0.0" />
+    <origin xyz="${0.5 * elevator_length} ${0.5 * vertical_stabilizer_width} ${-0.5 * (vertical_stabilizer_height - tail_height)}" rpy="0.0 0.0 0.0" />
+    <origin xyz="0.0 ${0.5 * tail_width} 0.0" rpy="0.0 0.0 0.0" />
     <xacro:insert_block name="tail_inertia" />
   </xacro:aero_surface>
 
