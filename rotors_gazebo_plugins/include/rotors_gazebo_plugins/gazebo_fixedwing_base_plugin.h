@@ -33,15 +33,12 @@
 #include <std_msgs/Bool.h>
 
 #include "rotors_gazebo_plugins/common.h"
-#include "rotors_gazebo_plugins/RegisterAeroSurface.h"
 
 namespace gazebo {
 // Default values
 static const std::string kDefaultAirSpeedSubTopic = "air_speed";
 static const std::string kDefaultCommandSubTopic = "gazebo/command/motor_speed";
 static const std::string kDefaultResetSubTopic = "reset";
-static constexpr double kDefaultAirDensity = 1.225;
-static constexpr double kDefaultAlphaStall = 0.3;
 
 // Constants
 static constexpr double kG = 9.81;
@@ -97,9 +94,6 @@ class GazeboFixedWingBasePlugin : public ModelPlugin {
   GazeboFixedWingBasePlugin();
   virtual ~GazeboFixedWingBasePlugin();
 
-  bool RegisterAeroSurface(rotors_gazebo_plugins::RegisterAeroSurface::Request& req,
-                           rotors_gazebo_plugins::RegisterAeroSurface::Response& res);
-
   void UpdateKinematics();
 
  protected:
@@ -110,7 +104,6 @@ class GazeboFixedWingBasePlugin : public ModelPlugin {
   std::string namespace_;
 
   ros::NodeHandle* node_handle_;
-  ros::ServiceServer register_aero_surface_service_;
   ros::Subscriber air_speed_sub_;
   ros::Subscriber command_sub_;
   ros::Subscriber reset_sub_;
@@ -127,22 +120,11 @@ class GazeboFixedWingBasePlugin : public ModelPlugin {
   // Pointer to the update event connection
   event::ConnectionPtr updateConnection_;
 
-  // Pointers to the control surfaces joints
-  std::vector<physics::JointPtr> ailerons_;
-  std::vector<physics::JointPtr> elevators_;
-  physics::JointPtr rudder_;
-
-  double air_density_;
-  double alpha_stall_;
-  double total_wing_area_;
-  double total_tail_area_;
-
   double throttle_;
   double aileron_deflection_;
   double elevator_deflection_;
   double rudder_deflection_;
 
-  math::Quaternion orientation_;
   math::Vector3 air_speed_;
 
   void AirSpeedCallback(const geometry_msgs::Vector3ConstPtr& air_speed_msg);

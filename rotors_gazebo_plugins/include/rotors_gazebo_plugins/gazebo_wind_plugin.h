@@ -22,13 +22,13 @@
 #ifndef ROTORS_GAZEBO_PLUGINS_GAZEBO_WIND_PLUGIN_H
 #define ROTORS_GAZEBO_PLUGINS_GAZEBO_WIND_PLUGIN_H
 
-#include <string>
-#include <ros/ros.h>
+#include <random>
 
 #include <gazebo/common/common.hh>
 #include <gazebo/common/Plugin.hh>
 #include <gazebo/gazebo.hh>
 #include <gazebo/physics/physics.hh>
+#include <ros/ros.h>
 
 #include "rotors_comm/WindSpeed.h"
 #include "rotors_gazebo_plugins/common.h"
@@ -47,17 +47,20 @@ static constexpr double kDefaultWindForceVariance = 0.0;
 static constexpr double kDefaultWindGustForceMean = 0.0;
 static constexpr double kDefaultWindGustForceVariance = 0.0;
 
+static constexpr double kDefaultWindSpeedMean = 0.0;
+static constexpr double kDefaultWindSpeedVariance = 0.0;
+
 static constexpr double kDefaultWindGustStart = 10.0;
 static constexpr double kDefaultWindGustDuration = 0.0;
 
 static const math::Vector3 kDefaultWindDirection = math::Vector3(1, 0, 0);
 static const math::Vector3 kDefaultWindGustDirection = math::Vector3(0, 1, 0);
 
-static constexpr double kDefaultObjectDragCoefficient = 1.4;
-
 /// \brief This gazebo plugin simulates wind acting on a model.
 class GazeboWindPlugin : public ModelPlugin {
  public:
+  typedef std::normal_distribution<> NormalDistribution;
+
   GazeboWindPlugin()
       : ModelPlugin(),
         namespace_(kDefaultNamespace),
@@ -67,17 +70,16 @@ class GazeboWindPlugin : public ModelPlugin {
         wind_force_variance_(kDefaultWindForceVariance),
         wind_gust_force_mean_(kDefaultWindGustForceMean),
         wind_gust_force_variance_(kDefaultWindGustForceVariance),
+        wind_speed_mean_(kDefaultWindSpeedMean),
+        wind_speed_variance_(kDefaultWindSpeedVariance),
         wind_direction_(kDefaultWindDirection),
         wind_gust_direction_(kDefaultWindGustDirection),
-        object_drag_coefficient_(kDefaultObjectDragCoefficient),
-        normal_surface_areas_(math::Vector3(0.0, 0.0, 0.0)),
+        random_generator_(random_device_()),
         frame_id_(kDefaultFrameId),
         link_name_(kDefaultLinkName),
         node_handle_(NULL) {}
 
   virtual ~GazeboWindPlugin();
-
-  bool GetLinkGeometry();
 
  protected:
   /// \brief Load the plugin.
@@ -109,13 +111,19 @@ class GazeboWindPlugin : public ModelPlugin {
   double wind_gust_force_mean_;
   double wind_gust_force_variance_;
 
-  double object_drag_coefficient_;
+  double wind_speed_mean_;
+  double wind_speed_variance_;
+
+  std::random_device random_device_;
+  std::mt19937 random_generator_;
+
+  NormalDistribution wind_force_n_;
+  NormalDistribution wind_gust_force_n_;
+  NormalDistribution wind_speed_n_;
 
   math::Vector3 xyz_offset_;
   math::Vector3 wind_direction_;
   math::Vector3 wind_gust_direction_;
-
-  math::Vector3 normal_surface_areas_;
 
   common::Time wind_gust_end_;
   common::Time wind_gust_start_;

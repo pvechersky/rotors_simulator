@@ -95,7 +95,7 @@ void HilSensorsInterface::AirSpeedCallback(const geometry_msgs::Vector3ConstPtr&
                           air_speed_msg->y * air_speed_msg->y +
                           air_speed_msg->z * air_speed_msg->z);
 
-  // The same for now
+  // The same FOR NOW
   ind_airspeed_ = air_speed * 100;
   true_airspeed_ = air_speed * 100;
 
@@ -134,10 +134,16 @@ void HilSensorsInterface::ImuCallback(const sensor_msgs::ImuConstPtr& imu_msg) {
   acc_y_ = imu_msg->linear_acceleration.y * 1000.0 / kDefaultGravityMagnitude;
   acc_z_ = imu_msg->linear_acceleration.z * 1000.0 / kDefaultGravityMagnitude;
 
-  att_w_ = imu_msg->orientation.w;
-  att_x_ = imu_msg->orientation.x;
-  att_y_ = imu_msg->orientation.y;
-  att_z_ = imu_msg->orientation.z;
+  tf::Quaternion q(imu_msg->orientation.x, imu_msg->orientation.y, imu_msg->orientation.z, imu_msg->orientation.w);
+  tf::Matrix3x3 rot(q);
+
+  double roll;
+  double pitch;
+  double yaw;
+  rot.getRPY(roll, pitch, yaw);
+  roll = roll - M_PI;
+
+  att_.setEuler(yaw, pitch, roll);
 
   gyro_x_ = imu_msg->angular_velocity.x;
   gyro_y_ = imu_msg->angular_velocity.y;
@@ -253,24 +259,24 @@ void HilSensorsInterface::SendHilSensorData() {
 
   // Encode and publish the hil_state_quaternion message
   hil_state_qtrn_msg_.time_usec = current_time.nsec * 1000;
-  hil_state_qtrn_msg_.attitude_quaternion[0] = att_w_;  // imu
-  hil_state_qtrn_msg_.attitude_quaternion[1] = att_x_;  // imu
-  hil_state_qtrn_msg_.attitude_quaternion[2] = att_y_;  // imu
-  hil_state_qtrn_msg_.attitude_quaternion[3] = att_z_;  // imu
-  hil_state_qtrn_msg_.rollspeed = gyro_x_;              // imu
-  hil_state_qtrn_msg_.pitchspeed = gyro_y_;             // imu
-  hil_state_qtrn_msg_.yawspeed = gyro_z_;               // imu
-  hil_state_qtrn_msg_.lat = lat_;                       // gps
-  hil_state_qtrn_msg_.lon = lon_;                       // gps
-  hil_state_qtrn_msg_.alt = alt_;                       // gps
-  hil_state_qtrn_msg_.vx = vn_;                         // gps
-  hil_state_qtrn_msg_.vy = ve_;                         // gps
-  hil_state_qtrn_msg_.vz = vd_;                         // gps
-  hil_state_qtrn_msg_.ind_airspeed = ind_airspeed_;     // air speed sensor
-  hil_state_qtrn_msg_.true_airspeed = true_airspeed_;   // air speed sensor
-  hil_state_qtrn_msg_.xacc = acc_x_;                    // imu
-  hil_state_qtrn_msg_.yacc = acc_y_;                    // imu
-  hil_state_qtrn_msg_.zacc = acc_z_;                    // imu
+  hil_state_qtrn_msg_.attitude_quaternion[0] = att_.w();  // imu
+  hil_state_qtrn_msg_.attitude_quaternion[1] = att_.x();  // imu
+  hil_state_qtrn_msg_.attitude_quaternion[2] = att_.y();  // imu
+  hil_state_qtrn_msg_.attitude_quaternion[3] = att_.z();  // imu
+  hil_state_qtrn_msg_.rollspeed = gyro_x_;                // imu
+  hil_state_qtrn_msg_.pitchspeed = gyro_y_;               // imu
+  hil_state_qtrn_msg_.yawspeed = gyro_z_;                 // imu
+  hil_state_qtrn_msg_.lat = lat_;                         // gps
+  hil_state_qtrn_msg_.lon = lon_;                         // gps
+  hil_state_qtrn_msg_.alt = alt_;                         // gps
+  hil_state_qtrn_msg_.vx = vn_;                           // gps
+  hil_state_qtrn_msg_.vy = ve_;                           // gps
+  hil_state_qtrn_msg_.vz = vd_;                           // gps
+  hil_state_qtrn_msg_.ind_airspeed = ind_airspeed_;       // air speed sensor
+  hil_state_qtrn_msg_.true_airspeed = true_airspeed_;     // air speed sensor
+  hil_state_qtrn_msg_.xacc = acc_x_;                      // imu
+  hil_state_qtrn_msg_.yacc = acc_y_;                      // imu
+  hil_state_qtrn_msg_.zacc = acc_z_;                      // imu
 
   mavlink_hil_state_quaternion_t* hil_state_qtrn_msg_ptr = &hil_state_qtrn_msg_;
   mavlink_msg_hil_state_quaternion_encode(1, 0, &mmsg, hil_state_qtrn_msg_ptr);

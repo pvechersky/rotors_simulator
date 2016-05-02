@@ -28,6 +28,7 @@
 #include <sensor_msgs/MagneticField.h>
 #include <sensor_msgs/NavSatFix.h>
 #include <std_msgs/UInt8.h>
+#include <tf/transform_datatypes.h>
 
 #include <mav_msgs/default_topics.h>
 #include <mavros_msgs/mavlink_convert.h>
@@ -92,10 +93,7 @@ class HilSensorsInterface {
   bool received_pressure_;
 
   // Sensor data
-  float att_w_;                 // w component of attitude quaternion
-  float att_x_;                 // x component of attitude quaternion
-  float att_y_;                 // y component of attitude quaternion
-  float att_z_;                 // z component of attitude quaternion
+  tf::Quaternion att_;          // Attitude quaternion
   float gyro_x_;                // Angular speed around X axis in body frame (rad / sec)
   float gyro_y_;                // Angular speed around Y axis in body frame (rad / sec)
   float gyro_z_;                // Angular speed around Z axis in body frame (rad / sec)

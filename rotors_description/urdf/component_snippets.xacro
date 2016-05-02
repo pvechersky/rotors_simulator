@@ -361,9 +361,9 @@
 
   <!-- Macro to add the wind plugin. -->
   <xacro:macro name="wind_plugin_macro"
-    params="namespace xyz_offset wind_direction wind_force_mean
-      wind_gust_direction wind_gust_duration wind_gust_start
-      wind_gust_force_mean object_drag_coefficient">
+    params="namespace xyz_offset wind_direction wind_force_mean wind_force_variance
+      wind_speed_mean wind_speed_variance wind_gust_direction wind_gust_duration 
+      wind_gust_start wind_gust_force_mean wind_gust_force_variance">
     <gazebo>
       <plugin filename="librotors_gazebo_wind_plugin.so" name="wind_plugin">
         <frameId>world</frameId>
@@ -372,11 +372,14 @@
         <xyzOffset>${xyz_offset}</xyzOffset> <!-- [m] [m] [m] -->
         <windDirection>${wind_direction}</windDirection>
         <windForceMean>${wind_force_mean}</windForceMean> <!-- [N] -->
+        <windForceVariance>${wind_force_variance}</windForceVariance> <!-- [N^2] -->
+        <windSpeedMean>${wind_speed_mean}</windSpeedMean> <!-- [m/s] -->
+        <windSpeedVariance>${wind_speed_variance}</windSpeedVariance> <!-- [(m/s)^2] -->
         <windGustDirection>${wind_gust_direction}</windGustDirection>
         <windGustDuration>${wind_gust_duration}</windGustDuration> <!-- [s] -->
         <windGustStart>${wind_gust_start}</windGustStart> <!-- [s] -->
         <windGustForceMean>${wind_gust_force_mean}</windGustForceMean> <!-- [N] -->
-        <objectDragCoefficient>${object_drag_coefficient}</objectDragCoefficient>
+        <windGustForceVariance>${wind_gust_force_variance}</windGustForceVariance> <!-- [N^2] -->
       </plugin>
     </gazebo>
   </xacro:macro>
