@@ -19,10 +19,10 @@
   limitations under the License.
 -->
 
-<robot name="atlantik_solar" xmlns:xacro="http://ros.org/wiki/xacro">
+<robot name="techpod" xmlns:xacro="http://ros.org/wiki/xacro">
   <xacro:include filename="$(find rotors_description)/urdf/component_snippets.xacro" />
   <!-- Instantiate fixed wing "mechanics" -->
-  <xacro:include filename="$(find rotors_description)/urdf/atlantik_solar.xacro" />
+  <xacro:include filename="$(find rotors_description)/urdf/techpod.xacro" />
 
   <!-- Instantiate a controller. -->
   <xacro:controller_plugin_macro namespace="${namespace}" imu_sub_topic="imu" />

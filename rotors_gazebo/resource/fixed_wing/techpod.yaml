@@ -1,0 +1,19 @@
+# Techpod vehicle parameters
+
+# Mass/Inertias
+mass: 2.65
+inertia: {xx: 0.16632, xy: 0.0, xz: 0.0755, yy: 0.3899, yz: 0.0, zz: 0.5243}
+
+# Geometry
+wing_surface: 0.47      # [m^2] Total wing surface area
+wingspan: 2.59          # [m] Wingspan
+chord_length: 0.18      # [m] Mean chord length
+i_thrust: 0.0           # [rad] Thrust incidence angle
+
+# Control surfaces parameters
+#   [rad] Minimum deflection angle
+#   [rad] Maximum deflection angle
+#   Channel number in the array of normalized commands
+aileron: {min: -0.349066, max: 0.349066, channel: 0}
+elevator: {min: -0.349066, max: 0.349066, channel: 1}
+rudder: {min: -0.349066, max: 0.349066, channel: 2}

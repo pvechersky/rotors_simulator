@@ -19,9 +19,9 @@
   limitations under the License.
 -->
 
-<robot name="atlantik_solar" xmlns:xacro="http://ros.org/wiki/xacro">
+<robot name="techpod" xmlns:xacro="http://ros.org/wiki/xacro">
   <!-- Global properties -->
-  <xacro:property name="namespace" value="$(arg mav_name)" />
+  <xacro:property name="namespace" value="$(arg uav_name)" />
   <xacro:property name="propeller_velocity_slowdown_sim" value="10" />
   <xacro:property name="use_mesh_file" value="false" />
   <xacro:property name="mesh_file" value="" />
