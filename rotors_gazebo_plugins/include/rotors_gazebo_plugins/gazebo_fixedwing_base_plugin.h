@@ -35,59 +35,98 @@
 #include "rotors_gazebo_plugins/common.h"
 
 namespace gazebo {
-// Default values
+// Default topic names
 static const std::string kDefaultAirSpeedSubTopic = "air_speed";
 static const std::string kDefaultCommandSubTopic = "gazebo/command/motor_speed";
 static const std::string kDefaultResetSubTopic = "reset";
 
+// Default values for Techpod fixed-wing control surfaces
+static constexpr double kDefaultControlSurfaceDeflectionMin = -20.0 * M_PI / 180.0;
+static constexpr double kDefaultControlSurfaceDeflectionMax = 20.0 * M_PI / 180.0;
+static constexpr int kDefaultAileronChannel = 0;
+static constexpr int kDefaultElevatorChannel = 1;
+static constexpr int kDefaultRudderChannel = 2;
+
+// Default vehicle parameters for Techpod
+static constexpr double kDefaultMass = 2.65;
+static constexpr double kDefaultWingSurface = 0.47;
+static constexpr double kDefaultWingspan = 2.59;
+static constexpr double kDefaultChordLength = 0.18;
+static constexpr double kDefaultIThrust = 0.0;
+static constexpr double kDefaultInertiaXx = 0.16632;
+static constexpr double kDefaultInertiaXy = 0.0;
+static constexpr double kDefaultInertiaXz = 0.0755;
+static constexpr double kDefaultInertiaYy = 0.3899;
+static constexpr double kDefaultInertiaYz = 0.0;
+static constexpr double kDefaultInertiaZz = 0.5243;
+
+// Default aerodynamic parameter values for Techpod
+static constexpr double kDefaultCD0 = 0.1360;
+static constexpr double kDefaultCDa = -0.6737;
+static constexpr double kDefaultCDa2 = 5.4546;
+static constexpr double kDefaultCL0 = 0.2127;
+static constexpr double kDefaultCLa = 10.8060;
+static constexpr double kDefaultCLa2 = -46.8324;
+static constexpr double kDefaultCLa3 = 60.6017;
+static constexpr double kDefaultCLq = 0.0;
+static constexpr double kDefaultCLde = 2.5463e-4;
+static constexpr double kDefaultCm0 = 0.0435;
+static constexpr double kDefaultCma = -2.9690;
+static constexpr double kDefaultCmq = -106.1541;
+static constexpr double kDefaultCmde = -6.1308;
+static constexpr double kDefaultCT0 = 0.0;
+static constexpr double kDefaultCT1 = 14.7217;
+static constexpr double kDefaultCT2 = 0.0;
+static constexpr double kDefaultTauT = 0.0880;
+static constexpr double kDefaultClb = -0.0154;
+static constexpr double kDefaultClp = -0.1647;
+static constexpr double kDefaultClr = 0.0117;
+static constexpr double kDefaultClda = 0.0570;
+static constexpr double kDefaultCYb = -0.3073;
+static constexpr double kDefaultCnb = 0.0430;
+static constexpr double kDefaultCnp = -0.0839;
+static constexpr double kDefaultCnr = -0.0827;
+static constexpr double kDefaultCndr = 0.06;
+
 // Constants
 static constexpr double kG = 9.81;
-
-static constexpr double kCL0 = 0.2127;
-static constexpr double kCLa = 10.8060;
-static constexpr double kCLa2 = -46.8324;
-static constexpr double kCLa3 = 60.6017;
-
-static constexpr double kCD0 = 0.1360;
-static constexpr double kCDa = -0.6737;
-static constexpr double kCDa2 = 5.4546;
-
-static constexpr double kCYb = -0.3073;
-
-static constexpr double kClb = -0.0154;
-static constexpr double kClp = -0.1647;
-static constexpr double kClr = 0.0117;
-static constexpr double kClda = 0.0570;
-
-static constexpr double kCm0 = 0.0435;
-static constexpr double kCma = -2.9690;
-static constexpr double kCmq = -106.1541;
-static constexpr double kCmde = -6.1308;
-
-static constexpr double kCnb = 0.0430;
-static constexpr double kCnp = -0.0839;
-static constexpr double kCnr = -0.0827;
-static constexpr double kCndr = 0.06;
-
-static constexpr double kCT0 = 0.0;
-static constexpr double kCT1 = 14.7217;
-static constexpr double kCT2 = 0.0;
-
-static constexpr double kMass = 2.65;
-static constexpr double kIxx = 0.1512*1.1;
-static constexpr double kIyy = 0.2785*1.4;
-static constexpr double kIzz = 0.3745*1.4;
-static constexpr double kIxz = 0.0755;
-
-static constexpr double kBWing = 2.59;
-static constexpr double kCChord = 0.18;
 static constexpr double kRhoAir = 1.18;
-static constexpr double kSWing = 0.47;
-static constexpr double kIThrust = 0.0;
 
-// Temporary
-static constexpr double kDeflectionMin = -20.0 * M_PI / 180.0;
-static constexpr double kDeflectionMax = 20.0 * M_PI / 180.0;
+struct ControlSurface {
+  double d_min;
+  double d_max;
+  double deflection;
+  int channel;
+};
+
+struct FixedWingAerodynamicParameters {
+  double cD0;
+  double cDa;
+  double cDa2;
+  double cL0;
+  double cLa;
+  double cLa2;
+  double cLa3;
+  double cLq;
+  double cLde;
+  double cm0;
+  double cma;
+  double cmq;
+  double cmde;
+  double cT0;
+  double cT1;
+  double cT2;
+  double tauT;
+  double clb;
+  double clp;
+  double clr;
+  double clda;
+  double cYb;
+  double cnb;
+  double cnp;
+  double cnr;
+  double cndr;
+};
 
 class GazeboFixedWingBasePlugin : public ModelPlugin {
  public:
@@ -120,10 +159,20 @@ class GazeboFixedWingBasePlugin : public ModelPlugin {
   // Pointer to the update event connection
   event::ConnectionPtr updateConnection_;
 
+  // Vehicle parameters
+  double mass_;
+  double wing_surface_;
+  double wingspan_;
+  double chord_length_;
+  double i_thrust_;
+  Eigen::Matrix3d inertia_;
+
+  // Control surfaces
+  ControlSurface aileron_;
+  ControlSurface elevator_;
+  ControlSurface rudder_;
+
   double throttle_;
-  double aileron_deflection_;
-  double elevator_deflection_;
-  double rudder_deflection_;
 
   math::Vector3 air_speed_;
 
@@ -133,6 +182,8 @@ class GazeboFixedWingBasePlugin : public ModelPlugin {
 
   common::Time last_time_;
   common::Time last_sim_time_;
+
+  FixedWingAerodynamicParameters aero_params_;
 };
 }
 

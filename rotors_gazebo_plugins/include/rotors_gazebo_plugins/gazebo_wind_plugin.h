@@ -22,8 +22,6 @@
 #ifndef ROTORS_GAZEBO_PLUGINS_GAZEBO_WIND_PLUGIN_H
 #define ROTORS_GAZEBO_PLUGINS_GAZEBO_WIND_PLUGIN_H
 
-#include <random>
-
 #include <gazebo/common/common.hh>
 #include <gazebo/common/Plugin.hh>
 #include <gazebo/gazebo.hh>

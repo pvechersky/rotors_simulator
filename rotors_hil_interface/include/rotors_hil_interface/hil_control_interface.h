@@ -34,14 +34,6 @@ static const std::string kDefaultMavModePubTopic = "mav_mode";
 static const std::string kDefaultMavStatusPubTopic = "mav_status";
 static const std::string kDefaultActuatorsPubTopic = "actuators";
 
-// Default actuator values [rad]
-static constexpr double kDefaultRollMin = -M_PI * 0.25;
-static constexpr double kDefaultRollMax = M_PI * 0.25;
-static constexpr double kDefaultPitchMin = -M_PI * 0.1;
-static constexpr double kDefaultPitchMax = M_PI * 0.1;
-static constexpr double kDefaultYawMin = -M_PI * 0.25;
-static constexpr double kDefaultYawMax = M_PI * 0.25;
-
 class HilControlInterface {
  public:
   HilControlInterface();
@@ -61,14 +53,6 @@ class HilControlInterface {
   // MAV diagnostics
   uint8_t base_mode_;
   uint8_t system_status_;
-
-  // Actuator constraints
-  double roll_min_;
-  double roll_max_;
-  double pitch_min_;
-  double pitch_max_;
-  double yaw_min_;
-  double yaw_max_;
 };
 }
 

@@ -31,9 +31,7 @@ namespace gazebo {
 
 GazeboAirSpeedPlugin::GazeboAirSpeedPlugin()
     : ModelPlugin(),
-      node_handle_(0),
-      ground_speed_(math::Vector3(0.0, 0.0, 0.0)),
-      wind_speed_(math::Vector3(0.0, 0.0, 0.0)) {
+      node_handle_(0) {
 }
 
 GazeboAirSpeedPlugin::~GazeboAirSpeedPlugin() {
@@ -75,7 +73,7 @@ void GazeboAirSpeedPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) 
 }
 
 void GazeboAirSpeedPlugin::OnUpdate(const common::UpdateInfo& _info) {
-  math::Vector3 air_speed = wind_speed_ - ground_speed_;
+  math::Vector3 air_speed = ground_speed_ - wind_speed_;
 
   air_speed_msg_.x = air_speed.x;
   air_speed_msg_.y = air_speed.y;

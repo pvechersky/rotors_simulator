@@ -30,7 +30,7 @@
 #include <ros/ros.h>
 
 #include "rotors_gazebo_plugins/common.h"
-#include "rotors_gazebo_plugins/RegisterAeroSurface.h"
+//#include "rotors_gazebo_plugins/RegisterAeroSurface.h"
 
 namespace positive_direction {
   const static int CCW = 1;

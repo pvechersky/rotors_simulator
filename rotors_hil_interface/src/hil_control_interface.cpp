@@ -36,12 +36,6 @@ HilControlInterface::HilControlInterface():
   pnh.param("mav_mode_pub_topic", mav_mode_pub_topic, kDefaultMavModePubTopic);
   pnh.param("mav_status_pub_topic", mav_status_pub_topic, kDefaultMavStatusPubTopic);
   pnh.param("actuators_pub_topic", actuators_pub_topic, kDefaultActuatorsPubTopic);
-  pnh.param("roll_min", roll_min_, kDefaultRollMin);
-  pnh.param("roll_max", roll_max_, kDefaultRollMax);
-  pnh.param("pitch_min", pitch_min_, kDefaultPitchMin);
-  pnh.param("pitch_max", pitch_max_, kDefaultPitchMax);
-  pnh.param("yaw_min", yaw_min_, kDefaultYawMin);
-  pnh.param("yaw_max", yaw_max_, kDefaultYawMax);
 
   mavlink_sub_ = nh_.subscribe(mavlink_sub_topic, 15, &HilControlInterface::MavlinkCallback, this);
 
@@ -92,26 +86,12 @@ void HilControlInterface::MavlinkCallback(const mavros_msgs::MavlinkConstPtr& ma
 
     ros::Time current_time = ros::Time::now();
 
-    //float aileron_angle = (roll_max_ + roll_min_) * 0.5 + (roll_max_ - roll_min_) * 0.5 * hil_controls.roll_ailerons;
-    //float elevator_angle = (pitch_max_ + pitch_min_) * 0.5 + (pitch_max_ - pitch_min_) * 0.5 * hil_controls.pitch_elevator;
-    //float rudder_angle = (yaw_max_ + yaw_min_) * 0.5 + (yaw_max_ - yaw_min_) * 0.5 * hil_controls.yaw_rudder;
-    //float throttle = hil_controls.throttle * 2.0 - 1.0;
-
-    //act_msg.angles.push_back(aileron_angle);
-    //act_msg.angles.push_back(elevator_angle);
-    //act_msg.angles.push_back(rudder_angle);
-    //act_msg.normalized.push_back(throttle);
-
-    //
-    // TODO ... make a parameter
-    //
     act_msg.normalized.push_back(hil_controls.roll_ailerons);
     act_msg.normalized.push_back(hil_controls.pitch_elevator);
     act_msg.normalized.push_back(hil_controls.yaw_rudder);
 
     act_msg.normalized.push_back(hil_controls.throttle);
 
-    act_msg.header.seq = 1;
     act_msg.header.stamp.sec = current_time.sec;
     act_msg.header.stamp.nsec = current_time.nsec;
 

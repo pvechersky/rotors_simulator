@@ -64,7 +64,7 @@ void GazeboAeroSurfacePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sd
   else
     gzerr << "[gazebo_aero_surface_plugin] Please specify a jointName.\n";
 
-  if (_sdf->HasElement("surfaceType")) {
+  /*if (_sdf->HasElement("surfaceType")) {
     std::string surface_type = _sdf->GetElement("surfaceType")->Get<std::string>();
     if (surface_type == "wing")
       surface_type_ = AERO_SURFACE_TYPE_WING;
@@ -125,7 +125,7 @@ void GazeboAeroSurfacePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sd
             boost::bind(&GazeboAeroSurfacePlugin::OnUpdate, this, _1));
 
     command_sub_ = node_handle_->subscribe(command_sub_topic, 1, &GazeboAeroSurfacePlugin::AngleCallback, this);
-  }
+  }*/
 }
 
 void GazeboAeroSurfacePlugin::AngleCallback(const mav_msgs::ActuatorsConstPtr& servo_angles) {

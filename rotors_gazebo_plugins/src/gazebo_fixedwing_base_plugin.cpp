@@ -32,10 +32,7 @@ namespace gazebo {
 GazeboFixedWingBasePlugin::GazeboFixedWingBasePlugin()
     : ModelPlugin(),
       node_handle_(0),
-      throttle_(0.0),
-      aileron_deflection_(0.0),
-      elevator_deflection_(0.0),
-      rudder_deflection_(0.0) {
+      throttle_(0.0) {
 }
 
 GazeboFixedWingBasePlugin::~GazeboFixedWingBasePlugin() {
@@ -85,12 +82,81 @@ void GazeboFixedWingBasePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _
   getSdfParam<std::string>(_sdf, "commandSubTopic", command_sub_topic, kDefaultCommandSubTopic);
   getSdfParam<std::string>(_sdf, "resetTopic", reset_topic, kDefaultResetSubTopic);
 
+  ros::NodeHandle pnh("~");
+
+  // Read the vehicle parameters from rosparam
+  pnh.param<double>("mass", mass_, kDefaultMass);
+  pnh.param<double>("wing_surface", wing_surface_, kDefaultWingSurface);
+  pnh.param<double>("wingspan", wingspan_, kDefaultWingspan);
+  pnh.param<double>("chord_length", chord_length_, kDefaultChordLength);
+  pnh.param<double>("i_thrust", i_thrust_, kDefaultIThrust);
+  pnh.param<double>("inertia/xx", inertia_(0, 0), kDefaultInertiaXx);
+  pnh.param<double>("inertia/xy", inertia_(0, 1), kDefaultInertiaXy);
+  inertia_(1, 0) = inertia_(0, 1);
+  pnh.param<double>("inertia/xz", inertia_(0, 2), kDefaultInertiaXz);
+  inertia_(2, 0) = inertia_(0, 2);
+  pnh.param<double>("inertia/yy", inertia_(1, 1), kDefaultInertiaYy);
+  pnh.param<double>("inertia/yz", inertia_(1, 2), kDefaultInertiaYz);
+  inertia_(2, 1) = inertia_(1, 2);
+  pnh.param<double>("inertia/zz", inertia_(2, 2), kDefaultInertiaZz);
+
+  // Read the control surface parameters from rosparam
+  std::map<std::string, double> control_surface;
+  std::string surface_string = "aileron";
+  if (pnh.getParam(surface_string, control_surface)) {
+    pnh.param<double>(surface_string + "/min", aileron_.d_min, kDefaultControlSurfaceDeflectionMin);
+    pnh.param<double>(surface_string + "/max", aileron_.d_max, kDefaultControlSurfaceDeflectionMax);
+    pnh.param<int>(surface_string + "/channel", aileron_.channel, kDefaultAileronChannel);
+  }
+
+  surface_string = "elevator";
+  if (pnh.getParam(surface_string, control_surface)) {
+    pnh.param<double>(surface_string + "/min", elevator_.d_min, kDefaultControlSurfaceDeflectionMin);
+    pnh.param<double>(surface_string + "/max", elevator_.d_max, kDefaultControlSurfaceDeflectionMax);
+    pnh.param<int>(surface_string + "/channel", elevator_.channel, kDefaultElevatorChannel);
+  }
+
+  surface_string = "rudder";
+  if (pnh.getParam(surface_string, control_surface)) {
+    pnh.param<double>(surface_string + "/min", rudder_.d_min, kDefaultControlSurfaceDeflectionMin);
+    pnh.param<double>(surface_string + "/max", rudder_.d_max, kDefaultControlSurfaceDeflectionMax);
+    pnh.param<int>(surface_string + "/channel", rudder_.channel, kDefaultRudderChannel);
+  }
+
+  // Read the aerodynamic parameters from rosparam
+  pnh.param<double>("cD0", aero_params_.cD0, kDefaultCD0);
+  pnh.param<double>("cDa", aero_params_.cDa, kDefaultCDa);
+  pnh.param<double>("cDa2", aero_params_.cDa2, kDefaultCDa2);
+  pnh.param<double>("cL0", aero_params_.cL0, kDefaultCL0);
+  pnh.param<double>("cLa", aero_params_.cLa, kDefaultCLa);
+  pnh.param<double>("cLa2", aero_params_.cLa2, kDefaultCLa2);
+  pnh.param<double>("cLa3", aero_params_.cLa3, kDefaultCLa3);
+  pnh.param<double>("cLq", aero_params_.cLq, kDefaultCLq);
+  pnh.param<double>("cLde", aero_params_.cLde, kDefaultCLde);
+  pnh.param<double>("cm0", aero_params_.cm0, kDefaultCm0);
+  pnh.param<double>("cma", aero_params_.cma, kDefaultCma);
+  pnh.param<double>("cmq", aero_params_.cmq, kDefaultCmq);
+  pnh.param<double>("cmde", aero_params_.cmde, kDefaultCmde);
+  pnh.param<double>("cT0", aero_params_.cT0, kDefaultCT0);
+  pnh.param<double>("cT1", aero_params_.cT1, kDefaultCT1);
+  pnh.param<double>("cT2", aero_params_.cT2, kDefaultCT2);
+  pnh.param<double>("tauT", aero_params_.tauT, kDefaultTauT);
+  pnh.param<double>("clb", aero_params_.clb, kDefaultClb);
+  pnh.param<double>("clp", aero_params_.clp, kDefaultClp);
+  pnh.param<double>("clr", aero_params_.clr, kDefaultClr);
+  pnh.param<double>("clda", aero_params_.clda, kDefaultClda);
+  pnh.param<double>("cYb", aero_params_.cYb, kDefaultCYb);
+  pnh.param<double>("cnb", aero_params_.cnb, kDefaultCnb);
+  pnh.param<double>("cnp", aero_params_.cnp, kDefaultCnp);
+  pnh.param<double>("cnr", aero_params_.cnr, kDefaultCnr);
+  pnh.param<double>("cndr", aero_params_.cndr, kDefaultCndr);
+
   // Listen to the update event. This event is broadcast every simulation iteration
   this->updateConnection_ =
       event::Events::ConnectWorldUpdateBegin(
           boost::bind(&GazeboFixedWingBasePlugin::OnUpdate, this, _1));
 
-  //air_speed_sub_ = node_handle_->subscribe(air_speed_sub_topic, 1, &GazeboFixedWingBasePlugin::AirSpeedCallback, this);
+  air_speed_sub_ = node_handle_->subscribe(air_speed_sub_topic, 1, &GazeboFixedWingBasePlugin::AirSpeedCallback, this);
   command_sub_ = node_handle_->subscribe(command_sub_topic, 1, &GazeboFixedWingBasePlugin::CommandCallback, this);
   reset_sub_ = node_handle_->subscribe(reset_topic, 1, &GazeboFixedWingBasePlugin::ResetCallback, this);
 
@@ -115,17 +181,23 @@ void GazeboFixedWingBasePlugin::UpdateKinematics() {
   last_time_ = current_time;
 
   // Get the body frame linear and angular velocities
+  //math::Vector3 lin_vel_body = orientation.RotateVectorReverse(air_speed_);
   math::Vector3 lin_vel_body = link_->GetRelativeLinearVel();
   math::Vector3 ang_vel_body = link_->GetRelativeAngularVel();
 
   // Get the current orientation
   math::Quaternion orientation = link_->GetWorldPose().rot;
-  orientation = math::Quaternion(orientation.GetRoll() - M_PI, orientation.GetPitch(), orientation.GetYaw());
-  //double phi = orientation.GetRoll() - M_PI;
-  //double theta = -orientation.GetPitch();
-  //double psi = -orientation.GetYaw();
-  double phi = orientation.GetRoll();
-  double theta = orientation.GetPitch();
+  //math::Quaternion W_I_rot_(M_PI, 0.0, 0.0);
+  //orientation = orientation * W_I_rot_;
+  //orientation = math::Quaternion(orientation.GetRoll() - M_PI, orientation.GetPitch(), orientation.GetYaw());
+
+  // Get the body frame linear and angular velocities
+  //math::Vector3 lin_vel_body = orientation.RotateVectorReverse(air_speed_);
+  //math::Vector3 lin_vel_body = link_->GetRelativeLinearVel();
+  //math::Vector3 ang_vel_body = link_->GetRelativeAngularVel();
+
+  double phi = orientation.GetRoll() - M_PI;
+  double theta = -orientation.GetPitch();
 
   double p = ang_vel_body.x;
   double q = ang_vel_body.y;
@@ -136,7 +208,7 @@ void GazeboFixedWingBasePlugin::UpdateKinematics() {
   double beta = (V < 0.1) ? 0.0 : asin(lin_vel_body.y / V);
   double alpha = (V < 0.1) ? 0.0 : atan(lin_vel_body.z / lin_vel_body.x);
 
-  double q_bar_S = 0.5 * kRhoAir * V * V * kSWing;
+  double q_bar_S = 0.5 * kRhoAir * V * V * wing_surface_;
 
   double ca = cos(alpha);
   double sa = sin(alpha);
@@ -144,9 +216,9 @@ void GazeboFixedWingBasePlugin::UpdateKinematics() {
   math::Matrix3 H_W2B(ca, 0.0, -sa, 0.0, 1.0, 0.0, sa, 0.0, ca);
 
   // Compute the force coefficients
-  double cD = kCD0 + kCDa * alpha + kCDa2 * alpha * alpha;
-  double cY_s = kCYb * beta;
-  double cL = kCL0 + kCLa * alpha + kCLa2 * alpha * alpha + kCLa3 * alpha * alpha * alpha;
+  double cD = aero_params_.cD0 + aero_params_.cDa * alpha + aero_params_.cDa2 * alpha * alpha;
+  double cY_s = aero_params_.cYb * beta;
+  double cL = aero_params_.cL0 + aero_params_.cLa * alpha + aero_params_.cLa2 * alpha * alpha + aero_params_.cLa3 * alpha * alpha * alpha;
 
   math::Vector3 cXYZ = H_W2B * math::Vector3(-cD, cY_s, -cL);
 
@@ -155,28 +227,28 @@ void GazeboFixedWingBasePlugin::UpdateKinematics() {
   double Y = q_bar_S * cXYZ.y;
   double Z = q_bar_S * cXYZ.z;
 
-  double p_hat = (V < 0.1) ? 0.0 : p * kBWing / (2.0 * V);
-  double q_hat = (V < 0.1) ? 0.0 : q * kCChord / (2.0 * V);
-  double r_hat = (V < 0.1) ? 0.0 : r * kBWing / (2.0 * V);
+  double p_hat = (V < 0.1) ? 0.0 : p * wingspan_ / (2.0 * V);
+  double q_hat = (V < 0.1) ? 0.0 : q * chord_length_ / (2.0 * V);
+  double r_hat = (V < 0.1) ? 0.0 : r * wingspan_ / (2.0 * V);
 
   // Get the control surfaces and throttle commands
-  double uE = elevator_deflection_;
-  double uA = aileron_deflection_;
-  double uR = rudder_deflection_;
+  double uE = elevator_.deflection;
+  double uA = aileron_.deflection;
+  double uR = rudder_.deflection;
   double uT = throttle_;
 
   // Compute the moment coefficients
-  double cl_s = kClb * beta + kClp * p_hat + kClr * r_hat + kClda * uA;
-  double cm_s = kCm0 + kCma * alpha + kCmq * q_hat + kCmde * uE;
-  double cn_s = kCnb * beta + kCnp * p_hat + kCnr * r_hat + kCndr * uR;
+  double cl_s = aero_params_.clb * beta + aero_params_.clp * p_hat + aero_params_.clr * r_hat + aero_params_.clda * uA;
+  double cm_s = aero_params_.cm0 + aero_params_.cma * alpha + aero_params_.cmq * q_hat + aero_params_.cmde * uE;
+  double cn_s = aero_params_.cnb * beta + aero_params_.cnp * p_hat + aero_params_.cnr * r_hat + aero_params_.cndr * uR;
 
   // Compute the moments
-  double Lm = q_bar_S * kBWing * cl_s;
-  double Mm = q_bar_S * kCChord * cm_s;
-  double Nm = q_bar_S * kBWing * cn_s;
+  double Lm = q_bar_S * wingspan_ * cl_s;
+  double Mm = q_bar_S * chord_length_ * cm_s;
+  double Nm = q_bar_S * wingspan_ * cn_s;
 
   // Thrust force
-  double T = kCT0 + kCT1 * uT + kCT2 * uT * uT;
+  double T = aero_params_.cT0 + aero_params_.cT1 * uT + aero_params_.cT2 * uT * uT;
 
   // Intermediate states
   double u = V * cos(alpha) * cos(beta);
@@ -184,19 +256,19 @@ void GazeboFixedWingBasePlugin::UpdateKinematics() {
   double w = V * sin(alpha) * cos(beta);
 
   // Intermediate state differentials
-  double u_dot = r * v - q * w - kG * sin(theta) + (X + T * cos(kIThrust)) / kMass;
-  double v_dot = p * w - r * u + kG * sin(phi) * cos(theta) + Y / kMass;
-  double w_dot = q * u - p * v + kG * cos(phi) * cos(theta) + (Z + T * sin(kIThrust)) / kMass;
+  double u_dot = r * v - q * w - kG * sin(theta) + (X + T * cos(i_thrust_)) / mass_;
+  double v_dot = p * w - r * u + kG * sin(phi) * cos(theta) + Y / mass_;
+  double w_dot = q * u - p * v + kG * cos(phi) * cos(theta) + (Z + T * sin(i_thrust_)) / mass_;
 
-  double I1 = kIxz * (kIyy - kIxx - kIzz);
-  double I2 = (kIxx * kIzz - kIxz * kIxz);
-  double p_dot = (kIzz * Lm + kIxz * Nm - (I1 * p + (kIxz * kIxz + kIzz * (kIzz - kIyy)) * r) * q) / I2;
-  double q_dot = (Mm - (kIxx - kIzz) * p * r - kIxz * (p * p - r * r)) / kIyy;
-  double r_dot = (kIxz * Lm + kIxx * Nm + (I1 * r + (kIxz * kIxz + kIxx * (kIxx - kIyy)) *p) *q) / I2;
+  double I1 = inertia_(0, 2) * (inertia_(1, 1) - inertia_(0, 0) - inertia_(2, 2));
+  double I2 = (inertia_(0, 0) * inertia_(2, 2) - inertia_(0, 2) * inertia_(0, 2));
+  double p_dot = (inertia_(2, 2) * Lm + inertia_(0, 2) * Nm - (I1 * p + (inertia_(0, 2) * inertia_(0, 2) + inertia_(2, 2) * (inertia_(2, 2) - inertia_(1, 1))) * r) * q) / I2;
+  double q_dot = (Mm - (inertia_(0, 0) - inertia_(2, 2)) * p * r - inertia_(0, 2) * (p * p - r * r)) / inertia_(1, 1);
+  double r_dot = (inertia_(0, 2) * Lm + inertia_(0, 0) * Nm + (I1 * r + (inertia_(0, 2) * inertia_(0, 2) + inertia_(0, 0) * (inertia_(0, 0) - inertia_(1, 1))) * p) * q) / I2;
 
   // Remove the acceleration due to gravity
-  //math::Vector3 gravity(0, 0, kG);
-  math::Vector3 gravity = orientation.RotateVectorReverse(math::Vector3(0, 0, kG));
+  math::Vector3 gravity(0, 0, kG);
+  //math::Vector3 gravity_body = orientation.RotateVectorReverse(gravity);
 
   u_dot = u_dot - gravity.x;
   v_dot = v_dot - gravity.y;
@@ -226,6 +298,8 @@ void GazeboFixedWingBasePlugin::UpdateKinematics() {
   link_->SetLinearVel(new_lin_vel_w);
   link_->SetAngularVel(new_ang_vel_w);
 
+  // Since we can't set the acceleration via Gazebo API we publish a message
+  // with new linear acceleration to be used by the IMU or any other plugins
   gazebo::msgs::Vector3d accel_msg;
 
   #if GAZEBO_MAJOR_VERSION < 6
@@ -238,15 +312,15 @@ void GazeboFixedWingBasePlugin::UpdateKinematics() {
 }
 
 void GazeboFixedWingBasePlugin::AirSpeedCallback(const geometry_msgs::Vector3ConstPtr& air_speed_msg) {
-  air_speed_.x = air_speed_msg->x * -1.0;
-  air_speed_.y = air_speed_msg->y * -1.0;
-  air_speed_.z = air_speed_msg->z * -1.0;
+  air_speed_.x = air_speed_msg->x;
+  air_speed_.y = air_speed_msg->y;
+  air_speed_.z = air_speed_msg->z;
 }
 
 void GazeboFixedWingBasePlugin::CommandCallback(const mav_msgs::ActuatorsConstPtr& command_msg) {
-  aileron_deflection_ = (kDeflectionMax + kDeflectionMin) * 0.5 + (kDeflectionMax - kDeflectionMin) * 0.5 * command_msg->normalized.at(0);
-  elevator_deflection_ = (kDeflectionMax + kDeflectionMin) * 0.5 + (kDeflectionMax - kDeflectionMin) * 0.5 * command_msg->normalized.at(1);
-  rudder_deflection_ = (kDeflectionMax + kDeflectionMin) * 0.5 + (kDeflectionMax - kDeflectionMin) * 0.5 * command_msg->normalized.at(2);
+  aileron_.deflection = (aileron_.d_max + aileron_.d_min) * 0.5 + (aileron_.d_max - aileron_.d_min) * 0.5 * command_msg->normalized.at(aileron_.channel);
+  elevator_.deflection = (elevator_.d_max + elevator_.d_min) * 0.5 + (elevator_.d_max - elevator_.d_min) * 0.5 * command_msg->normalized.at(elevator_.channel);
+  rudder_.deflection = (rudder_.d_max + rudder_.d_min) * 0.5 + (rudder_.d_max - rudder_.d_min) * 0.5 * command_msg->normalized.at(rudder_.channel);
 
   throttle_ = command_msg->normalized.at(3);
 }
@@ -254,7 +328,7 @@ void GazeboFixedWingBasePlugin::CommandCallback(const mav_msgs::ActuatorsConstPt
 void GazeboFixedWingBasePlugin::ResetCallback(const std_msgs::BoolConstPtr& reset_msg) {
   if (reset_msg->data) {
     math::Pose pose = model_->GetWorldPose();
-    pose.pos = math::Vector3(0.0, 0.0, 0.0);
+    pose.pos = math::Vector3(0.0, 0.0, 0.1);
     pose.rot = math::Quaternion(M_PI, 0.0, 0.0);
     model_->SetWorldPose(pose);
 
@@ -270,9 +344,9 @@ void GazeboFixedWingBasePlugin::ResetCallback(const std_msgs::BoolConstPtr& rese
     ang_vel.z = 0.0;
     model_->SetAngularVel(ang_vel);
 
-    aileron_deflection_ = 0.0;
-    elevator_deflection_ = 0.0;
-    rudder_deflection_ = 0.0;
+    aileron_.deflection = 0.0;
+    elevator_.deflection = 0.0;
+    rudder_.deflection = 0.0;
     throttle_ = 0.0;
 
     gazebo::msgs::Vector3d accel_msg;
