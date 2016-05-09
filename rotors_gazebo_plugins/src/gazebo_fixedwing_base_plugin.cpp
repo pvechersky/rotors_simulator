@@ -101,27 +101,20 @@ void GazeboFixedWingBasePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _
   pnh.param<double>("inertia/zz", inertia_(2, 2), kDefaultInertiaZz);
 
   // Read the control surface parameters from rosparam
-  std::map<std::string, double> control_surface;
   std::string surface_string = "aileron";
-  if (pnh.getParam(surface_string, control_surface)) {
-    pnh.param<double>(surface_string + "/min", aileron_.d_min, kDefaultControlSurfaceDeflectionMin);
-    pnh.param<double>(surface_string + "/max", aileron_.d_max, kDefaultControlSurfaceDeflectionMax);
-    pnh.param<int>(surface_string + "/channel", aileron_.channel, kDefaultAileronChannel);
-  }
+  pnh.param<double>(surface_string + "/min", aileron_.d_min, kDefaultControlSurfaceDeflectionMin);
+  pnh.param<double>(surface_string + "/max", aileron_.d_max, kDefaultControlSurfaceDeflectionMax);
+  pnh.param<int>(surface_string + "/channel", aileron_.channel, kDefaultAileronChannel);
 
   surface_string = "elevator";
-  if (pnh.getParam(surface_string, control_surface)) {
-    pnh.param<double>(surface_string + "/min", elevator_.d_min, kDefaultControlSurfaceDeflectionMin);
-    pnh.param<double>(surface_string + "/max", elevator_.d_max, kDefaultControlSurfaceDeflectionMax);
-    pnh.param<int>(surface_string + "/channel", elevator_.channel, kDefaultElevatorChannel);
-  }
+  pnh.param<double>(surface_string + "/min", elevator_.d_min, kDefaultControlSurfaceDeflectionMin);
+  pnh.param<double>(surface_string + "/max", elevator_.d_max, kDefaultControlSurfaceDeflectionMax);
+  pnh.param<int>(surface_string + "/channel", elevator_.channel, kDefaultElevatorChannel);
 
   surface_string = "rudder";
-  if (pnh.getParam(surface_string, control_surface)) {
-    pnh.param<double>(surface_string + "/min", rudder_.d_min, kDefaultControlSurfaceDeflectionMin);
-    pnh.param<double>(surface_string + "/max", rudder_.d_max, kDefaultControlSurfaceDeflectionMax);
-    pnh.param<int>(surface_string + "/channel", rudder_.channel, kDefaultRudderChannel);
-  }
+  pnh.param<double>(surface_string + "/min", rudder_.d_min, kDefaultControlSurfaceDeflectionMin);
+  pnh.param<double>(surface_string + "/max", rudder_.d_max, kDefaultControlSurfaceDeflectionMax);
+  pnh.param<int>(surface_string + "/channel", rudder_.channel, kDefaultRudderChannel);
 
   // Read the aerodynamic parameters from rosparam
   pnh.param<double>("cD0", aero_params_.cD0, kDefaultCD0);
