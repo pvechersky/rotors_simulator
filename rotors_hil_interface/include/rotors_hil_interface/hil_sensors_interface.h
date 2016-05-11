@@ -36,7 +36,8 @@
 namespace rotors_hil {
 // Constants
 static constexpr int kAllFieldsUpdated = 4095;
-static constexpr double kDefaultGravityMagnitude = 9.8068;
+static constexpr double kAirDensity = 1.18;
+static constexpr double kGravityMagnitude = 9.8068;
 
 // Default values
 static const std::string kDefaultAirSpeedSubTopic = "air_speed";
@@ -44,6 +45,7 @@ static const std::string kDefaultGroundSpeedSubTopic = "ground_speed";
 static const std::string kDefaultPressureSubTopic = "air_pressure";
 static const std::string kDefaultSetModeSubTopic = "set_mode";
 static const std::string kDefaultMavlinkPubTopic = "/mavlink/to";
+static constexpr bool kDefaultSensorLevelHil = true;
 
 class HilSensorsInterface {
  public:
@@ -92,8 +94,14 @@ class HilSensorsInterface {
   bool received_mag_;
   bool received_pressure_;
 
+  // Whether we are running sensor-level or state-level HIL
+  bool sensor_level_hil_;
+
   // Sensor data
   tf::Quaternion att_;          // Attitude quaternion
+  float acc_x_;                 // X acceleration (m/s^2)
+  float acc_y_;                 // Y acceleration (m/s^2)
+  float acc_z_;                 // Z acceleration (m/s^2)
   float gyro_x_;                // Angular speed around X axis in body frame (rad / sec)
   float gyro_y_;                // Angular speed around Y axis in body frame (rad / sec)
   float gyro_z_;                // Angular speed around Z axis in body frame (rad / sec)
@@ -113,9 +121,6 @@ class HilSensorsInterface {
   uint16_t cog_;                // Course over ground (NOT heading, but direction of movement) in degrees * 100. If unknown, set to: 65535
   uint16_t ind_airspeed_;       // Indicated airspeed, expressed as m/s * 100
   uint16_t true_airspeed_;      // True airspeed, expressed as m/s * 100*/
-  int16_t acc_x_;               // X acceleration (milli g's)
-  int16_t acc_y_;               // Y acceleration (milli g's)
-  int16_t acc_z_;               // Z acceleration (milli g's)
   int16_t vn_;                  // GPS velocity in cm/s in NORTH direction in earth-fixed NED frame
   int16_t ve_;                  // GPS velocity in cm/s in EAST direction in earth-fixed NED frame
   int16_t vd_;                  // GPS velocity in cm/s in DOWN direction in earth-fixed NED frame

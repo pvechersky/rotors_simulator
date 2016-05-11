@@ -42,7 +42,6 @@ GazeboImuPlugin::~GazeboImuPlugin() {
   }
 }
 
-
 void GazeboImuPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
   // Store the pointer to the model
   model_ = _model;
@@ -96,7 +95,6 @@ void GazeboImuPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
   getSdfParam<double>(_sdf, "accelerometerTurnOnBiasSigma",
                       imu_parameters_.accelerometer_turn_on_bias_sigma,
                       imu_parameters_.accelerometer_turn_on_bias_sigma);
-  getSdfParam<bool>(_sdf, "useKinematics", use_kinematics_, kDefaultUseKinematics);
 
   last_time_ = world_->GetSimTime();
 
@@ -154,17 +152,6 @@ void GazeboImuPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
   // TODO(nikolicj) incorporate steady-state covariance of bias process
   gyroscope_bias_.setZero();
   accelerometer_bias_.setZero();
-
-  // If we are using kinematics to move the model, the linear acceleration
-  // needs to come from the plugin that computes kinematics
-  if (use_kinematics_) {
-    gazebo_node_ = transport::NodePtr(new transport::Node());
-    gazebo_node_->Init(world_->GetName());
-
-    std::string topicname = "~/" + model_->GetName() + "/linear_accel";
-
-    linear_accel_sub_ = gazebo_node_->Subscribe(topicname, &GazeboImuPlugin::LinearAccelCallback, this);
-  }
 }
 
 /// \brief This function adds noise to acceleration and angular rates for
@@ -243,10 +230,7 @@ void GazeboImuPlugin::OnUpdate(const common::UpdateInfo& _info) {
 
   velocity_prev_W_ = velocity_current_W;
 #else
-  if (use_kinematics_)
-    acceleration_I = accel_linear_kin_;
-  else
-    acceleration_I = link_->GetRelativeLinearAccel() - C_W_I.RotateVectorReverse(gravity_W_);
+  acceleration_I = link_->GetRelativeLinearAccel() - C_W_I.RotateVectorReverse(gravity_W_);
 #endif
 
   math::Vector3 angular_vel_I = link_->GetRelativeAngularVel();
@@ -280,11 +264,6 @@ void GazeboImuPlugin::OnUpdate(const common::UpdateInfo& _info) {
   imu_pub_.publish(imu_message_);
 
 }
-
-void GazeboImuPlugin::LinearAccelCallback(ConstVector3dPtr &msg) {
-  accel_linear_kin_ = math::Vector3(msg->x(), msg->y(), msg->z());
-}
-
 
 GZ_REGISTER_MODEL_PLUGIN(GazeboImuPlugin);
 }

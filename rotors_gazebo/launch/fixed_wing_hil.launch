@@ -1,13 +1,12 @@
 <launch>
   <arg name="uav_name" default="techpod"/>
-  <arg name="world_name" default="zurich"/>
+  <arg name="world_name" default="outdoor"/>
   <arg name="enable_logging" default="false"/>
   <arg name="enable_ground_truth" default="false"/>
   <arg name="log_file" default="$(arg uav_name)"/>
   <arg name="use_kinematics" default="false"/>
 
-  <env name="GAZEBO_MODEL_PATH" value="$(find rotors_gazebo)/models"/>
-  <!--<env name="GAZEBO_MODEL_PATH" value="$(find drcsim_model_resources)/gazebo_models"/>-->
+  <env name="GAZEBO_MODEL_PATH" value="$(find drcsim_model_resources)/gazebo_models"/>
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
     <arg name="world_name" value="$(find rotors_gazebo)/worlds/$(arg world_name).world"/>
     <arg name="paused" value="false" />
@@ -33,6 +32,7 @@
       <param name="odometry_topic" value="ground_truth/odometry" />
       <param name="hil_mode_topic" value="hil_mode" />
       <param name="mavlink_pub_topic" value="/mavlink/to" />
+      <param name="sensor_level_hil" value="true" />
     </node>
 
     <node name="hil_control_interface" pkg="rotors_hil_interface" type="rotors_hil_control_interface" output="screen">
