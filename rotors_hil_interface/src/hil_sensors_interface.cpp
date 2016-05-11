@@ -134,8 +134,8 @@ void HilSensorsInterface::ImuCallback(const sensor_msgs::ImuConstPtr& imu_msg) {
   acc_y_ = imu_msg->linear_acceleration.y * 1000.0 / kDefaultGravityMagnitude;
   acc_z_ = imu_msg->linear_acceleration.z * 1000.0 / kDefaultGravityMagnitude;
 
-  tf::Quaternion q(imu_msg->orientation.x, imu_msg->orientation.y, imu_msg->orientation.z, imu_msg->orientation.w);
-  tf::Matrix3x3 rot(q);
+  att_ = tf::Quaternion(imu_msg->orientation.x, imu_msg->orientation.y, imu_msg->orientation.z, imu_msg->orientation.w);
+  /*tf::Matrix3x3 rot(q);
 
   double roll;
   double pitch;
@@ -143,7 +143,7 @@ void HilSensorsInterface::ImuCallback(const sensor_msgs::ImuConstPtr& imu_msg) {
   rot.getRPY(roll, pitch, yaw);
   roll = roll - M_PI;
 
-  att_.setEuler(yaw, pitch, roll);
+  att_.setEuler(yaw, pitch, roll);*/
 
   gyro_x_ = imu_msg->angular_velocity.x;
   gyro_y_ = imu_msg->angular_velocity.y;

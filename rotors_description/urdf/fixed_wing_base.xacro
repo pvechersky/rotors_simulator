@@ -41,12 +41,13 @@
     <link name="${robot_namespace}/base_link"></link>
 
     <joint name="${robot_namespace}/base_joint" type="fixed">
-      <origin xyz="0 0 0.0" rpy="0 0 0" />
+      <origin xyz="0 0 0" rpy="0 0 0" />
       <parent link="${robot_namespace}/base_link" />
       <child link="${robot_namespace}/base_link_inertia" />
     </joint>
 
     <link name="${robot_namespace}/base_link_inertia">
+<!--    <link name="${robot_namespace}/base_link">-->
       <inertial>
         <mass value="${mass}" />
         <xacro:insert_block name="cog" />
@@ -55,12 +56,14 @@
       <visual>
         <origin xyz="0 0 0" rpy="0 0 0" />
         <geometry>
-          <xacro:if value="${use_mesh_file}">
+<!--          <xacro:if value="${use_mesh_file}">
             <mesh filename="${mesh_file}" scale="1 1 1" />
           </xacro:if>
           <xacro:unless value="${use_mesh_file}">
             <box size="${length} ${width} ${height}" />
-          </xacro:unless>
+          </xacro:unless>-->
+          <mesh filename="package://rotors_gazebo/models/body.dae"
+              scale="0.2 0.2 0.2" />
         </geometry>
       </visual>
       <collision>
@@ -80,9 +83,9 @@
 	<alphaStall>${alpha_stall}</alphaStall>
       </plugin>
     </gazebo>
-    <gazebo reference="${robot_namespace}/base_link">
+<!--    <gazebo reference="${robot_namespace}/base_link">
       <material>Gazebo/${color}</material>
-    </gazebo>
+    </gazebo>-->
   </xacro:macro>
 
   <!-- Wheel joint and link -->

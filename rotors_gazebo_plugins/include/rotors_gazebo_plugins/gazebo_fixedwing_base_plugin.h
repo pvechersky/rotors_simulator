@@ -26,7 +26,6 @@
 #include <gazebo/common/Plugin.hh>
 #include <gazebo/gazebo.hh>
 #include <gazebo/physics/physics.hh>
-#include <gazebo/transport/transport.hh>
 #include <geometry_msgs/Vector3.h>
 #include <mav_msgs/Actuators.h>
 #include <nav_msgs/Odometry.h>
@@ -133,7 +132,7 @@ class GazeboFixedWingBasePlugin : public ModelPlugin {
   GazeboFixedWingBasePlugin();
   virtual ~GazeboFixedWingBasePlugin();
 
-  void UpdateKinematics();
+  void ComputeAerodynamicForcesMoments(math::Vector3& forces, math::Vector3& moments);
 
  protected:
   void Load(physics::ModelPtr _model, sdf::ElementPtr _sdf);
@@ -146,9 +145,6 @@ class GazeboFixedWingBasePlugin : public ModelPlugin {
   ros::Subscriber air_speed_sub_;
   ros::Subscriber command_sub_;
   ros::Subscriber reset_sub_;
-
-  transport::NodePtr gazebo_node_;
-  transport::PublisherPtr linear_accel_pub_;
 
   // Pointer to the world
   physics::WorldPtr world_;
@@ -179,9 +175,6 @@ class GazeboFixedWingBasePlugin : public ModelPlugin {
   void AirSpeedCallback(const geometry_msgs::Vector3ConstPtr& air_speed_msg);
   void CommandCallback(const mav_msgs::ActuatorsConstPtr& command_msg);
   void ResetCallback(const std_msgs::BoolConstPtr& reset_msg);
-
-  common::Time last_time_;
-  common::Time last_sim_time_;
 
   FixedWingAerodynamicParameters aero_params_;
 };
