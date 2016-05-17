@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import os
 import rospy
 from qt_gui.plugin import Plugin

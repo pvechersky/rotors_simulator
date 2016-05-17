@@ -23,9 +23,8 @@
 namespace rotors_hil {
 
 HilControlInterface::HilControlInterface():
-  base_mode_(0),
-  system_status_(255)
-{
+    base_mode_(0),
+    system_status_(255) {
   ros::NodeHandle pnh("~");
 
   std::string mavlink_sub_topic;
