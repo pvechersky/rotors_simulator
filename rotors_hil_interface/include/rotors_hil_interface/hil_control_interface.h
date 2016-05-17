@@ -34,6 +34,9 @@ static const std::string kDefaultMavModePubTopic = "mav_mode";
 static const std::string kDefaultMavStatusPubTopic = "mav_status";
 static const std::string kDefaultActuatorsPubTopic = "actuators";
 
+// Default values
+static constexpr bool kDefaultKeyTeleop = false;
+
 class HilControlInterface {
  public:
   HilControlInterface();
@@ -53,6 +56,8 @@ class HilControlInterface {
   // MAV diagnostics
   uint8_t base_mode_;
   uint8_t system_status_;
+
+  bool key_teleop_;
 };
 }
 

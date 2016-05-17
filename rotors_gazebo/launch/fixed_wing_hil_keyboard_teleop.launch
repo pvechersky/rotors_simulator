@@ -38,9 +38,14 @@
     <node name="hil_control_interface" pkg="rotors_hil_interface" type="rotors_hil_control_interface" output="screen">
       <param name="mavlink_sub_topic" value="/mavlink/from" />
       <param name="actuators_pub_topic" value="gazebo/command/motor_speed" />
-      <param name="key_teleop" value="false" />
+      <param name="key_teleop" value="true" />
     </node>
 
     <node name="rotors_gui" pkg="rqt_rotors" type="rqt_rotors" output="screen" />
+
+    <node name="rotors_key_teleop" pkg="rotors_key_teleop" type="rotors_key_teleop" output="screen">
+      <param name="control_timeout" value="0.5" />
+      <param name="controls_sensitivity" value="0.05" />
+    </node>
   </group>
 </launch>

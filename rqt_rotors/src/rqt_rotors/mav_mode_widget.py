@@ -51,7 +51,7 @@ class MavModeWidget(QWidget):
     self.button_set_hil_mode.setEnabled(False)
     self.button_arm.setEnabled(False)
     self.text_state.setText(self.STR_UNKNOWN)
-    self.clearMavMode()
+    self.clear_mav_mode()
 
     # Initialize class variables
     self.mav_mode = 0
@@ -66,8 +66,8 @@ class MavModeWidget(QWidget):
     self.button_reset_model.pressed.connect(self.on_reset_model_button_pressed)
     
     # Initialize ROS subscribers and publishers
-    self.mav_mode_sub = rospy.Subscriber(self.STR_MAV_MODE_SUB_TOPIC, UInt8, self.mavModeCallback, queue_size=1)
-    self.mav_status_sub = rospy.Subscriber(self.STR_MAV_STATUS_SUB_TOPIC, UInt8, self.mavStatusCallback, queue_size=1)
+    self.mav_mode_sub = rospy.Subscriber(self.STR_MAV_MODE_SUB_TOPIC, UInt8, self.mav_mode_callback, queue_size=1)
+    self.mav_status_sub = rospy.Subscriber(self.STR_MAV_STATUS_SUB_TOPIC, UInt8, self.mav_status_callback, queue_size=1)
     self.set_mode_pub = rospy.Publisher(self.STR_SET_MODE_PUB_TOPIC, UInt8, queue_size=1)
     self.reset_pub = rospy.Publisher(self.STR_RESET_MODEL_PUB_TOPIC, Bool, queue_size=1)
 
@@ -82,7 +82,7 @@ class MavModeWidget(QWidget):
   def on_reset_model_button_pressed(self):
     self.reset_pub.publish(True)
     
-  def mavModeCallback(self, msg):
+  def mav_mode_callback(self, msg):
     if not(self.received_heartbeat):
       self.button_set_hil_mode.setEnabled(True)
       self.button_arm.setEnabled(True)
@@ -90,7 +90,7 @@ class MavModeWidget(QWidget):
 
     if (self.mav_mode != msg.data):
       self.mav_mode = msg.data
-      self.processMavMode(msg.data)
+      self.process_mav_mode(msg.data)
 
       new_hil_enabled = (msg.data & self.MAV_MODE_FLAG_HIL_ENABLED)
       new_armed = (msg.data & self.MAV_MODE_FLAG_SAFETY_ARMED)
@@ -103,36 +103,25 @@ class MavModeWidget(QWidget):
         self.armed = new_armed
         self.button_arm.setEnabled(not(new_armed))
 
-  def mavStatusCallback(self, msg):
+  def mav_status_callback(self, msg):
     if (self.mav_status != msg.data):
       self.mav_status = msg.data
       self.text_state.setText(self.mav_state[msg.data])
 
-  def clearMavMode(self):
+  def clear_mav_mode(self):
     count = self.mav_mode_layout.rowCount()
     for i in range(count):
       self.mav_mode_layout.itemAt(i, QFormLayout.FieldRole).widget().setText(self.STR_UNKNOWN)
 
-  def processMavMode(self, mode):
-    self.text_mode_safety_armed.setText(self.mavModeText(mode, self.MAV_MODE_FLAG_SAFETY_ARMED))
-    self.text_mode_manual_input.setText(self.mavModeText(mode, self.MAV_MODE_FLAG_MANUAL_INPUT_ENABLED))
-    self.text_mode_hil.setText(self.mavModeText(mode, self.MAV_MODE_FLAG_HIL_ENABLED))
-    self.text_mode_stabilize.setText(self.mavModeText(mode, self.MAV_MODE_FLAG_STABILIZE_ENABLED))
-    self.text_mode_guided.setText(self.mavModeText(mode, self.MAV_MODE_FLAG_GUIDED_ENABLED))
-    self.text_mode_auto.setText(self.mavModeText(mode, self.MAV_MODE_FLAG_AUTO_ENABLED))
-    self.text_mode_test.setText(self.mavModeText(mode, self.MAV_MODE_FLAG_TEST_ENABLED))
-    self.text_mode_custom_mode.setText(self.mavModeText(mode, self.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED))
+  def process_mav_mode(self, mode):
+    self.text_mode_safety_armed.setText(self.mav_mode_text(mode, self.MAV_MODE_FLAG_SAFETY_ARMED))
+    self.text_mode_manual_input.setText(self.mav_mode_text(mode, self.MAV_MODE_FLAG_MANUAL_INPUT_ENABLED))
+    self.text_mode_hil.setText(self.mav_mode_text(mode, self.MAV_MODE_FLAG_HIL_ENABLED))
+    self.text_mode_stabilize.setText(self.mav_mode_text(mode, self.MAV_MODE_FLAG_STABILIZE_ENABLED))
+    self.text_mode_guided.setText(self.mav_mode_text(mode, self.MAV_MODE_FLAG_GUIDED_ENABLED))
+    self.text_mode_auto.setText(self.mav_mode_text(mode, self.MAV_MODE_FLAG_AUTO_ENABLED))
+    self.text_mode_test.setText(self.mav_mode_text(mode, self.MAV_MODE_FLAG_TEST_ENABLED))
+    self.text_mode_custom_mode.setText(self.mav_mode_text(mode, self.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED))
 
-  def mavModeText(self, mode, flag):
+  def mav_mode_text(self, mode, flag):
     return 'ON' if (mode & flag) else 'OFF'
-
-  def getKey():
-    tty.setraw(sys.stdin.fileno())
-    rlist, _, _ = select.select([sys.stdin], [], [], 0.1)
-    if rlist:
-        key = sys.stdin.read(1)
-    else:
-        key = ''
-
-    termios.tcsetattr(sys.stdin, termios.TCSADRAIN, settings)
-    return key

@@ -22,7 +22,6 @@
 #define ROTORS_KEY_TELEOP_H_
 
 #include <ros/ros.h>
-#include <stdio.h>
 #include <termios.h>
 
 #include <mav_msgs/Actuators.h>
@@ -34,16 +33,19 @@ static constexpr int STDIN_FD = 0;
 // Key assignment constants
 static constexpr int KEYCODE_THROTTLE_UP = 0x77;    // 'w'
 static constexpr int KEYCODE_THROTTLE_DOWN = 0x73;  // 's'
-static constexpr int KEYCODE_RUDDER_LEFT = 0x61;    // 'a'
-static constexpr int KEYCODE_RUDDER_RIGHT = 0x64;   // 'd'
-static constexpr int KEYCODE_ELEVATOR_UP = 0x41;    // up arrow
-static constexpr int KEYCODE_ELEVATOR_DOWN = 0x42;  // down arrow
-static constexpr int KEYCODE_AILERON_LEFT = 0x44;   // left arrow
-static constexpr int KEYCODE_AILERON_RIGHT = 0x43;  // right arrow
+static constexpr int KEYCODE_YAW_LEFT = 0x61;       // 'a'
+static constexpr int KEYCODE_YAW_RIGHT = 0x64;      // 'd'
+static constexpr int KEYCODE_PITCH_UP = 0x42;       // up arrow
+static constexpr int KEYCODE_PITCH_DOWN = 0x41;     // down arrow
+static constexpr int KEYCODE_ROLL_LEFT = 0x44;      // left arrow
+static constexpr int KEYCODE_ROLL_RIGHT = 0x43;     // right arrow
+static constexpr int KEYCODE_RESET = 0x52;          // 'R'
 static constexpr int KEYCODE_QUIT = 0x51;           // 'Q'
 
 // Default values
-static const std::string kDefaultActuatorsPubTopic = "actuators";
+static const std::string kDefaultActuatorsPubTopic = "gazebo/command/motor_speed";
+static constexpr double kDefaultControlTimeout = 0.5;
+static constexpr double kDefaultSensitivity = 0.05;
 
 class KeyTeleop {
  public:
@@ -65,7 +67,16 @@ class KeyTeleop {
   double yaw_rudder_;
   double throttle_;
 
-  // Object to store original input attributes
+  // Controls sensitivity
+  double sensitivity_;
+
+  // Control timers
+  double last_aileron_time_;
+  double last_elevator_time_;
+  double last_rudder_time_;
+  double control_timeout_;
+
+  // Object to store original input terminal attributes
   termios attributes_old_;
 };
 }

@@ -36,6 +36,8 @@ HilControlInterface::HilControlInterface():
   pnh.param("mav_status_pub_topic", mav_status_pub_topic, kDefaultMavStatusPubTopic);
   pnh.param("actuators_pub_topic", actuators_pub_topic, kDefaultActuatorsPubTopic);
 
+  pnh.param("key_teleop", key_teleop_, kDefaultKeyTeleop);
+
   mavlink_sub_ = nh_.subscribe(mavlink_sub_topic, 15, &HilControlInterface::MavlinkCallback, this);
 
   mav_mode_pub_ = nh_.advertise<std_msgs::UInt8>(mav_mode_pub_topic, 1);
@@ -72,7 +74,7 @@ void HilControlInterface::MavlinkCallback(const mavros_msgs::MavlinkConstPtr& ma
       mav_status_pub_.publish(mav_status_msg);
     }
   }
-  else if (mavros_msg->msgid == MAVLINK_MSG_ID_HIL_CONTROLS) {
+  else if (mavros_msg->msgid == MAVLINK_MSG_ID_HIL_CONTROLS && !key_teleop_) {
     mavlink_message_t* mavlink_msg(new mavlink_message_t);
     mavros_msgs::mavlink::convert(*mavros_msg, *mavlink_msg);
 

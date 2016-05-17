@@ -25,7 +25,13 @@ namespace rotors_teleop {
 KeyTeleop::KeyTeleop() {
   ConfigureTerminalInput();
 
-  actuators_pub_ = nh_.advertise<mav_msgs::Actuators>(kDefaultActuatorsPubTopic, 1);
+  ros::NodeHandle pnh("~");
+  std::string actuators_pub_topic;
+  pnh.param("actuators_pub_topic", actuators_pub_topic, kDefaultActuatorsPubTopic);
+  pnh.param("control_timeout", control_timeout_, kDefaultControlTimeout);
+  pnh.param("controls_sensitivity", sensitivity_, kDefaultSensitivity);
+
+  actuators_pub_ = nh_.advertise<mav_msgs::Actuators>(actuators_pub_topic, 1);
 }
 
 KeyTeleop::~KeyTeleop() {
@@ -49,6 +55,10 @@ void KeyTeleop::ConfigureTerminalInput() {
 
   // Set the new attributes
   tcsetattr(STDIN_FD, TCSANOW, &attributes_new);
+
+  ROS_INFO(" ");
+  ROS_INFO("Terminal configured for keyboard teleop");
+  ROS_INFO(" ");
 }
 
 void KeyTeleop::KeyInputLoop() {
@@ -60,35 +70,65 @@ void KeyTeleop::KeyInputLoop() {
       Shutdown();
     }
 
+    double curr_time = ros::Time::now().toSec();
+
     switch(c) {
-      case KEYCODE_AILERON_LEFT:
-        std::cout << "LEFT" << std::endl;
+      case KEYCODE_ROLL_LEFT:
+        roll_ailerons_ -= sensitivity_;
+        roll_ailerons_ = (roll_ailerons_ < -1.0) ? -1.0 : roll_ailerons_;
+        last_aileron_time_ = curr_time;
         break;
-      case KEYCODE_AILERON_RIGHT:
-        std::cout << "RIGHT" << std::endl;
+      case KEYCODE_ROLL_RIGHT:
+        roll_ailerons_ += sensitivity_;
+        roll_ailerons_ = (roll_ailerons_ > 1.0) ? 1.0 : roll_ailerons_;
+        last_aileron_time_ = curr_time;
         break;
-      case KEYCODE_ELEVATOR_UP:
-        std::cout << "UP" << std::endl;
+      case KEYCODE_PITCH_UP:
+        pitch_elevator_ -= sensitivity_;
+        pitch_elevator_ = (pitch_elevator_ < -1.0) ? -1.0 : pitch_elevator_;
+        last_elevator_time_ = curr_time;
         break;
-      case KEYCODE_ELEVATOR_DOWN:
-        std::cout << "DOWN" << std::endl;
+      case KEYCODE_PITCH_DOWN:
+        pitch_elevator_ += sensitivity_;
+        pitch_elevator_ = (pitch_elevator_ > 1.0) ? 1.0 : pitch_elevator_;
+        last_elevator_time_ = curr_time;
         break;
-      case KEYCODE_RUDDER_LEFT:
+      case KEYCODE_YAW_LEFT:
+        yaw_rudder_ -= sensitivity_;
+        yaw_rudder_ = (yaw_rudder_ < -1.0) ? -1.0 : yaw_rudder_;
+        last_rudder_time_ = curr_time;
         break;
-      case KEYCODE_RUDDER_RIGHT:
+      case KEYCODE_YAW_RIGHT:
+        yaw_rudder_ += sensitivity_;
+        yaw_rudder_ = (yaw_rudder_ > 1.0) ? 1.0 : yaw_rudder_;
+        last_rudder_time_ = curr_time;
         break;
       case KEYCODE_THROTTLE_UP:
-        throttle_ += 0.02;
+        throttle_ += sensitivity_;
         throttle_ = (throttle_ > 1.0) ? 1.0 : throttle_;
         break;
       case KEYCODE_THROTTLE_DOWN:
-        throttle_ -= 0.02;
+        throttle_ -= sensitivity_;
         throttle_ = (throttle_ < 0.0) ? 0.0 : throttle_;
         break;
+      case KEYCODE_RESET:
+        ROS_INFO("Keyboard teleop - resetting controls");
+        roll_ailerons_ = 0.0;
+        pitch_elevator_ = 0.0;
+        yaw_rudder_ = 0.0;
+        throttle_ = 0.0;
       case KEYCODE_QUIT:
+        ROS_INFO("Keyboard teleop - shuttind down");
         Shutdown();
         break;
+      default:
+        break;
     }
+
+    // If it has been too long since we received certain commands we set those controls to zero
+    roll_ailerons_ = ((curr_time - last_aileron_time_) > control_timeout_) ? 0.0 : roll_ailerons_;
+    pitch_elevator_ = ((curr_time - last_elevator_time_) > control_timeout_) ? 0.0 : pitch_elevator_;
+    yaw_rudder_ = ((curr_time - last_rudder_time_) > control_timeout_) ? 0.0 : yaw_rudder_;
 
     mav_msgs::Actuators act_msg;
 
