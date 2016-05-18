@@ -22,13 +22,24 @@ find_package(catkin REQUIRED COMPONENTS
   tf
 )
 
+find_package(Qt4)
+
 find_package(Eigen REQUIRED)
 find_package(octomap REQUIRED)
 find_package(gazebo REQUIRED)
 find_package(OpenCV REQUIRED)
+find_package(Protobuf REQUIRED)
+
+include (${QT_USE_FILE})
+add_definitions(${QT_DEFINITIONS})
+
 link_directories(${GAZEBO_LIBRARY_DIRS})
-include_directories(${GAZEBO_INCLUDE_DIRS})
+include_directories(SYSTEM ${GAZEBO_INCLUDE_DIRS})
 include_directories(${OpenCV_INCLUDE_DIRS})
+
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
+
+QT4_WRAP_CPP(headers_MOC include/rotors_gazebo_plugins/gui_plugin.h)
 
 catkin_package(
   INCLUDE_DIRS include ${Eigen_INCLUDE_DIRS}
@@ -92,6 +103,10 @@ add_library(rotors_gazebo_air_speed_plugin src/gazebo_air_speed_plugin.cpp)
 target_link_libraries(rotors_gazebo_air_speed_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
 add_dependencies(rotors_gazebo_air_speed_plugin ${catkin_EXPORTED_TARGETS})
 
+add_library(rotors_gui_test_plugin SHARED ${headers_MOC} src/gui_plugin.cpp)
+target_link_libraries(rotors_gui_test_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES} ${QT_LIBRARIES} ${PROTOBUF_LIBRARIES})
+add_dependencies(rotors_gui_test_plugin ${catkin_EXPORTED_TARGETS})
+
 install(
   TARGETS
     rotors_gazebo_motor_model
@@ -107,6 +122,7 @@ install(
     rotors_gazebo_magnetometer_plugin
     rotors_gazebo_pressure_plugin
     rotors_gazebo_air_speed_plugin
+    rotors_gui_test_plugin
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 )

@@ -143,6 +143,12 @@ void GazeboFixedWingBasePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _
   air_speed_sub_ = node_handle_->subscribe(air_speed_sub_topic, 1, &GazeboFixedWingBasePlugin::AirSpeedCallback, this);
   command_sub_ = node_handle_->subscribe(command_sub_topic, 1, &GazeboFixedWingBasePlugin::CommandCallback, this);
   reset_sub_ = node_handle_->subscribe(reset_topic, 1, &GazeboFixedWingBasePlugin::ResetCallback, this);
+
+  // Create the gazebo transport node and the publisher
+  gazebo_node_ = transport::NodePtr(new transport::Node());
+  gazebo_node_->Init("techpod");
+
+  fw_pose_pub_ = gazebo_node_->Advertise<gazebo::msgs::Pose>("~/mav/pose");
 }
 
 void GazeboFixedWingBasePlugin::OnUpdate(const common::UpdateInfo& _info) {
@@ -153,6 +159,18 @@ void GazeboFixedWingBasePlugin::OnUpdate(const common::UpdateInfo& _info) {
 
   link_->AddLinkForce(forces);
   link_->AddRelativeTorque(moments);
+
+  // Create a pose message
+  gazebo::msgs::Pose pose_msg;
+
+  #if GAZEBO_MAJOR_VERSION < 6
+    gazebo::msgs::Set(&pose_msg, model_->GetWorldPose());
+  #else
+    gazebo::msgs::Set(&pose_msg, model_->GetWorldPose().Ign());
+  #endif
+
+  // Send the message
+  fw_pose_pub_->Publish(pose_msg);
 }
 
 void GazeboFixedWingBasePlugin::ComputeAerodynamicForcesMoments(math::Vector3& forces, math::Vector3& moments) {

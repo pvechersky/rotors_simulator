@@ -1,8 +1,8 @@
 <?xml version="1.0" ?>
 <sdf version="1.4">
   <world name="outdoor">
-    <!-- place user camera -->
     <gui>
+      <plugin name="view_selection" filename="librotors_gui_test_plugin.so"/>
       <camera name="user_camera">
         <pose>-21.660200 -11.942800 12.053900 0.000000 0.443643 0.352194</pose>
       </camera>

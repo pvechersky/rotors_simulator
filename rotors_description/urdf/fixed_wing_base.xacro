@@ -47,7 +47,6 @@
     </joint>
 
     <link name="${robot_namespace}/base_link_inertia">
-<!--    <link name="${robot_namespace}/base_link">-->
       <inertial>
         <mass value="${mass}" />
         <xacro:insert_block name="cog" />
