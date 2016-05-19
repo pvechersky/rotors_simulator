@@ -174,10 +174,9 @@ void GazeboFixedWingBasePlugin::OnUpdate(const common::UpdateInfo& _info) {
 }
 
 void GazeboFixedWingBasePlugin::ComputeAerodynamicForcesMoments(math::Vector3& forces, math::Vector3& moments) {
-  // Get the body frame linear and angular velocities
-  //math::Quaternion orientation = link_->GetWorldPose().rot;
-  //math::Vector3 lin_vel_body = orientation.RotateVectorReverse(air_speed_);
-  math::Vector3 lin_vel_body = link_->GetRelativeLinearVel();
+  // Rotate airspeed into the body frame and get the body angular rates from Gazebo
+  math::Quaternion orientation = link_->GetWorldPose().rot;
+  math::Vector3 lin_vel_body = orientation.RotateVectorReverse(air_speed_);
   math::Vector3 ang_vel_body = link_->GetRelativeAngularVel();
 
   double u = lin_vel_body.x;

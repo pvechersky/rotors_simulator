@@ -35,9 +35,9 @@
 
 namespace rotors_hil {
 // Constants
-static constexpr int kAllFieldsUpdated = 4095;
 static constexpr double kAirDensity = 1.18;
 static constexpr double kGravityMagnitude = 9.8068;
+static constexpr int kAllFieldsUpdated = 4095;
 
 // Default values
 static const std::string kDefaultAirSpeedSubTopic = "air_speed";
@@ -46,13 +46,16 @@ static const std::string kDefaultPressureSubTopic = "air_pressure";
 static const std::string kDefaultSetModeSubTopic = "set_mode";
 static const std::string kDefaultMavlinkPubTopic = "/mavlink/to";
 static constexpr bool kDefaultSensorLevelHil = true;
+static constexpr double kDefaultHilGpsFrequency = 5.0;
+static constexpr double kDefaultHilImuFrequency = 50.0;
 
 class HilSensorsInterface {
  public:
   HilSensorsInterface();
   virtual ~HilSensorsInterface();
 
-  void MainTask();
+  void MainTaskSensorLevelHil();
+  void MainTaskStateLevelHil();
 
   // Callbacks
   void AirSpeedCallback(const geometry_msgs::Vector3ConstPtr& air_speed_msg);
@@ -63,10 +66,13 @@ class HilSensorsInterface {
   void PressureCallback(const sensor_msgs::FluidPressureConstPtr& pressure_msg);
   void SetModeCallback(const std_msgs::UInt8ConstPtr& set_mode_msg);
 
-  // Sensor data management
-  void SendHilSensorData();
-  void ClearAllSensorsUpdateStatuses();
-  bool AreAllSensorsUpdated();
+  // Sensor data publishing
+  void PublishHilGps();
+  void PublishHilSensor();
+  void PublishHilStateQtrn();
+
+  // Whether we are running sensor-level or state-level HIL
+  bool sensor_level_hil_;
 
  private:
   // ROS interface
@@ -86,16 +92,12 @@ class HilSensorsInterface {
   mavlink_hil_state_quaternion_t hil_state_qtrn_msg_;
   mavlink_command_long_t cmd_msg_;
 
-  // Sensor update trackers
-  bool received_air_speed_;
-  bool received_gps_;
-  bool received_ground_speed_;
-  bool received_imu_;
-  bool received_mag_;
-  bool received_pressure_;
+  // HIL publishing intervals
+  double hil_gps_interval_;
+  double hil_imu_interval_;
 
-  // Whether we are running sensor-level or state-level HIL
-  bool sensor_level_hil_;
+  double last_gps_pub_time_;
+  double last_imu_pub_time_;
 
   // Sensor data
   tf::Quaternion att_;          // Attitude quaternion
