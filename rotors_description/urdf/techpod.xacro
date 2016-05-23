@@ -171,7 +171,7 @@
     color="${body_color}"
     use_mesh_file="${use_mesh_file}"
     mesh_file="${mesh_file}"
-    reset_topic="reset"
+    reset_topic="reset_model"
     air_density="${air_density}"
     alpha_stall="${alpha_stall}">
     <origin xyz="0 0 0" rpy="0 0 0" />

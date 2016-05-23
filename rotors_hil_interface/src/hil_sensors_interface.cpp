@@ -24,6 +24,7 @@ namespace rotors_hil {
 
 HilSensorsInterface::HilSensorsInterface():
     // TODO: add sensors or params or constants for these
+  rate_(kDefaultHilImuFrequency),
   temperature_(15.0),
   eph_(100),
   epv_(100),
@@ -42,6 +43,7 @@ HilSensorsInterface::HilSensorsInterface():
   std::string imu_sub_topic;
   std::string mag_sub_topic;
   std::string pressure_sub_topic;
+  std::string reboot_autopilot_sub_topic;
   std::string set_mode_sub_topic;
   std::string mavlink_pub_topic;
   pnh.param("air_speed_topic", air_speed_sub_topic, kDefaultAirSpeedSubTopic);
@@ -50,6 +52,7 @@ HilSensorsInterface::HilSensorsInterface():
   pnh.param("imu_topic", imu_sub_topic, std::string(mav_msgs::default_topics::IMU));
   pnh.param("mag_topic", mag_sub_topic, std::string(mav_msgs::default_topics::MAGNETIC_FIELD));
   pnh.param("pressure_topic", pressure_sub_topic, kDefaultPressureSubTopic);
+  pnh.param("reboot_autopilot_topic", reboot_autopilot_sub_topic, kDefaultRebootAutopilotSubTopic);
   pnh.param("set_mode_topic", set_mode_sub_topic, kDefaultSetModeSubTopic);
   pnh.param("mavlink_pub_topic", mavlink_pub_topic, kDefaultMavlinkPubTopic);
   pnh.param("sensor_level_hil", sensor_level_hil_, kDefaultSensorLevelHil);
@@ -62,12 +65,15 @@ HilSensorsInterface::HilSensorsInterface():
   imu_sub_ = nh_.subscribe(imu_sub_topic, 1, &HilSensorsInterface::ImuCallback, this);
   mag_sub_ = nh_.subscribe(mag_sub_topic, 1, &HilSensorsInterface::MagCallback, this);
   pressure_sub_ = nh_.subscribe(pressure_sub_topic, 1, &HilSensorsInterface::PressureCallback, this);
+  reboot_autopilot_sub_ = nh_.subscribe(reboot_autopilot_sub_topic, 1, &HilSensorsInterface::RebootAutopilotCallback, this);
   set_mode_sub_ = nh_.subscribe(set_mode_sub_topic, 1, &HilSensorsInterface::SetModeCallback, this);
 
   mavlink_pub_ = nh_.advertise<mavros_msgs::Mavlink>(mavlink_pub_topic, 5);
 
   hil_gps_interval_ = 1.0 / hil_gps_freq;
   hil_imu_interval_ = 1.0 / hil_imu_freq;
+
+  rate_ = ros::Rate(hil_imu_freq);
 }
 
 HilSensorsInterface::~HilSensorsInterface() {
@@ -84,6 +90,7 @@ void HilSensorsInterface::MainTaskSensorLevelHil() {
       PublishHilSensor();
 
     ros::spinOnce();
+    rate_.sleep();
   }
 }
 
@@ -95,6 +102,7 @@ void HilSensorsInterface::MainTaskStateLevelHil() {
       PublishHilStateQtrn();
 
     ros::spinOnce();
+    rate_.sleep();
   }
 }
 
@@ -104,8 +112,8 @@ void HilSensorsInterface::AirSpeedCallback(const geometry_msgs::Vector3ConstPtr&
                           air_speed_msg->z * air_speed_msg->z);
 
   // The same FOR NOW
-  ind_airspeed_ = air_speed;
-  true_airspeed_ = air_speed;
+  ind_airspeed_ = air_speed * 100.0;
+  true_airspeed_ = air_speed * 100.0;
 }
 
 void HilSensorsInterface::GpsCallback(const sensor_msgs::NavSatFixConstPtr& gps_msg) {
@@ -120,10 +128,9 @@ void HilSensorsInterface::GpsCallback(const sensor_msgs::NavSatFixConstPtr& gps_
 }
 
 void HilSensorsInterface::GroundSpeedCallback(const geometry_msgs::Vector3ConstPtr& ground_speed_msg) {
-  // Ground speed in HIL_STATE_QUATERNION message is expressed in cm/s
-  vn_ = ground_speed_msg->x;
-  ve_ = -ground_speed_msg->y;
-  vd_ = -ground_speed_msg->z;
+  vn_ = ground_speed_msg->x * 100.0;
+  ve_ = -ground_speed_msg->y * 100.0;
+  vd_ = -ground_speed_msg->z * 100.0;
 
   vel_ = sqrt(vn_^2 + ve_^2 + vd_^2);
 }
@@ -134,7 +141,7 @@ void HilSensorsInterface::ImuCallback(const sensor_msgs::ImuConstPtr& imu_msg) {
   acc_z_ = -imu_msg->linear_acceleration.z;
 
   att_ = tf::Quaternion(imu_msg->orientation.x, imu_msg->orientation.y, imu_msg->orientation.z, imu_msg->orientation.w);
-  att_ *= tf::Quaternion(0.0, 0.0, M_PI);
+  //att_ *= tf::Quaternion(0.0, 0.0, M_PI);
 
   gyro_x_ = imu_msg->angular_velocity.x;
   gyro_y_ = -imu_msg->angular_velocity.y;
@@ -155,7 +162,31 @@ void HilSensorsInterface::PressureCallback(const sensor_msgs::FluidPressureConst
   pressure_abs_ = pressure_msg->fluid_pressure * 0.01;
 
   // From the following formula: p_stag - p_static = 0.5 * rho * v^2
-  pressure_diff_ = 0.5 * kAirDensity * ind_airspeed_ * ind_airspeed_ * 0.01;
+  pressure_diff_ = 0.5 * kAirDensity * ind_airspeed_ * ind_airspeed_ * 0.01 * 0.0001;
+}
+
+void HilSensorsInterface::RebootAutopilotCallback(const std_msgs::BoolConstPtr& reboot_autopilot_msg) {
+  mavlink_message_t mmsg;
+
+  cmd_msg_.target_system = 1;
+  cmd_msg_.target_component = 0;
+  cmd_msg_.command = MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN;
+  cmd_msg_.confirmation = 1;
+  cmd_msg_.param1 = 1;      // TODO: look for the pre-defined value
+  cmd_msg_.param2 = 0;      // TODO: look for the pre-defined value
+
+  mavlink_command_long_t* cmd_msg_ptr = &cmd_msg_;
+  mavlink_msg_command_long_encode(1, 0, &mmsg, cmd_msg_ptr);
+  mavlink_message_t* msg = &mmsg;
+
+  ros::Time current_time = ros::Time::now();
+
+  mavros_msgs::MavlinkPtr rmsg = boost::make_shared<mavros_msgs::Mavlink>();
+  rmsg->header.stamp.sec = current_time.sec;
+  rmsg->header.stamp.nsec = current_time.nsec;
+  mavros_msgs::mavlink::convert(*msg, *rmsg);
+
+  mavlink_pub_.publish(rmsg);
 }
 
 void HilSensorsInterface::SetModeCallback(const std_msgs::UInt8ConstPtr& set_mode_msg) {
@@ -192,10 +223,10 @@ void HilSensorsInterface::PublishHilGps() {
   hil_gps_msg_.alt = alt_;
   hil_gps_msg_.eph = eph_;
   hil_gps_msg_.epv = epv_;
-  hil_gps_msg_.vel = vel_ * 100.0;
-  hil_gps_msg_.vn = vn_ * 100.0;
-  hil_gps_msg_.ve = ve_ * 100.0;
-  hil_gps_msg_.vd = vd_ * 100.0;
+  hil_gps_msg_.vel = vel_;
+  hil_gps_msg_.vn = vn_;
+  hil_gps_msg_.ve = ve_;
+  hil_gps_msg_.vd = vd_;
   hil_gps_msg_.cog = cog_;
   hil_gps_msg_.satellites_visible = satellites_visible_;
 
@@ -264,11 +295,11 @@ void HilSensorsInterface::PublishHilStateQtrn() {
   hil_state_qtrn_msg_.lat = lat_;
   hil_state_qtrn_msg_.lon = lon_;
   hil_state_qtrn_msg_.alt = alt_;
-  hil_state_qtrn_msg_.vx = vn_ * 100.0;
-  hil_state_qtrn_msg_.vy = ve_ * 100.0;
-  hil_state_qtrn_msg_.vz = vd_ * 100.0;
-  hil_state_qtrn_msg_.ind_airspeed = ind_airspeed_ * 100.0;
-  hil_state_qtrn_msg_.true_airspeed = true_airspeed_ * 100.0;
+  hil_state_qtrn_msg_.vx = vn_;
+  hil_state_qtrn_msg_.vy = ve_;
+  hil_state_qtrn_msg_.vz = vd_;
+  hil_state_qtrn_msg_.ind_airspeed = ind_airspeed_;
+  hil_state_qtrn_msg_.true_airspeed = true_airspeed_;
   hil_state_qtrn_msg_.xacc = acc_x_ * 1000.0 / kGravityMagnitude;
   hil_state_qtrn_msg_.yacc = acc_y_ * 1000.0 / kGravityMagnitude;
   hil_state_qtrn_msg_.zacc = acc_z_ * 1000.0 / kGravityMagnitude;

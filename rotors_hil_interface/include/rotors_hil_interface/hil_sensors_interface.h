@@ -27,6 +27,7 @@
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/MagneticField.h>
 #include <sensor_msgs/NavSatFix.h>
+#include <std_msgs/Bool.h>
 #include <std_msgs/UInt8.h>
 #include <tf/transform_datatypes.h>
 
@@ -43,6 +44,7 @@ static constexpr int kAllFieldsUpdated = 4095;
 static const std::string kDefaultAirSpeedSubTopic = "air_speed";
 static const std::string kDefaultGroundSpeedSubTopic = "ground_speed";
 static const std::string kDefaultPressureSubTopic = "air_pressure";
+static const std::string kDefaultRebootAutopilotSubTopic = "reboot_autopilot";
 static const std::string kDefaultSetModeSubTopic = "set_mode";
 static const std::string kDefaultMavlinkPubTopic = "/mavlink/to";
 static constexpr bool kDefaultSensorLevelHil = true;
@@ -64,6 +66,7 @@ class HilSensorsInterface {
   void ImuCallback(const sensor_msgs::ImuConstPtr& imu_msg);
   void MagCallback(const sensor_msgs::MagneticFieldConstPtr& mag_msg);
   void PressureCallback(const sensor_msgs::FluidPressureConstPtr& pressure_msg);
+  void RebootAutopilotCallback(const std_msgs::BoolConstPtr& reboot_autopilot_msg);
   void SetModeCallback(const std_msgs::UInt8ConstPtr& set_mode_msg);
 
   // Sensor data publishing
@@ -83,8 +86,10 @@ class HilSensorsInterface {
   ros::Subscriber imu_sub_;
   ros::Subscriber mag_sub_;
   ros::Subscriber pressure_sub_;
+  ros::Subscriber reboot_autopilot_sub_;
   ros::Subscriber set_mode_sub_;
   ros::Publisher mavlink_pub_;
+  ros::Rate rate_;
 
   // MAVLINK messages
   mavlink_hil_gps_t hil_gps_msg_;

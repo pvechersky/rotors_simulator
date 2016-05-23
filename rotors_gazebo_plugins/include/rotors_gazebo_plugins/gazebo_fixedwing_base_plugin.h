@@ -38,7 +38,7 @@ namespace gazebo {
 // Default topic names
 static const std::string kDefaultAirSpeedSubTopic = "air_speed";
 static const std::string kDefaultCommandSubTopic = "gazebo/command/motor_speed";
-static const std::string kDefaultResetSubTopic = "reset";
+static const std::string kDefaultResetSubTopic = "reset_model";
 
 // Default values for Techpod fixed-wing control surfaces
 static constexpr double kDefaultControlSurfaceDeflectionMin = -20.0 * M_PI / 180.0;

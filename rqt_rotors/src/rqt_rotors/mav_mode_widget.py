@@ -36,7 +36,8 @@ class MavModeWidget(QWidget):
   STR_MAV_MODE_SUB_TOPIC = 'mav_mode'
   STR_MAV_STATUS_SUB_TOPIC = 'mav_status'
   STR_SET_MODE_PUB_TOPIC = 'set_mode'
-  STR_RESET_MODEL_PUB_TOPIC = 'reset'
+  STR_REBOOT_AUTOPILOT_PUB_TOPIC = 'reboot_autopilot'
+  STR_RESET_MODEL_PUB_TOPIC = 'reset_model'
 
   def __init__(self, parent):
     # Init QWidget
@@ -50,6 +51,7 @@ class MavModeWidget(QWidget):
     # Set the initial parameters of UI elements
     self.button_set_hil_mode.setEnabled(False)
     self.button_arm.setEnabled(False)
+    self.button_reboot_autopilot.setEnabled(False)
     self.text_state.setText(self.STR_UNKNOWN)
     self.clear_mav_mode()
 
@@ -63,13 +65,15 @@ class MavModeWidget(QWidget):
     # Set the functions that are called when signals are emitted
     self.button_set_hil_mode.pressed.connect(self.on_set_hil_mode_button_pressed)
     self.button_arm.pressed.connect(self.on_arm_button_pressed)
+    self.button_reboot_autopilot.pressed.connect(self.on_reboot_autopilot_button_pressed)
     self.button_reset_model.pressed.connect(self.on_reset_model_button_pressed)
     
     # Initialize ROS subscribers and publishers
     self.mav_mode_sub = rospy.Subscriber(self.STR_MAV_MODE_SUB_TOPIC, UInt8, self.mav_mode_callback, queue_size=1)
     self.mav_status_sub = rospy.Subscriber(self.STR_MAV_STATUS_SUB_TOPIC, UInt8, self.mav_status_callback, queue_size=1)
     self.set_mode_pub = rospy.Publisher(self.STR_SET_MODE_PUB_TOPIC, UInt8, queue_size=1)
-    self.reset_pub = rospy.Publisher(self.STR_RESET_MODEL_PUB_TOPIC, Bool, queue_size=1)
+    self.reboot_autopilot_pub = rospy.Publisher(self.STR_REBOOT_AUTOPILOT_PUB_TOPIC, Bool, queue_size=1)
+    self.reset_model_pub = rospy.Publisher(self.STR_RESET_MODEL_PUB_TOPIC, Bool, queue_size=1)
 
   def on_set_hil_mode_button_pressed(self):
     new_mode = self.mav_mode | self.MAV_MODE_FLAG_HIL_ENABLED
@@ -79,13 +83,17 @@ class MavModeWidget(QWidget):
     new_mode = self.mav_mode | self.MAV_MODE_FLAG_SAFETY_ARMED
     self.set_mode_pub.publish(new_mode)
 
+  def on_reboot_autopilot_button_pressed(self):
+    self.reboot_autopilot_pub.publish(True)
+
   def on_reset_model_button_pressed(self):
-    self.reset_pub.publish(True)
+    self.reset_model_pub.publish(True)
     
   def mav_mode_callback(self, msg):
     if not(self.received_heartbeat):
       self.button_set_hil_mode.setEnabled(True)
       self.button_arm.setEnabled(True)
+      self.button_reboot_autopilot.setEnabled(True)
       self.received_heartbeat = True
 
     if (self.mav_mode != msg.data):
@@ -94,10 +102,6 @@ class MavModeWidget(QWidget):
 
       new_hil_enabled = (msg.data & self.MAV_MODE_FLAG_HIL_ENABLED)
       new_armed = (msg.data & self.MAV_MODE_FLAG_SAFETY_ARMED)
-
-      #if (self.hil_enabled != new_hil_enabled):
-      #  self.hil_enabled = new_hil_enabled
-      #  self.button_set_hil_mode.setEnabled(not(new_hil_enabled))
 
       if (not self.hil_enabled and new_hil_enabled):
         self.hil_enabled = True
