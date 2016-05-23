@@ -95,9 +95,17 @@ class MavModeWidget(QWidget):
       new_hil_enabled = (msg.data & self.MAV_MODE_FLAG_HIL_ENABLED)
       new_armed = (msg.data & self.MAV_MODE_FLAG_SAFETY_ARMED)
 
-      if (self.hil_enabled != new_hil_enabled):
-        self.hil_enabled = new_hil_enabled
-        self.button_set_hil_mode.setEnabled(not(new_hil_enabled))
+      #if (self.hil_enabled != new_hil_enabled):
+      #  self.hil_enabled = new_hil_enabled
+      #  self.button_set_hil_mode.setEnabled(not(new_hil_enabled))
+
+      if (not self.hil_enabled and new_hil_enabled):
+        self.hil_enabled = True
+        self.button_set_hil_mode.setEnabled(False)
+
+      if (self.hil_enabled and not new_hil_enabled):
+        new_mode = self.mav_mode | self.MAV_MODE_FLAG_HIL_ENABLED
+        self.set_mode_pub.publish(new_mode)
       
       if (self.armed != new_armed):
         self.armed = new_armed
