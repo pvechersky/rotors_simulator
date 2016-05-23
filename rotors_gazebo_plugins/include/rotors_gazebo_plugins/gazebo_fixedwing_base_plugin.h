@@ -27,7 +27,6 @@
 #include <gazebo/gazebo.hh>
 #include <gazebo/msgs/msgs.hh>
 #include <gazebo/physics/physics.hh>
-#include <gazebo/transport/transport.hh>
 #include <geometry_msgs/Vector3.h>
 #include <mav_msgs/Actuators.h>
 #include <nav_msgs/Odometry.h>
@@ -179,9 +178,6 @@ class GazeboFixedWingBasePlugin : public ModelPlugin {
   void ResetCallback(const std_msgs::BoolConstPtr& reset_msg);
 
   FixedWingAerodynamicParameters aero_params_;
-
-  transport::NodePtr gazebo_node_;
-  transport::PublisherPtr fw_pose_pub_;
 };
 }
 
