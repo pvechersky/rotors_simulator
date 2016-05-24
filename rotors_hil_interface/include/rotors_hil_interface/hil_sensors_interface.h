@@ -50,6 +50,7 @@ static const std::string kDefaultMavlinkPubTopic = "/mavlink/to";
 static constexpr bool kDefaultSensorLevelHil = true;
 static constexpr double kDefaultHilGpsFrequency = 5.0;
 static constexpr double kDefaultHilImuFrequency = 100.0;
+static constexpr double kDefaultHilStateFrequency = 100.0;
 
 class HilSensorsInterface {
  public:
@@ -100,9 +101,12 @@ class HilSensorsInterface {
   // HIL publishing intervals
   u_int32_t hil_gps_interval_nsec_;
   u_int32_t hil_imu_interval_nsec_;
+  u_int32_t hil_state_interval_nsec_;
 
+  // Publishing time trackers
   u_int32_t last_gps_pub_time_nsec_;
   u_int32_t last_imu_pub_time_nsec_;
+  u_int32_t last_state_pub_time_nsec_;
 
   // Sensor data
   tf::Quaternion att_;          // Attitude quaternion

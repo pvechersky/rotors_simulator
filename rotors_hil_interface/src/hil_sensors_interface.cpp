@@ -37,6 +37,7 @@ HilSensorsInterface::HilSensorsInterface():
 
   double hil_gps_freq;
   double hil_imu_freq;
+  double hil_state_freq;
   std::string air_speed_sub_topic;
   std::string gps_sub_topic;
   std::string ground_speed_sub_topic;
@@ -58,6 +59,7 @@ HilSensorsInterface::HilSensorsInterface():
   pnh.param("sensor_level_hil", sensor_level_hil_, kDefaultSensorLevelHil);
   pnh.param("hil_gps_frequency", hil_gps_freq, kDefaultHilGpsFrequency);
   pnh.param("hil_imu_frequency", hil_imu_freq, kDefaultHilImuFrequency);
+  pnh.param("hil_state_frequency", hil_state_freq, kDefaultHilStateFrequency);
 
   air_speed_sub_ = nh_.subscribe(air_speed_sub_topic, 1, &HilSensorsInterface::AirSpeedCallback, this);
   gps_sub_ = nh_.subscribe(gps_sub_topic, 1, &HilSensorsInterface::GpsCallback, this);
@@ -72,8 +74,9 @@ HilSensorsInterface::HilSensorsInterface():
 
   hil_gps_interval_nsec_ = 1.0 / hil_gps_freq * 1000000000;
   hil_imu_interval_nsec_ = 1.0 / hil_imu_freq * 1000000000;
+  hil_state_interval_nsec_ = 1.0 / hil_state_freq * 1000000000;
 
-  rate_ = ros::Rate(hil_imu_freq);
+  rate_ = (sensor_level_hil_) ? ros::Rate(hil_imu_freq) : ros::Rate(hil_state_freq);
 }
 
 HilSensorsInterface::~HilSensorsInterface() {
@@ -98,12 +101,12 @@ void HilSensorsInterface::MainTaskSensorLevelHil() {
   }
 }
 
-void HilSensorsInterface::MainTaskStateLevelHil() {
+void HilSensorsInterface::MainTaskStateLevelHil() {   
   while (ros::ok()) {
     u_int32_t curr_nsec = ros::Time::now().nsec;
 
-    if ((curr_nsec - last_imu_pub_time_nsec_) >= hil_imu_interval_nsec_) {
-      last_imu_pub_time_nsec_ = curr_nsec;
+    if ((curr_nsec - last_state_pub_time_nsec_) >= hil_state_interval_nsec_) {
+      last_state_pub_time_nsec_ = curr_nsec;
       PublishHilStateQtrn();
     }
 
