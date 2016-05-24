@@ -32,7 +32,7 @@
       <param name="mavlink_pub_topic" value="/mavlink/to" />
       <param name="sensor_level_hil" value="true" />
       <param name="hil_gps_frequency" value="5.0" />
-      <param name="hil_imu_frequency" value="50.0" />
+      <param name="hil_imu_frequency" value="100.0" />
     </node>
 
     <node name="hil_control_interface" pkg="rotors_hil_interface" type="rotors_hil_control_interface" output="screen">

@@ -70,8 +70,8 @@ HilSensorsInterface::HilSensorsInterface():
 
   mavlink_pub_ = nh_.advertise<mavros_msgs::Mavlink>(mavlink_pub_topic, 5);
 
-  hil_gps_interval_ = 1.0 / hil_gps_freq;
-  hil_imu_interval_ = 1.0 / hil_imu_freq;
+  hil_gps_interval_nsec_ = 1.0 / hil_gps_freq * 1000000000;
+  hil_imu_interval_nsec_ = 1.0 / hil_imu_freq * 1000000000;
 
   rate_ = ros::Rate(hil_imu_freq);
 }
@@ -81,13 +81,17 @@ HilSensorsInterface::~HilSensorsInterface() {
 
 void HilSensorsInterface::MainTaskSensorLevelHil() {
   while (ros::ok()) {
-    double curr_time = ros::Time::now().toSec();
+    u_int32_t curr_nsec = ros::Time::now().nsec;
 
-    if ((curr_time - last_gps_pub_time_) >= hil_gps_interval_)
+    if ((curr_nsec - last_gps_pub_time_nsec_) >= hil_gps_interval_nsec_) {
+      last_gps_pub_time_nsec_ = curr_nsec;
       PublishHilGps();
+    }
 
-    if ((curr_time - last_imu_pub_time_) >= hil_imu_interval_)
+    if ((curr_nsec - last_imu_pub_time_nsec_) >= hil_imu_interval_nsec_) {
+      last_imu_pub_time_nsec_ = curr_nsec;
       PublishHilSensor();
+    }
 
     ros::spinOnce();
     rate_.sleep();
@@ -96,10 +100,12 @@ void HilSensorsInterface::MainTaskSensorLevelHil() {
 
 void HilSensorsInterface::MainTaskStateLevelHil() {
   while (ros::ok()) {
-    double curr_time = ros::Time::now().toSec();
+    u_int32_t curr_nsec = ros::Time::now().nsec;
 
-    if ((curr_time - last_imu_pub_time_) >= hil_imu_interval_)
+    if ((curr_nsec - last_imu_pub_time_nsec_) >= hil_imu_interval_nsec_) {
+      last_imu_pub_time_nsec_ = curr_nsec;
       PublishHilStateQtrn();
+    }
 
     ros::spinOnce();
     rate_.sleep();
@@ -242,8 +248,6 @@ void HilSensorsInterface::PublishHilGps() {
   mavros_msgs::mavlink::convert(*msg, *rmsg_hil_gps);
 
   mavlink_pub_.publish(rmsg_hil_gps);
-
-  last_gps_pub_time_ = current_time.toSec();
 }
 
 void HilSensorsInterface::PublishHilSensor() {
@@ -277,8 +281,6 @@ void HilSensorsInterface::PublishHilSensor() {
   mavros_msgs::mavlink::convert(*msg, *rmsg_hil_sensor);
 
   mavlink_pub_.publish(rmsg_hil_sensor);
-
-  last_imu_pub_time_ = current_time.toSec();
 }
 
 void HilSensorsInterface::PublishHilStateQtrn() {
@@ -316,8 +318,6 @@ void HilSensorsInterface::PublishHilStateQtrn() {
   mavros_msgs::mavlink::convert(*msg, *rmsg_hil_state_qtrn);
 
   mavlink_pub_.publish(rmsg_hil_state_qtrn);
-
-  last_imu_pub_time_ = current_time.toSec();
 }
 }
 
