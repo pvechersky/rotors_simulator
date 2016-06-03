@@ -518,6 +518,52 @@
     </gazebo>
   </xacro:macro>
 
+  <!-- Macro to add a laser sensor. -->
+  <xacro:macro name="laser_sensor_plugin_macro"
+    params="namespace parent_link laser_suffix *origin">
+    <!-- Laser sensor link -->
+    <link name="${namespace}/laser_${laser_suffix}_link">
+      <inertial>
+        <mass value="1e-5" />
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6" />
+      </inertial>
+    </link>
+    <!-- Laser sensor joint -->
+    <joint name="${namespace}/laser_${laser_suffix}_joint" type="revolute">
+      <xacro:insert_block name="origin" />
+      <parent link="${parent_link}" />
+      <child link="${namespace}/laser_${laser_suffix}_link" />
+      <limit upper="0" lower="0" effort="0" velocity="0" />
+    </joint>
+    <gazebo reference="${namespace}/laser_${laser_suffix}_link">
+      <sensor type="ray" name="laser_1">
+	<pose>0 0 0 0 0 0</pose>
+        <update_rate>30.0</update_rate>
+	<visualize>false</visualize>
+        <ray>
+          <scan>
+            <horizontal>
+              <samples>1</samples>
+              <resolution>1</resolution>
+              <min_angle>0</min_angle>
+              <max_angle>0</max_angle>
+            </horizontal>
+          </scan>
+          <range>
+            <min>0.3</min>
+            <max>300.0</max>
+            <resolution>0.1</resolution>
+          </range> 
+        </ray>
+        <plugin name="laser_scan_controller" filename="libgazebo_ros_laser.so">
+          <frameName>${namespace}/${parent_link}</frameName>
+          <topicName>depth_scan</topicName>
+        </plugin>
+      </sensor>
+    </gazebo>
+  </xacro:macro>
+
   <!-- VI sensor macros -->
   <!-- Macro to add a VI-sensor camera. -->
   <xacro:macro name="vi_sensor_camera_macro"
