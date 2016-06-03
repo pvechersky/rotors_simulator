@@ -4,7 +4,7 @@
   <arg name="uav_name" default="techpod"/>
   <arg name="model" default="$(find rotors_description)/urdf/$(arg uav_name)_base.xacro"/>
   <arg name="tf_prefix" default="$(optenv ROS_NAMESPACE)"/>
-  <arg name="x" default="5.0"/>
+  <arg name="x" default="0.0"/>
   <arg name="y" default="0.0"/>
   <arg name="z" default="0.0"/>
   <arg name="R" default="0.0"/>

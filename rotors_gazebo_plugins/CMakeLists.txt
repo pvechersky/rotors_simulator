@@ -10,6 +10,7 @@ find_package(catkin REQUIRED COMPONENTS
   cmake_modules
   cv_bridge
   geometry_msgs
+  image_transport
   mav_msgs
   message_generation
   octomap_msgs
@@ -44,7 +45,7 @@ QT4_WRAP_CPP(headers_MOC include/rotors_gazebo_plugins/gazebo_view_control_plugi
 catkin_package(
   INCLUDE_DIRS include ${Eigen_INCLUDE_DIRS}
   LIBRARIES rotors_gazebo_motor_model rotors_gazebo_controller_interface
-  CATKIN_DEPENDS cv_bridge geometry_msgs mav_msgs octomap_msgs octomap_ros rosbag roscpp rotors_comm rotors_control std_srvs tf
+  CATKIN_DEPENDS cv_bridge geometry_msgs image_transport mav_msgs octomap_msgs octomap_ros rosbag roscpp rotors_comm rotors_control std_srvs tf
   DEPENDS eigen gazebo octomap opencv
 )
 

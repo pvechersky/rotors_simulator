@@ -73,6 +73,21 @@ void GazeboFixedWingBasePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _
   getSdfParam<std::string>(_sdf, "commandSubTopic", command_sub_topic, kDefaultCommandSubTopic);
   getSdfParam<std::string>(_sdf, "resetTopic", reset_topic, kDefaultResetSubTopic);
 
+  cam_parent_frame_ = "world";
+  cam_child_frame_ = "techpod/camera_downward_link";
+
+  /*link_->SetGravityMode(false);
+  link_->SetKinematic(true);
+  for (int i = 0; i < link_->GetChildCount(); i++) {
+    physics::LinkPtr child = boost::dynamic_pointer_cast<gazebo::physics::Link>(link_->GetChild(i));
+    if (child) {
+      child->SetGravityMode(false);
+      child->SetKinematic(true);
+    }
+  }*/
+
+  start_position_ = model_->GetWorldPose().pos;
+
   ros::NodeHandle pnh("~");
 
   // Read the vehicle parameters from rosparam
@@ -153,6 +168,25 @@ void GazeboFixedWingBasePlugin::OnUpdate(const common::UpdateInfo& _info) {
 
   link_->AddLinkForce(forces);
   link_->AddRelativeTorque(moments);
+
+  // Broadcast the transform to the camera link
+  math::Pose cam_pose = link_->GetWorldPose();
+  math::Quaternion base_ori = link_->GetWorldPose().rot;
+  math::Quaternion shift = math::Quaternion(0.0, M_PI, M_PI);
+  math::Quaternion cam_ori = shift * base_ori;
+  tf::Quaternion rot(cam_ori.x, cam_ori.y, cam_ori.z, cam_ori.w);
+  tf::Vector3 pos(cam_pose.pos.x, cam_pose.pos.y, cam_pose.pos.z);
+  tf_ = tf::Transform(rot, pos);
+  transform_broadcaster_.sendTransform(tf::StampedTransform(tf_, ros::Time::now(), cam_parent_frame_, cam_child_frame_));
+
+  // Broadcast the transform to the base link
+  /*tf::Quaternion base_rot(base_ori.x, base_ori.y, base_ori.z, base_ori.w);
+  tf::Transform base_tf_(base_rot, pos);
+  transform_broadcaster_.sendTransform(tf::StampedTransform(base_tf_, ros::Time::now(), cam_parent_frame_, "base_link"));
+
+  math::Vector3 linear_vel_B = math::Vector3(10.0, 0.0, 0.0);
+  math::Vector3 linear_vel_W = base_ori.RotateVector(linear_vel_B);
+  link_->SetLinearVel(linear_vel_W);*/
 }
 
 void GazeboFixedWingBasePlugin::ComputeAerodynamicForcesMoments(math::Vector3& forces, math::Vector3& moments) {
@@ -238,7 +272,7 @@ void GazeboFixedWingBasePlugin::CommandCallback(const mav_msgs::ActuatorsConstPt
 void GazeboFixedWingBasePlugin::ResetCallback(const std_msgs::BoolConstPtr& reset_msg) {
   if (reset_msg->data) {
     math::Pose pose = model_->GetWorldPose();
-    pose.pos = math::Vector3(0.0, 0.0, 0.1);
+    pose.pos = start_position_;
     pose.rot = math::Quaternion(0.0, 0.0, 0.0);
     model_->SetWorldPose(pose);
 

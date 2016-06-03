@@ -38,6 +38,7 @@ class MavModeWidget(QWidget):
   STR_SET_MODE_PUB_TOPIC = 'set_mode'
   STR_REBOOT_AUTOPILOT_PUB_TOPIC = 'reboot_autopilot'
   STR_RESET_MODEL_PUB_TOPIC = 'reset_model'
+  STR_START_RECONSTRUCTION_PUB_TOPIC = 'start_reconstruction'
 
   def __init__(self, parent):
     # Init QWidget
@@ -61,12 +62,14 @@ class MavModeWidget(QWidget):
     self.received_heartbeat = False
     self.hil_enabled = False
     self.armed = False
+    self.reconstruction_started = False
     
     # Set the functions that are called when signals are emitted
     self.button_set_hil_mode.pressed.connect(self.on_set_hil_mode_button_pressed)
     self.button_arm.pressed.connect(self.on_arm_button_pressed)
     self.button_reboot_autopilot.pressed.connect(self.on_reboot_autopilot_button_pressed)
     self.button_reset_model.pressed.connect(self.on_reset_model_button_pressed)
+    self.button_reconstruct.pressed.connect(self.on_reconstruct_button_pressed)
     
     # Initialize ROS subscribers and publishers
     self.mav_mode_sub = rospy.Subscriber(self.STR_MAV_MODE_SUB_TOPIC, UInt8, self.mav_mode_callback, queue_size=1)
@@ -74,6 +77,7 @@ class MavModeWidget(QWidget):
     self.set_mode_pub = rospy.Publisher(self.STR_SET_MODE_PUB_TOPIC, UInt8, queue_size=1)
     self.reboot_autopilot_pub = rospy.Publisher(self.STR_REBOOT_AUTOPILOT_PUB_TOPIC, Bool, queue_size=1)
     self.reset_model_pub = rospy.Publisher(self.STR_RESET_MODEL_PUB_TOPIC, Bool, queue_size=1)
+    self.start_reconstruction_pub = rospy.Publisher(self.STR_START_RECONSTRUCTION_PUB_TOPIC, Bool, queue_size=1)
 
   def on_set_hil_mode_button_pressed(self):
     new_mode = self.mav_mode | self.MAV_MODE_FLAG_HIL_ENABLED
@@ -88,6 +92,11 @@ class MavModeWidget(QWidget):
 
   def on_reset_model_button_pressed(self):
     self.reset_model_pub.publish(True)
+
+  def on_reconstruct_button_pressed(self):
+    if not(self.reconstruction_started):
+      self.start_reconstruction_pub.publish(True)
+    self.reconstruction_started = True
     
   def mav_mode_callback(self, msg):
     if not(self.received_heartbeat):

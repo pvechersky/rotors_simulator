@@ -31,6 +31,7 @@
 #include <mav_msgs/Actuators.h>
 #include <nav_msgs/Odometry.h>
 #include <std_msgs/Bool.h>
+#include <tf/transform_broadcaster.h>
 
 #include "rotors_gazebo_plugins/common.h"
 
@@ -156,6 +157,10 @@ class GazeboFixedWingBasePlugin : public ModelPlugin {
   // Pointer to the update event connection
   event::ConnectionPtr updateConnection_;
 
+  // Frame names
+  std::string cam_parent_frame_;
+  std::string cam_child_frame_;
+
   // Vehicle parameters
   double mass_;
   double wing_surface_;
@@ -172,6 +177,11 @@ class GazeboFixedWingBasePlugin : public ModelPlugin {
   double throttle_;
 
   math::Vector3 air_speed_;
+
+  math::Vector3 start_position_;
+
+  tf::Transform tf_;
+  tf::TransformBroadcaster transform_broadcaster_;
 
   void AirSpeedCallback(const geometry_msgs::Vector3ConstPtr& air_speed_msg);
   void CommandCallback(const mav_msgs::ActuatorsConstPtr& command_msg);

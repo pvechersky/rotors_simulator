@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>295</width>
-    <height>520</height>
+    <height>569</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -309,7 +309,7 @@ QGroupBox::title {
     </item>
    </layout>
   </widget>
-  <widget class="QPushButton" name="button_reset_model">
+  <widget class="QPushButton" name="button_reconstruct">
    <property name="enabled">
     <bool>true</bool>
    </property>
@@ -317,6 +317,22 @@ QGroupBox::title {
     <rect>
      <x>60</x>
      <y>450</y>
+     <width>158</width>
+     <height>27</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Start Reconstruction</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="button_reset_model">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="geometry">
+    <rect>
+     <x>60</x>
+     <y>490</y>
      <width>158</width>
      <height>27</height>
     </rect>
