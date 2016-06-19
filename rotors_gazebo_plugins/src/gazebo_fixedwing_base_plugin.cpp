@@ -196,12 +196,12 @@ void GazeboFixedWingBasePlugin::ComputeAerodynamicForcesMoments(math::Vector3& f
   math::Vector3 ang_vel_body = link_->GetRelativeAngularVel();
 
   double u = lin_vel_body.x;
-  double v = -lin_vel_body.y;
-  double w = -lin_vel_body.z;
+  double v = lin_vel_body.y;
+  double w = lin_vel_body.z;
 
   double p = ang_vel_body.x;
-  double q = -ang_vel_body.y;
-  double r = -ang_vel_body.z;
+  double q = ang_vel_body.y;
+  double r = ang_vel_body.z;
 
   double V = lin_vel_body.GetLength();
 
@@ -251,8 +251,8 @@ void GazeboFixedWingBasePlugin::ComputeAerodynamicForcesMoments(math::Vector3& f
   double T = aero_params_.cT0 + aero_params_.cT1 * uT + aero_params_.cT2 * uT * uT;
 
   // Update the forces and moments vectors
-  forces = math::Vector3(T + X, -Y, -Z);
-  moments = math::Vector3(Lm, -Mm, -Nm);
+  forces = math::Vector3(T + X, Y, Z);
+  moments = math::Vector3(Lm, Mm, Nm);
 }
 
 void GazeboFixedWingBasePlugin::AirSpeedCallback(const geometry_msgs::Vector3ConstPtr& air_speed_msg) {
