@@ -28,12 +28,14 @@ find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   geometry_msgs
   mav_msgs
+  nav_msgs
   octomap_msgs
   octomap_ros
   rosbag
   roscpp
   rotors_comm
   rotors_control
+  sensor_msgs
   std_srvs
   tf
 )
@@ -61,7 +63,8 @@ endif()
 catkin_package(
   INCLUDE_DIRS include ${Eigen_INCLUDE_DIRS}
   LIBRARIES rotors_gazebo_motor_model rotors_gazebo_controller_interface
-  CATKIN_DEPENDS cv_bridge geometry_msgs mav_msgs octomap_msgs octomap_ros rosbag roscpp rotors_comm rotors_control std_srvs tf
+  CATKIN_DEPENDS cv_bridge geometry_msgs mav_msgs nav_msgs octomap_msgs octomap_ros rosbag roscpp
+    rotors_comm rotors_control sensor_msgs std_srvs tf
   DEPENDS eigen gazebo octomap opencv
 )
 
@@ -100,6 +103,10 @@ add_library(rotors_gazebo_multirotor_base_plugin src/gazebo_multirotor_base_plug
 target_link_libraries(rotors_gazebo_multirotor_base_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
 add_dependencies(rotors_gazebo_multirotor_base_plugin ${catkin_EXPORTED_TARGETS})
 
+add_library(rotors_gazebo_gps_plugin src/gazebo_gps_plugin.cpp)
+target_link_libraries(rotors_gazebo_gps_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+add_dependencies(rotors_gazebo_gps_plugin ${catkin_EXPORTED_TARGETS})
+
 if (BUILD_MAVLINK_INTERFACE)
   add_library(rotors_gazebo_mavlink_interface src/gazebo_mavlink_interface.cpp)
   target_link_libraries(rotors_gazebo_mavlink_interface ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES} ${mavros_LIBRARIES})
@@ -117,6 +124,7 @@ install(
     rotors_gazebo_wind_plugin
     rotors_gazebo_octomap_plugin
     rotors_gazebo_multirotor_base_plugin
+    rotors_gazebo_gps_plugin
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 )
