@@ -47,15 +47,15 @@ void GazeboOdometryPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) 
   model_ = _model;
   world_ = model_->GetWorld();
 
-  SdfVector3 noise_normal_position;
-  SdfVector3 noise_normal_quaternion;
-  SdfVector3 noise_normal_linear_velocity;
-  SdfVector3 noise_normal_angular_velocity;
-  SdfVector3 noise_uniform_position;
-  SdfVector3 noise_uniform_quaternion;
-  SdfVector3 noise_uniform_linear_velocity;
-  SdfVector3 noise_uniform_angular_velocity;
-  const SdfVector3 zeros3(0.0, 0.0, 0.0);
+  Vector3 noise_normal_position;
+  Vector3 noise_normal_quaternion;
+  Vector3 noise_normal_linear_velocity;
+  Vector3 noise_normal_angular_velocity;
+  Vector3 noise_uniform_position;
+  Vector3 noise_uniform_quaternion;
+  Vector3 noise_uniform_linear_velocity;
+  Vector3 noise_uniform_angular_velocity;
+  const Vector3 zeros3(0.0, 0.0, 0.0);
 
   odometry_queue_.clear();
 
@@ -95,14 +95,14 @@ void GazeboOdometryPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) 
   getSdfParam<std::string>(_sdf, "odometryTopic", odometry_pub_topic_, odometry_pub_topic_);
   getSdfParam<std::string>(_sdf, "parentFrameId", parent_frame_id_, parent_frame_id_);
   getSdfParam<std::string>(_sdf, "childFrameId", child_frame_id_, child_frame_id_);
-  getSdfParam<SdfVector3>(_sdf, "noiseNormalPosition", noise_normal_position, zeros3);
-  getSdfParam<SdfVector3>(_sdf, "noiseNormalQuaternion", noise_normal_quaternion, zeros3);
-  getSdfParam<SdfVector3>(_sdf, "noiseNormalLinearVelocity", noise_normal_linear_velocity, zeros3);
-  getSdfParam<SdfVector3>(_sdf, "noiseNormalAngularVelocity", noise_normal_angular_velocity, zeros3);
-  getSdfParam<SdfVector3>(_sdf, "noiseUniformPosition", noise_uniform_position, zeros3);
-  getSdfParam<SdfVector3>(_sdf, "noiseUniformQuaternion", noise_uniform_quaternion, zeros3);
-  getSdfParam<SdfVector3>(_sdf, "noiseUniformLinearVelocity", noise_uniform_linear_velocity, zeros3);
-  getSdfParam<SdfVector3>(_sdf, "noiseUniformAngularVelocity", noise_uniform_angular_velocity, zeros3);
+  getSdfParam<Vector3>(_sdf, "noiseNormalPosition", noise_normal_position, zeros3);
+  getSdfParam<Vector3>(_sdf, "noiseNormalQuaternion", noise_normal_quaternion, zeros3);
+  getSdfParam<Vector3>(_sdf, "noiseNormalLinearVelocity", noise_normal_linear_velocity, zeros3);
+  getSdfParam<Vector3>(_sdf, "noiseNormalAngularVelocity", noise_normal_angular_velocity, zeros3);
+  getSdfParam<Vector3>(_sdf, "noiseUniformPosition", noise_uniform_position, zeros3);
+  getSdfParam<Vector3>(_sdf, "noiseUniformQuaternion", noise_uniform_quaternion, zeros3);
+  getSdfParam<Vector3>(_sdf, "noiseUniformLinearVelocity", noise_uniform_linear_velocity, zeros3);
+  getSdfParam<Vector3>(_sdf, "noiseUniformAngularVelocity", noise_uniform_angular_velocity, zeros3);
   getSdfParam<int>(_sdf, "measurementDelay", measurement_delay_, measurement_delay_);
   getSdfParam<int>(_sdf, "measurementDivisor", measurement_divisor_, measurement_divisor_);
   getSdfParam<double>(_sdf, "unknownDelay", unknown_delay_, unknown_delay_);
