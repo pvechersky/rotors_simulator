@@ -387,10 +387,11 @@
     </gazebo>
   </xacro:macro>
 
-  <!-- Macro to add a GPS sensor with gaussian noise. -->
-  <xacro:macro name="gps_gaussian_plugin_macro"
-    params="namespace gps_suffix parent_link gps_topic mass_gps_sensor *inertia
-      *origin">
+  <!-- Macro to add a GPS sensor. -->
+  <xacro:macro name="gps_plugin_macro"
+    params="namespace gps_suffix parent_link gps_topic mass_gps_sensor
+      use_advanced_noise horizontal_pos_std_dev vertical_pos_std_dev
+      horizontal_vel_std_dev vertical_vel_std_dev *inertia *origin">
     <!-- GPS link -->
     <link name="${namespace}/gps${gps_suffix}_link">
       <inertial>
@@ -412,44 +413,49 @@
         <visualize>0</visualize>
         <always_on>1</always_on>
         <update_rate>5</update_rate>
-        <gps>
-          <position_sensing>
-            <horizontal>
-              <noise type="gaussian">
-                <mean>0.0</mean>
-                <stddev>3.000</stddev>
-                <bias_mean>0.0</bias_mean>
-                <bias_stddev>0.0</bias_stddev>
-              </noise>
-            </horizontal>
-            <vertical>
-              <noise type="gaussian">
-                <mean>0.0</mean>
-                <stddev>6.000</stddev>
-                <bias_mean>0.0</bias_mean>
-                <bias_stddev>0.0</bias_stddev>
-              </noise>
-            </vertical>
-          </position_sensing>
-          <velocity_sensing>
-            <horizontal>
-              <noise type="gaussian">
-                <mean>0.0</mean>
-                <stddev>0.03</stddev>
-                <bias_mean>0.0</bias_mean>
-                <bias_stddev>0.0</bias_stddev>
-              </noise>
-            </horizontal>
-            <vertical>
-              <noise type="gaussian">
-                <mean>0.0</mean>
-                <stddev>0.100</stddev>
-                <bias_mean>0.0</bias_mean>
-                <bias_stddev>0.0</bias_stddev>
-              </noise>
-            </vertical>
-          </velocity_sensing>
-        </gps>
+        <xacro:if value="${use_advanced_noise}">
+          <gps></gps>
+        </xacro:if>
+        <xacro:unless value="${use_advanced_noise}">
+          <gps>
+            <position_sensing>
+              <horizontal>
+                <noise type="gaussian">
+                  <mean>0.0</mean>
+                  <stddev>${horizontal_pos_std_dev}</stddev>
+                  <bias_mean>0.0</bias_mean>
+                  <bias_stddev>0.0</bias_stddev>
+                </noise>
+              </horizontal>
+              <vertical>
+                <noise type="gaussian">
+                  <mean>0.0</mean>
+                  <stddev>${vertical_pos_std_dev}</stddev>
+                  <bias_mean>0.0</bias_mean>
+                  <bias_stddev>0.0</bias_stddev>
+                </noise>
+              </vertical>
+            </position_sensing>
+            <velocity_sensing>
+              <horizontal>
+                <noise type="gaussian">
+                  <mean>0.0</mean>
+                  <stddev>${horizontal_vel_std_dev}</stddev>
+                  <bias_mean>0.0</bias_mean>
+                  <bias_stddev>0.0</bias_stddev>
+                </noise>
+              </horizontal>
+              <vertical>
+                <noise type="gaussian">
+                  <mean>0.0</mean>
+                  <stddev>${vertical_vel_std_dev}</stddev>
+                  <bias_mean>0.0</bias_mean>
+                  <bias_stddev>0.0</bias_stddev>
+                </noise>
+              </vertical>
+            </velocity_sensing>
+          </gps>
+        </xacro:unless>
         <plugin filename="librotors_gazebo_gps_plugin.so" name="rotors_gazebo_gps${gps_suffix}_plugin">
           <robotNamespace>${namespace}</robotNamespace> <!-- (string, required): ros namespace in which the messages are published -->
           <linkName>${namespace}/gps${gps_suffix}_link</linkName> <!-- (string, required): name of the body which holds the GPS sensor -->
@@ -772,17 +778,22 @@
     </xacro:imu_plugin_macro>
   </xacro:macro>
 
-  <xacro:macro name="default_gps_gaussian" params="namespace parent_link">
+  <xacro:macro name="default_gps" params="namespace parent_link use_advanced_noise">
     <!-- Default GPS. -->
-    <xacro:gps_gaussian_plugin_macro
+    <xacro:gps_plugin_macro
       namespace="${namespace}"
-      gps_suffix=""
+      gps_suffix="gaussian"
       parent_link="${parent_link}"
       gps_topic="gps"
-      mass_gps_sensor="0.015">
+      mass_gps_sensor="0.015"
+      use_advanced_noise="${use_advanced_noise}"
+      horizontal_pos_std_dev="3.0"
+      vertical_pos_std_dev="6.0"
+      horizontal_vel_std_dev="0.03"
+      vertical_vel_std_dev="0.1">
       <inertia ixx="0.00001" ixy="0.0" ixz="0.0" iyy="0.00001" iyz="0.0" izz="0.00001" />
       <origin xyz="0 0 0" rpy="0 0 0" />
-    </xacro:gps_gaussian_plugin_macro>
+    </xacro:gps_plugin_macro>
   </xacro:macro>
 
   <xacro:macro name="default_mavlink_interface" params="namespace imu_sub_topic rotor_count">

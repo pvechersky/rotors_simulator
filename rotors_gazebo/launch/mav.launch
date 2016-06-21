@@ -4,6 +4,8 @@
   <arg name="enable_logging" default="false"/>
   <arg name="enable_ground_truth" default="true"/>
   <arg name="log_file" default="$(arg mav_name)"/>
+  <arg name="mount_gps" default="true"/>
+  <arg name="use_advanced_gps_noise" default="true"/>
 
   <env name="GAZEBO_MODEL_PATH" value="$(find rotors_gazebo)/models"/>
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
@@ -20,6 +22,8 @@
       <arg name="enable_logging" value="$(arg enable_logging)" />
       <arg name="enable_ground_truth" value="$(arg enable_ground_truth)" />
       <arg name="log_file" value="$(arg log_file)"/>
+      <arg name="mount_gps" default="$(arg mount_gps)"/>
+      <arg name="use_advanced_gps_noise" default="$(arg use_advanced_gps_noise)"/>
     </include>
   </group>
 </launch>

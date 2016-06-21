@@ -10,6 +10,8 @@
   <arg name="enable_logging" default="false"/>
   <arg name="enable_ground_truth" default="true"/>
   <arg name="log_file" default="$(arg mav_name)"/>
+  <arg name="mount_gps" default="false"/>
+  <arg name="use_advanced_gps_noise" default="false"/>
   <arg name="enable_mavlink_interface" default="false"/>
 
   <!-- send the robot XML to param server -->
@@ -19,6 +21,8 @@
     enable_ground_truth:=$(arg enable_ground_truth)
     enable_mavlink_interface:=$(arg enable_mavlink_interface)
     log_file:=$(arg log_file)
+    mount_gps:=$(arg mount_gps)
+    use_advanced_gps_noise:=$(arg use_advanced_gps_noise)
     mav_name:=$(arg mav_name)"
   />
   <param name="tf_prefix" type="string" value="$(arg tf_prefix)" />
