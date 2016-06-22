@@ -415,6 +415,42 @@
         <update_rate>5</update_rate>
         <xacro:if value="${use_advanced_noise}">
           <gps></gps>
+          <plugin name="crates_gnss_plugin" filename="libcrates_gnss.so">
+            <debug>1</debug> <!-- Print some debug information -->
+            <freq>10</freq>  <!-- Rate to check for incoming measurements -->
+            <base>0</base>   <!-- Rate at which to send base station parameters -->
+            <mask>1</mask>   <!-- Do not broadcast NAV for satellites below horizon -->
+            <rtcmport>127.0.0.1:10001</rtcmport>  <!-- TCP host:port on which to broadcast RTCM encoded nav/obs for RTKLIB -->
+            <solnport>127.0.0.1:10002</solnport>  <!-- TCP host:port on which to receive RTKLIB solutions in the ECEF frame -->
+            <peph>file://gnss/com18135.sp3</peph> <!-- Precise ephemerides     -->
+            <pclk>file://gnss/com18135.clk</pclk> <!-- Precise clocks          -->
+            <!--<beph>file://gnss/brdm2830.14p</beph>--> <!-- Broadcast ephemerides   -->
+            <ftec>file://gnss/igsg2830.14i</ftec> <!-- Total electron count    -->
+            <trop>file://gnss/hert2830.14zpd</trop> <!-- Trop: zenith path delay -->
+            <constellations>
+              <system id="GPS" code1="L1C" code2="L2C" code3="L5I"/> <!-- Global Positioning System (United States) -->
+              <system id="GLO" code1="L1C" code2="L2C" code3="L5I"/> <!-- Globalnaya Navigatsionnaya Sputnikovaya Sistema (Russia) -->
+              <system id="GAL" code1="L1C" code2="L5I" code3="L6C"/> <!-- Galileo (Europe) -->
+              <system id="QZS" code1="L1C" code2="L2C" code3="L5I"/> <!-- Quasi-Zenith Satellite System (Japan) -->
+              <system id="CMP" code1="L1I" code2="L2I" code3="L3I"/> <!-- BeiDou Navigation Satellite System (China) -->
+            </constellations>
+            <code>
+              <noise type="gaussian">
+                <mean>0.0</mean>
+                <stddev>0.0</stddev>
+                <bias_mean>0.0</bias_mean>
+                <bias_stddev>0.0</bias_stddev>
+              </noise>
+            </code>
+            <carr>
+              <noise type="gaussian">
+                <mean>0.0</mean>
+                <stddev>0.0</stddev>
+                <bias_mean>0.0</bias_mean>
+                <bias_stddev>0.0</bias_stddev>
+              </noise>
+            </carr>
+          </plugin>
         </xacro:if>
         <xacro:unless value="${use_advanced_noise}">
           <gps>
