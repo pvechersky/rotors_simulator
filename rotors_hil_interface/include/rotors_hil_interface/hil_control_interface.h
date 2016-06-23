@@ -22,16 +22,18 @@
 #define ROTORS_HIL_CONTROL_INTERFACE_H_
 
 #include <ros/ros.h>
-#include <std_msgs/UInt8.h>
+//#include <std_msgs/UInt8.h>
 
 #include <mav_msgs/Actuators.h>
-#include <mavros_msgs/mavlink_convert.h>
+#include <mavros_msgs/HilControls.h>
+//#include <mavros_msgs/mavlink_convert.h>
 
 namespace rotors_hil {
 // Default topic names
-static const std::string kDefaultMavlinkSubTopic = "/mavlink/from";
-static const std::string kDefaultMavModePubTopic = "mav_mode";
-static const std::string kDefaultMavStatusPubTopic = "mav_status";
+//static const std::string kDefaultMavlinkSubTopic = "/mavlink/from";
+static const std::string kDefaultHilControlsSubTopic = "/mavros/hil_controls/hil_controls";
+//static const std::string kDefaultMavModePubTopic = "mav_mode";
+//static const std::string kDefaultMavStatusPubTopic = "mav_status";
 static const std::string kDefaultActuatorsPubTopic = "actuators";
 
 // Default values
@@ -43,19 +45,22 @@ class HilControlInterface {
   virtual ~HilControlInterface();
 
   // Callbacks
-  void MavlinkCallback(const mavros_msgs::MavlinkConstPtr& mavros_msg);
+  //void MavlinkCallback(const mavros_msgs::MavlinkConstPtr& mavros_msg);
+
+  void HilControlsCallback(const mavros_msgs::HilControlsConstPtr& hil_controls_msg);
 
  private:
   // ROS interface
   ros::NodeHandle nh_;
-  ros::Subscriber mavlink_sub_;
-  ros::Publisher mav_mode_pub_;
-  ros::Publisher mav_status_pub_;
+  //ros::Subscriber mavlink_sub_;
+  ros::Subscriber hil_controls_sub_;
+  //ros::Publisher mav_mode_pub_;
+  //ros::Publisher mav_status_pub_;
   ros::Publisher actuators_pub_;
 
   // MAV diagnostics
-  uint8_t base_mode_;
-  uint8_t system_status_;
+  //uint8_t base_mode_;
+  //uint8_t system_status_;
 
   bool key_teleop_;
 };

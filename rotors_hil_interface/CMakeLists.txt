@@ -25,8 +25,8 @@ catkin_package(
 include_directories(include ${catkin_INCLUDE_DIRS} ${mavros_msgs_INCLUDE_DIRS})
 
 add_executable(rotors_hil_control_interface src/hil_control_interface.cpp)
-add_dependencies(rotors_hil_control_interface ${catkin_EXPORTED_TARGETS} ${mavros_EXPORTED_TARGETS} ${mavros_msgs_EXPORTED_TARGETS})
-target_link_libraries(rotors_hil_control_interface ${catkin_LIBRARIES} ${mavros_LIBRARIES})
+add_dependencies(rotors_hil_control_interface ${catkin_EXPORTED_TARGETS} ${mavros_msgs_EXPORTED_TARGETS})
+target_link_libraries(rotors_hil_control_interface ${catkin_LIBRARIES})
 
 add_executable(rotors_hil_sensors_interface src/hil_sensors_interface.cpp)
 add_dependencies(rotors_hil_sensors_interface ${catkin_EXPORTED_TARGETS} ${mavros_EXPORTED_TARGETS} ${mavros_msgs_EXPORTED_TARGETS})

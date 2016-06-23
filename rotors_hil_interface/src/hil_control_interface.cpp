@@ -22,33 +22,38 @@
 
 namespace rotors_hil {
 
-HilControlInterface::HilControlInterface():
-    base_mode_(0),
-    system_status_(255) {
+HilControlInterface::HilControlInterface() {
+    //base_mode_(0),
+    //system_status_(255) {
   ros::NodeHandle pnh("~");
 
-  std::string mavlink_sub_topic;
-  std::string mav_mode_pub_topic;
-  std::string mav_status_pub_topic;
+  //std::string mavlink_sub_topic;
+  std::string hil_controls_sub_topic;
+  //std::string mav_mode_pub_topic;
+  //std::string mav_status_pub_topic;
   std::string actuators_pub_topic;
-  pnh.param("mavlink_sub_topic", mavlink_sub_topic, kDefaultMavlinkSubTopic);
-  pnh.param("mav_mode_pub_topic", mav_mode_pub_topic, kDefaultMavModePubTopic);
-  pnh.param("mav_status_pub_topic", mav_status_pub_topic, kDefaultMavStatusPubTopic);
+  //pnh.param("mavlink_sub_topic", mavlink_sub_topic, kDefaultMavlinkSubTopic);
+  pnh.param("hil_controls_sub_topic", hil_controls_sub_topic, kDefaultHilControlsSubTopic);
+  //pnh.param("mav_mode_pub_topic", mav_mode_pub_topic, kDefaultMavModePubTopic);
+  //pnh.param("mav_status_pub_topic", mav_status_pub_topic, kDefaultMavStatusPubTopic);
   pnh.param("actuators_pub_topic", actuators_pub_topic, kDefaultActuatorsPubTopic);
 
   pnh.param("key_teleop", key_teleop_, kDefaultKeyTeleop);
 
-  mavlink_sub_ = nh_.subscribe(mavlink_sub_topic, 15, &HilControlInterface::MavlinkCallback, this);
+  //mavlink_sub_ = nh_.subscribe(mavlink_sub_topic, 15,
+  //                             &HilControlInterface::MavlinkCallback, this);
+  hil_controls_sub_ = nh_.subscribe(hil_controls_sub_topic, 1,
+                                    &HilControlInterface::HilControlsCallback, this);
 
-  mav_mode_pub_ = nh_.advertise<std_msgs::UInt8>(mav_mode_pub_topic, 1);
-  mav_status_pub_ = nh_.advertise<std_msgs::UInt8>(mav_status_pub_topic, 1);
+  //mav_mode_pub_ = nh_.advertise<std_msgs::UInt8>(mav_mode_pub_topic, 1);
+  //mav_status_pub_ = nh_.advertise<std_msgs::UInt8>(mav_status_pub_topic, 1);
   actuators_pub_ = nh_.advertise<mav_msgs::Actuators>(actuators_pub_topic, 1);
 }
 
 HilControlInterface::~HilControlInterface() {
 }
 
-void HilControlInterface::MavlinkCallback(const mavros_msgs::MavlinkConstPtr& mavros_msg) {
+/*void HilControlInterface::MavlinkCallback(const mavros_msgs::MavlinkConstPtr& mavros_msg) {
   if (mavros_msg->msgid == MAVLINK_MSG_ID_HEARTBEAT) {
     mavlink_message_t* mavlink_msg(new mavlink_message_t);
     mavros_msgs::mavlink::convert(*mavros_msg, *mavlink_msg);
@@ -98,6 +103,23 @@ void HilControlInterface::MavlinkCallback(const mavros_msgs::MavlinkConstPtr& ma
 
     actuators_pub_.publish(act_msg);
   }
+}*/
+
+void HilControlInterface::HilControlsCallback(const mavros_msgs::HilControlsConstPtr& hil_controls_msg) {
+  mav_msgs::Actuators act_msg;
+
+  ros::Time current_time = ros::Time::now();
+
+  act_msg.normalized.push_back(hil_controls_msg->roll_ailerons);
+  act_msg.normalized.push_back(hil_controls_msg->pitch_elevator);
+  act_msg.normalized.push_back(hil_controls_msg->yaw_rudder);
+
+  act_msg.normalized.push_back(hil_controls_msg->throttle);
+
+  act_msg.header.stamp.sec = current_time.sec;
+  act_msg.header.stamp.nsec = current_time.nsec;
+
+  actuators_pub_.publish(act_msg);
 }
 }
 
