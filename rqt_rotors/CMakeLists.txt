@@ -8,6 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
   rqt_gui
   rqt_gui_py
   std_msgs
+  std_srvs
 )
 
 catkin_package()

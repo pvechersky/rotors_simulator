@@ -32,7 +32,6 @@ namespace gazebo {
 GazeboMagnetometerPlugin::GazeboMagnetometerPlugin()
     : ModelPlugin(),
       node_handle_(0),
-      magnetometer_sequence_(0),
       random_generator_(random_device_()) {
 }
 
@@ -116,7 +115,6 @@ void GazeboMagnetometerPlugin::OnUpdate(const common::UpdateInfo& _info) {
   common::Time current_time  = world_->GetSimTime();
 
   // Fill the magnetic field message header
-  magnetometer_message_.header.seq = magnetometer_sequence_;
   magnetometer_message_.header.stamp.sec = current_time.sec;
   magnetometer_message_.header.stamp.nsec = current_time.nsec;
 
@@ -139,7 +137,6 @@ void GazeboMagnetometerPlugin::OnUpdate(const common::UpdateInfo& _info) {
 
   // Publish the message
   magnetometer_pub_.publish(magnetometer_message_);
-  magnetometer_sequence_++;
 }
 
 GZ_REGISTER_MODEL_PLUGIN(GazeboMagnetometerPlugin);

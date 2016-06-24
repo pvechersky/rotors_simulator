@@ -1,4 +1,0 @@
-# Boolean command to reset the model in Gazebo to its starting state
-bool reset
----
-bool success

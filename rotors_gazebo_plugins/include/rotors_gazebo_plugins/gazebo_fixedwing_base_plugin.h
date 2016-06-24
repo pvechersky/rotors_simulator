@@ -30,9 +30,9 @@
 #include <nav_msgs/Odometry.h>
 #include <ros/ros.h>
 #include <std_msgs/Bool.h>
+#include <std_srvs/Empty.h>
 #include <tf/transform_broadcaster.h>
 
-#include "rotors_comm/ResetModel.h"
 #include "rotors_gazebo_plugins/common.h"
 
 namespace gazebo {
@@ -187,8 +187,7 @@ class GazeboFixedWingBasePlugin : public ModelPlugin {
   void AirSpeedCallback(const geometry_msgs::Vector3ConstPtr& air_speed_msg);
   void CommandCallback(const mav_msgs::ActuatorsConstPtr& command_msg);
 
-  bool ResetModelCallback(rotors_comm::ResetModel::Request &req,
-                          rotors_comm::ResetModel::Response &res);
+  bool ResetModelCallback(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
 
   FixedWingAerodynamicParameters aero_params_;
 };

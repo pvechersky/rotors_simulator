@@ -273,8 +273,7 @@ void GazeboFixedWingBasePlugin::CommandCallback(const mav_msgs::ActuatorsConstPt
   throttle_ = command_msg->normalized.at(3);
 }
 
-bool GazeboFixedWingBasePlugin::ResetModelCallback(rotors_comm::ResetModel::Request &req,
-                                                   rotors_comm::ResetModel::Response &res) {
+bool GazeboFixedWingBasePlugin::ResetModelCallback(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res) {
   model_->SetWorldPose(start_pose_);
 
   math::Vector3 lin_vel = model_->GetWorldLinearVel();
@@ -294,7 +293,6 @@ bool GazeboFixedWingBasePlugin::ResetModelCallback(rotors_comm::ResetModel::Requ
   rudder_.deflection = 0.0;
   throttle_ = 0.0;
 
-  res.success = true;
   return true;
 }
 

@@ -7,7 +7,6 @@ find_package(catkin REQUIRED
 add_service_files(
   FILES
   Octomap.srv
-  ResetModel.srv
 )
 
 add_message_files(

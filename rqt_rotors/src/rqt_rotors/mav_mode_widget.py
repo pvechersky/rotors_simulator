@@ -3,6 +3,7 @@ import os
 import rospy
 import rospkg
 import numpy as np
+import time
 from mavros_msgs.msg import State
 from mavros_msgs.srv import CommandBool
 from mavros_msgs.srv import CommandLong
@@ -11,8 +12,8 @@ from python_qt_binding import loadUi
 from python_qt_binding.QtGui import QWidget
 from python_qt_binding.QtGui import QFormLayout
 from python_qt_binding.QtCore import QTimer, Slot
-from rotors_comm.srv import ResetModel
 from std_msgs.msg import Bool
+from std_srvs.srv import Empty
 
 class MavModeWidget(QWidget):
   # MAV mode flags
@@ -62,11 +63,13 @@ class MavModeWidget(QWidget):
     self.clear_mav_mode()
 
     # Initialize class variables
+    self.last_heartbeat_time = time.time()
     self.mav_mode = 65
     self.mav_status = 255
-    self.received_heartbeat = False
     self.armed = False
+    self.connected = False
     self.guided = False
+    self.hil_enabled = False
     self.reconstruction_started = False
     
     # Set the functions that are called when signals are emitted
@@ -78,7 +81,7 @@ class MavModeWidget(QWidget):
 
     # Create ROS service proxies
     self.arm = rospy.ServiceProxy(self.STR_MAVROS_ARM_SERVICE_NAME, CommandBool)
-    self.reset_model = rospy.ServiceProxy(self.STR_RESET_MODEL_SERVICE_NAME, ResetModel)
+    self.reset_model = rospy.ServiceProxy(self.STR_RESET_MODEL_SERVICE_NAME, Empty)
     self.send_command_long = rospy.ServiceProxy(self.STR_MAVROS_COMMAND_LONG_SERVICE_NAME, CommandLong)
     self.set_mode = rospy.ServiceProxy(self.STR_MAVROS_SET_MODE_SERVICE_NAME, SetMode)
     
@@ -88,7 +91,10 @@ class MavModeWidget(QWidget):
 
   def on_set_hil_mode_button_pressed(self):
     new_mode = self.mav_mode | self.MAV_MODE_FLAG_HIL_ENABLED
+    self.hil_enabled = True
+    self.mav_mode = new_mode
     self.set_mode(new_mode, '')
+    self.text_mode_hil.setText(self.mav_mode_text(self.hil_enabled))
 
   def on_arm_button_pressed(self):
     self.arm(True)
@@ -97,7 +103,7 @@ class MavModeWidget(QWidget):
     self.send_command_long(False, 246, 1, 1, 0, 0, 0, 0, 0, 0)
 
   def on_reset_model_button_pressed(self):
-    self.reset_model(True)
+    self.reset_model()
 
   def on_reconstruct_button_pressed(self):
     if not(self.reconstruction_started):
@@ -105,38 +111,36 @@ class MavModeWidget(QWidget):
     self.reconstruction_started = True
     
   def sys_status_callback(self, msg):
-    if not(self.received_heartbeat):
+    if (not self.connected and msg.connected):
       self.button_set_hil_mode.setEnabled(True)
       self.button_arm.setEnabled(True)
       self.button_reboot_autopilot.setEnabled(True)
-      self.received_heartbeat = True
-
+      self.connected = True
+      self.last_heartbeat_time = time.time()
       self.text_mode_safety_armed.setText(self.mav_mode_text(msg.armed))
       self.text_mode_guided.setText(self.mav_mode_text(msg.guided))
+      return
+
+    if (((time.time() - self.last_heartbeat_time) >= 2.0) and self.hil_enabled):
+      new_mode = self.mav_mode | self.MAV_MODE_FLAG_HIL_ENABLED
+      self.set_mode(new_mode, '')
 
     if (self.armed != msg.armed):
       self.armed = msg.armed
       self.text_mode_safety_armed.setText(self.mav_mode_text(self.armed))
       self.button_arm.setEnabled(not(self.armed))
+      self.mav_mode = self.mav_mode | self.MAV_MODE_FLAG_SAFETY_ARMED
 
     if (self.guided != msg.guided):
       self.guided = msg.guided
       self.text_mode_guided.setText(self.mav_mode_text(self.guided))
 
+    self.last_heartbeat_time = time.time()
+
   def clear_mav_mode(self):
     count = self.mav_mode_layout.rowCount()
     for i in range(count):
       self.mav_mode_layout.itemAt(i, QFormLayout.FieldRole).widget().setText(self.STR_UNKNOWN)
-
-  # def process_mav_mode(self, mode):
-  #   self.text_mode_safety_armed.setText(self.mav_mode_text(mode, self.MAV_MODE_FLAG_SAFETY_ARMED))
-  #   self.text_mode_manual_input.setText(self.mav_mode_text(mode, self.MAV_MODE_FLAG_MANUAL_INPUT_ENABLED))
-  #   self.text_mode_hil.setText(self.mav_mode_text(mode, self.MAV_MODE_FLAG_HIL_ENABLED))
-  #   self.text_mode_stabilize.setText(self.mav_mode_text(mode, self.MAV_MODE_FLAG_STABILIZE_ENABLED))
-  #   self.text_mode_guided.setText(self.mav_mode_text(mode, self.MAV_MODE_FLAG_GUIDED_ENABLED))
-  #   self.text_mode_auto.setText(self.mav_mode_text(mode, self.MAV_MODE_FLAG_AUTO_ENABLED))
-  #   self.text_mode_test.setText(self.mav_mode_text(mode, self.MAV_MODE_FLAG_TEST_ENABLED))
-  #   self.text_mode_custom_mode.setText(self.mav_mode_text(mode, self.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED))
 
   def mav_mode_text(self, mode_enabled):
     return 'ON' if mode_enabled else 'OFF'
