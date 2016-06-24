@@ -22,17 +22,14 @@
 #define ROTORS_HIL_SENSORS_INTERFACE_H_
 
 #include <geometry_msgs/Vector3.h>
+#include <mav_msgs/default_topics.h>
+#include <mavros_msgs/mavlink_convert.h>
 #include <ros/ros.h>
 #include <sensor_msgs/FluidPressure.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/MagneticField.h>
 #include <sensor_msgs/NavSatFix.h>
-#include <std_msgs/Bool.h>
-#include <std_msgs/UInt8.h>
 #include <tf/transform_datatypes.h>
-
-#include <mav_msgs/default_topics.h>
-#include <mavros_msgs/mavlink_convert.h>
 
 namespace rotors_hil {
 // Constants
@@ -44,8 +41,6 @@ static constexpr int kAllFieldsUpdated = 4095;
 static const std::string kDefaultAirSpeedSubTopic = "air_speed";
 static const std::string kDefaultGroundSpeedSubTopic = "ground_speed";
 static const std::string kDefaultPressureSubTopic = "air_pressure";
-static const std::string kDefaultRebootAutopilotSubTopic = "reboot_autopilot";
-static const std::string kDefaultSetModeSubTopic = "set_mode";
 static const std::string kDefaultMavlinkPubTopic = "/mavlink/to";
 static constexpr bool kDefaultSensorLevelHil = true;
 static constexpr double kDefaultHilGpsFrequency = 5.0;
@@ -67,8 +62,6 @@ class HilSensorsInterface {
   void ImuCallback(const sensor_msgs::ImuConstPtr& imu_msg);
   void MagCallback(const sensor_msgs::MagneticFieldConstPtr& mag_msg);
   void PressureCallback(const sensor_msgs::FluidPressureConstPtr& pressure_msg);
-  void RebootAutopilotCallback(const std_msgs::BoolConstPtr& reboot_autopilot_msg);
-  void SetModeCallback(const std_msgs::UInt8ConstPtr& set_mode_msg);
 
   // Sensor data publishing
   void PublishHilGps();
@@ -87,8 +80,6 @@ class HilSensorsInterface {
   ros::Subscriber imu_sub_;
   ros::Subscriber mag_sub_;
   ros::Subscriber pressure_sub_;
-  ros::Subscriber reboot_autopilot_sub_;
-  ros::Subscriber set_mode_sub_;
   ros::Publisher mavlink_pub_;
   ros::Rate rate_;
 
@@ -96,7 +87,6 @@ class HilSensorsInterface {
   mavlink_hil_gps_t hil_gps_msg_;
   mavlink_hil_sensor_t hil_sensor_msg_;
   mavlink_hil_state_quaternion_t hil_state_qtrn_msg_;
-  mavlink_command_long_t cmd_msg_;
 
   // HIL publishing intervals
   u_int32_t hil_gps_interval_nsec_;

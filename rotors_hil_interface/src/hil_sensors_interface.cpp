@@ -44,8 +44,6 @@ HilSensorsInterface::HilSensorsInterface():
   std::string imu_sub_topic;
   std::string mag_sub_topic;
   std::string pressure_sub_topic;
-  std::string reboot_autopilot_sub_topic;
-  std::string set_mode_sub_topic;
   std::string mavlink_pub_topic;
   pnh.param("air_speed_topic", air_speed_sub_topic, kDefaultAirSpeedSubTopic);
   pnh.param("gps_topic", gps_sub_topic, std::string(mav_msgs::default_topics::GPS));
@@ -53,8 +51,6 @@ HilSensorsInterface::HilSensorsInterface():
   pnh.param("imu_topic", imu_sub_topic, std::string(mav_msgs::default_topics::IMU));
   pnh.param("mag_topic", mag_sub_topic, std::string(mav_msgs::default_topics::MAGNETIC_FIELD));
   pnh.param("pressure_topic", pressure_sub_topic, kDefaultPressureSubTopic);
-  pnh.param("reboot_autopilot_topic", reboot_autopilot_sub_topic, kDefaultRebootAutopilotSubTopic);
-  pnh.param("set_mode_topic", set_mode_sub_topic, kDefaultSetModeSubTopic);
   pnh.param("mavlink_pub_topic", mavlink_pub_topic, kDefaultMavlinkPubTopic);
   pnh.param("sensor_level_hil", sensor_level_hil_, kDefaultSensorLevelHil);
   pnh.param("hil_gps_frequency", hil_gps_freq, kDefaultHilGpsFrequency);
@@ -67,8 +63,6 @@ HilSensorsInterface::HilSensorsInterface():
   imu_sub_ = nh_.subscribe(imu_sub_topic, 1, &HilSensorsInterface::ImuCallback, this);
   mag_sub_ = nh_.subscribe(mag_sub_topic, 1, &HilSensorsInterface::MagCallback, this);
   pressure_sub_ = nh_.subscribe(pressure_sub_topic, 1, &HilSensorsInterface::PressureCallback, this);
-  reboot_autopilot_sub_ = nh_.subscribe(reboot_autopilot_sub_topic, 1, &HilSensorsInterface::RebootAutopilotCallback, this);
-  set_mode_sub_ = nh_.subscribe(set_mode_sub_topic, 1, &HilSensorsInterface::SetModeCallback, this);
 
   mavlink_pub_ = nh_.advertise<mavros_msgs::Mavlink>(mavlink_pub_topic, 5);
 
@@ -172,54 +166,6 @@ void HilSensorsInterface::PressureCallback(const sensor_msgs::FluidPressureConst
 
   // From the following formula: p_stag - p_static = 0.5 * rho * v^2
   pressure_diff_ = 0.5 * kAirDensity * ind_airspeed_ * ind_airspeed_ * 0.01 * 0.0001;
-}
-
-void HilSensorsInterface::RebootAutopilotCallback(const std_msgs::BoolConstPtr& reboot_autopilot_msg) {
-  mavlink_message_t mmsg;
-
-  cmd_msg_.target_system = 1;
-  cmd_msg_.target_component = 0;
-  cmd_msg_.command = MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN;
-  cmd_msg_.confirmation = 1;
-  cmd_msg_.param1 = 1;      // TODO: look for the pre-defined value
-  cmd_msg_.param2 = 0;      // TODO: look for the pre-defined value
-
-  mavlink_command_long_t* cmd_msg_ptr = &cmd_msg_;
-  mavlink_msg_command_long_encode(1, 0, &mmsg, cmd_msg_ptr);
-  mavlink_message_t* msg = &mmsg;
-
-  ros::Time current_time = ros::Time::now();
-
-  mavros_msgs::MavlinkPtr rmsg = boost::make_shared<mavros_msgs::Mavlink>();
-  rmsg->header.stamp.sec = current_time.sec;
-  rmsg->header.stamp.nsec = current_time.nsec;
-  mavros_msgs::mavlink::convert(*msg, *rmsg);
-
-  mavlink_pub_.publish(rmsg);
-}
-
-void HilSensorsInterface::SetModeCallback(const std_msgs::UInt8ConstPtr& set_mode_msg) {
-  mavlink_message_t mmsg;
-
-  cmd_msg_.target_system = 1;
-  cmd_msg_.target_component = 0;
-  cmd_msg_.command = MAV_CMD_DO_SET_MODE;
-  cmd_msg_.confirmation = 1;
-  cmd_msg_.param1 = set_mode_msg->data;
-  cmd_msg_.param2 = 1;
-
-  mavlink_command_long_t* cmd_msg_ptr = &cmd_msg_;
-  mavlink_msg_command_long_encode(1, 0, &mmsg, cmd_msg_ptr);
-  mavlink_message_t* msg = &mmsg;
-
-  ros::Time current_time = ros::Time::now();
-
-  mavros_msgs::MavlinkPtr rmsg = boost::make_shared<mavros_msgs::Mavlink>();
-  rmsg->header.stamp.sec = current_time.sec;
-  rmsg->header.stamp.nsec = current_time.nsec;
-  mavros_msgs::mavlink::convert(*msg, *rmsg);
-
-  mavlink_pub_.publish(rmsg);
 }
 
 void HilSensorsInterface::PublishHilGps() {
