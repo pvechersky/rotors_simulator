@@ -68,10 +68,11 @@ void GazeboFixedWingBasePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _
 
   std::string air_speed_sub_topic;
   std::string command_sub_topic;
-  std::string reset_topic;
+  std::string reset_model_service_name;
   getSdfParam<std::string>(_sdf, "airSpeedSubTopic", air_speed_sub_topic, kDefaultAirSpeedSubTopic);
   getSdfParam<std::string>(_sdf, "commandSubTopic", command_sub_topic, kDefaultCommandSubTopic);
-  getSdfParam<std::string>(_sdf, "resetTopic", reset_topic, kDefaultResetSubTopic);
+  getSdfParam<std::string>(_sdf, "resetModelServiceName", reset_model_service_name,
+                           kDefaultResetModelServiceName);
 
   cam_parent_frame_ = "world";
   cam_child_frame_ = "techpod/camera_downward_link";
@@ -86,7 +87,7 @@ void GazeboFixedWingBasePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _
     }
   }*/
 
-  start_position_ = model_->GetWorldPose().pos;
+  start_pose_ = model_->GetWorldPose();
 
   ros::NodeHandle pnh("~");
 
@@ -157,7 +158,10 @@ void GazeboFixedWingBasePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _
 
   air_speed_sub_ = node_handle_->subscribe(air_speed_sub_topic, 1, &GazeboFixedWingBasePlugin::AirSpeedCallback, this);
   command_sub_ = node_handle_->subscribe(command_sub_topic, 1, &GazeboFixedWingBasePlugin::CommandCallback, this);
-  reset_sub_ = node_handle_->subscribe(reset_topic, 1, &GazeboFixedWingBasePlugin::ResetCallback, this);
+
+  reset_model_service_ = node_handle_->advertiseService(reset_model_service_name,
+                                                        &GazeboFixedWingBasePlugin::ResetModelCallback,
+                                                        this);
 }
 
 void GazeboFixedWingBasePlugin::OnUpdate(const common::UpdateInfo& _info) {
@@ -269,30 +273,29 @@ void GazeboFixedWingBasePlugin::CommandCallback(const mav_msgs::ActuatorsConstPt
   throttle_ = command_msg->normalized.at(3);
 }
 
-void GazeboFixedWingBasePlugin::ResetCallback(const std_msgs::BoolConstPtr& reset_msg) {
-  if (reset_msg->data) {
-    math::Pose pose = model_->GetWorldPose();
-    pose.pos = start_position_;
-    pose.rot = math::Quaternion(0.0, 0.0, 0.0);
-    model_->SetWorldPose(pose);
+bool GazeboFixedWingBasePlugin::ResetModelCallback(rotors_comm::ResetModel::Request &req,
+                                                   rotors_comm::ResetModel::Response &res) {
+  model_->SetWorldPose(start_pose_);
 
-    math::Vector3 lin_vel = model_->GetWorldLinearVel();
-    lin_vel.x = 0.0;
-    lin_vel.y = 0.0;
-    lin_vel.z = 0.0;
-    model_->SetLinearVel(lin_vel);
+  math::Vector3 lin_vel = model_->GetWorldLinearVel();
+  lin_vel.x = 0.0;
+  lin_vel.y = 0.0;
+  lin_vel.z = 0.0;
+  model_->SetLinearVel(lin_vel);
 
-    math::Vector3 ang_vel = model_->GetWorldAngularVel();
-    ang_vel.x = 0.0;
-    ang_vel.y = 0.0;
-    ang_vel.z = 0.0;
-    model_->SetAngularVel(ang_vel);
+  math::Vector3 ang_vel = model_->GetWorldAngularVel();
+  ang_vel.x = 0.0;
+  ang_vel.y = 0.0;
+  ang_vel.z = 0.0;
+  model_->SetAngularVel(ang_vel);
 
-    aileron_.deflection = 0.0;
-    elevator_.deflection = 0.0;
-    rudder_.deflection = 0.0;
-    throttle_ = 0.0;
-  }
+  aileron_.deflection = 0.0;
+  elevator_.deflection = 0.0;
+  rudder_.deflection = 0.0;
+  throttle_ = 0.0;
+
+  res.success = true;
+  return true;
 }
 
 GZ_REGISTER_MODEL_PLUGIN(GazeboFixedWingBasePlugin);

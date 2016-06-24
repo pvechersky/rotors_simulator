@@ -21,25 +21,25 @@
 #ifndef ROTORS_GAZEBO_PLUGINS_GAZEBO_FIXEDWING_BASE_PLUGIN_H
 #define ROTORS_GAZEBO_PLUGINS_GAZEBO_FIXEDWING_BASE_PLUGIN_H
 
-#include <ros/ros.h>
 #include <gazebo/common/common.hh>
 #include <gazebo/common/Plugin.hh>
 #include <gazebo/gazebo.hh>
-#include <gazebo/msgs/msgs.hh>
 #include <gazebo/physics/physics.hh>
 #include <geometry_msgs/Vector3.h>
 #include <mav_msgs/Actuators.h>
 #include <nav_msgs/Odometry.h>
+#include <ros/ros.h>
 #include <std_msgs/Bool.h>
 #include <tf/transform_broadcaster.h>
 
+#include "rotors_comm/ResetModel.h"
 #include "rotors_gazebo_plugins/common.h"
 
 namespace gazebo {
 // Default topic names
 static const std::string kDefaultAirSpeedSubTopic = "air_speed";
 static const std::string kDefaultCommandSubTopic = "gazebo/command/motor_speed";
-static const std::string kDefaultResetSubTopic = "reset_model";
+static const std::string kDefaultResetModelServiceName = "reset_model";
 
 // Default values for Techpod fixed-wing control surfaces
 static constexpr double kDefaultControlSurfaceDeflectionMin = -20.0 * M_PI / 180.0;
@@ -146,7 +146,8 @@ class GazeboFixedWingBasePlugin : public ModelPlugin {
   ros::NodeHandle* node_handle_;
   ros::Subscriber air_speed_sub_;
   ros::Subscriber command_sub_;
-  ros::Subscriber reset_sub_;
+
+  ros::ServiceServer reset_model_service_;
 
   // Pointer to the world
   physics::WorldPtr world_;
@@ -178,14 +179,16 @@ class GazeboFixedWingBasePlugin : public ModelPlugin {
 
   math::Vector3 air_speed_;
 
-  math::Vector3 start_position_;
+  math::Pose start_pose_;
 
   tf::Transform tf_;
   tf::TransformBroadcaster transform_broadcaster_;
 
   void AirSpeedCallback(const geometry_msgs::Vector3ConstPtr& air_speed_msg);
   void CommandCallback(const mav_msgs::ActuatorsConstPtr& command_msg);
-  void ResetCallback(const std_msgs::BoolConstPtr& reset_msg);
+
+  bool ResetModelCallback(rotors_comm::ResetModel::Request &req,
+                          rotors_comm::ResetModel::Response &res);
 
   FixedWingAerodynamicParameters aero_params_;
 };

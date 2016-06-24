@@ -11,6 +11,7 @@ from python_qt_binding import loadUi
 from python_qt_binding.QtGui import QWidget
 from python_qt_binding.QtGui import QFormLayout
 from python_qt_binding.QtCore import QTimer, Slot
+from rotors_comm.srv import ResetModel
 from std_msgs.msg import Bool
 
 class MavModeWidget(QWidget):
@@ -36,8 +37,12 @@ class MavModeWidget(QWidget):
 
   # String constants
   STR_UNKNOWN = 'N/A'
+  STR_MAVROS_ARM_SERVICE_NAME = '/mavros/cmd/arming'
+  STR_MAVROS_COMMAND_LONG_SERVICE_NAME = '/mavros/cmd/command'
+  STR_MAVROS_SET_MODE_SERVICE_NAME = '/mavros/set_mode'
+  STR_RESET_MODEL_SERVICE_NAME = 'reset_model'
   STR_SYS_STATUS_SUB_TOPIC = '/mavros/state'
-  STR_RESET_MODEL_PUB_TOPIC = 'reset_model'
+
   STR_START_RECONSTRUCTION_PUB_TOPIC = 'start_reconstruction'
 
   def __init__(self, parent):
@@ -72,13 +77,13 @@ class MavModeWidget(QWidget):
     self.button_reconstruct.pressed.connect(self.on_reconstruct_button_pressed)
 
     # Create ROS service proxies
-    self.arm = rospy.ServiceProxy('/mavros/cmd/arming', CommandBool)
-    self.send_command_long = rospy.ServiceProxy('/mavros/cmd/command', CommandLong)
-    self.set_mode = rospy.ServiceProxy('/mavros/set_mode', SetMode)
+    self.arm = rospy.ServiceProxy(self.STR_MAVROS_ARM_SERVICE_NAME, CommandBool)
+    self.reset_model = rospy.ServiceProxy(self.STR_RESET_MODEL_SERVICE_NAME, ResetModel)
+    self.send_command_long = rospy.ServiceProxy(self.STR_MAVROS_COMMAND_LONG_SERVICE_NAME, CommandLong)
+    self.set_mode = rospy.ServiceProxy(self.STR_MAVROS_SET_MODE_SERVICE_NAME, SetMode)
     
     # Initialize ROS subscribers and publishers
     self.sys_status_sub = rospy.Subscriber(self.STR_SYS_STATUS_SUB_TOPIC, State, self.sys_status_callback, queue_size=1)
-    self.reset_model_pub = rospy.Publisher(self.STR_RESET_MODEL_PUB_TOPIC, Bool, queue_size=1)
     self.start_reconstruction_pub = rospy.Publisher(self.STR_START_RECONSTRUCTION_PUB_TOPIC, Bool, queue_size=1)
 
   def on_set_hil_mode_button_pressed(self):
@@ -92,7 +97,7 @@ class MavModeWidget(QWidget):
     self.send_command_long(False, 246, 1, 1, 0, 0, 0, 0, 0, 0)
 
   def on_reset_model_button_pressed(self):
-    self.reset_model_pub.publish(True)
+    self.reset_model(True)
 
   def on_reconstruct_button_pressed(self):
     if not(self.reconstruction_started):

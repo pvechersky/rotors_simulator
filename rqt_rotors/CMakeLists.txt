@@ -4,6 +4,7 @@ project(rqt_rotors)
 find_package(catkin REQUIRED COMPONENTS
   mavros_msgs
   rospy
+  rotors_comm
   rqt_gui
   rqt_gui_py
   std_msgs

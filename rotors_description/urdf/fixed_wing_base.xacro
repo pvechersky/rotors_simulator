@@ -37,7 +37,7 @@
   <!-- Fixed-wing fuselage link -->
   <xacro:macro name="fixed_wing_base_macro"
     params="robot_namespace mass length width height color use_mesh_file 
-      mesh_file reset_topic air_density alpha_stall *cog *inertia">
+      mesh_file reset_model_service_name *cog *inertia">
     <link name="${robot_namespace}/base_link"></link>
 
     <joint name="${robot_namespace}/base_joint" type="fixed">
@@ -77,9 +77,7 @@
       <plugin name="${robot_namespace}_base" filename="librotors_gazebo_fixedwing_base_plugin.so">
         <robotNamespace>${robot_namespace}</robotNamespace>
         <linkName>${robot_namespace}/base_link</linkName>
-	<resetTopic>${reset_topic}</resetTopic>
-	<airDensity>${air_density}</airDensity>
-	<alphaStall>${alpha_stall}</alphaStall>
+	<resetModelServiceName>${reset_model_service_name}</resetModelServiceName>
       </plugin>
     </gazebo>
 <!--    <gazebo reference="${robot_namespace}/base_link">

@@ -171,9 +171,7 @@
     color="${body_color}"
     use_mesh_file="${use_mesh_file}"
     mesh_file="${mesh_file}"
-    reset_topic="reset_model"
-    air_density="${air_density}"
-    alpha_stall="${alpha_stall}">
+    reset_model_service_name="reset_model">
     <origin xyz="0 0 0" rpy="0 0 0" />
     <inertia ixx="${0.1512 * 1.1}" ixy="0.0" ixz="0.0755" iyy="${0.2785 * 1.4}" iyz="0.0" izz="${0.3745 * 1.4}" />
     <!--<xacro:insert_block name="body_inertia" />-->
