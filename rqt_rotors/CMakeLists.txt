@@ -2,9 +2,11 @@ cmake_minimum_required(VERSION 2.8.3)
 project(rqt_rotors)
 
 find_package(catkin REQUIRED COMPONENTS
+  mavros_msgs
   rospy
   rqt_gui
   rqt_gui_py
+  std_msgs
 )
 
 catkin_package()
