@@ -424,7 +424,7 @@
             <solnport>127.0.0.1:10002</solnport>  <!-- TCP host:port on which to receive RTKLIB solutions in the ECEF frame -->
             <peph>file://gnss/com18135.sp3</peph> <!-- Precise ephemerides     -->
             <pclk>file://gnss/com18135.clk</pclk> <!-- Precise clocks          -->
-            <!--<beph>file://gnss/brdm2830.14p</beph>--> <!-- Broadcast ephemerides   -->
+            <beph>file://gnss/brdm2830.14p</beph> <!-- Broadcast ephemerides   -->
             <ftec>file://gnss/igsg2830.14i</ftec> <!-- Total electron count    -->
             <trop>file://gnss/hert2830.14zpd</trop> <!-- Trop: zenith path delay -->
             <constellations>

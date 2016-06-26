@@ -7,21 +7,18 @@
   <arg name="mount_gps" default="true"/>
   <arg name="use_advanced_gps_noise" default="true"/>
 
-  <group if="$(arg mount_gps)">
-    <group if="$(arg use_advanced_gps_noise)">
-      <env name="GAZEBO_RESOURCE_PATH" value="${GAZEBO_RESOURCE_PATH}:$(find crates_gnss)/share/example/resources"/>
-      <include file="$(find crates_gnss)/launch/rtklib.launch">
-        <arg name="conf" default="$(find crates_gnss)/share/example/conf/code_autonomous.conf" />
-      </include>
-    </group>
-  </group>
-
-  <env name="GAZEBO_MODEL_PATH" value="${GAZEBO_MODEL_PATH}:$(find rotors_gazebo)/models"/>
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <env name="GAZEBO_MASTER_URI" value="http://localhost:11311"/>
+    <env name="GAZEBO_MODEL_DATABASE_URI" value="http://gazebosim.org/models"/>
+    <env name="GAZEBO_RESOURCE_PATH" value="${GAZEBO_RESOURCE_PATH}:$(find crates_gnss)/share/example/resources"/>
+    <env name="GAZEBO_MODEL_PATH" value="${GAZEBO_MODEL_PATH}:$(find rotors_gazebo)/models:$(find crates_gnss)/share/example/models"/>
+    <env name="OGRE_RESOURCE_PATH" value="/usr/lib/x86_64-linux-gnu/OGRE-1.8.0"/>
     <arg name="world_name" value="$(find rotors_gazebo)/worlds/$(arg world_name).world"/>
-    <!-- <arg name="debug" value="true" /> -->
     <arg name="paused" value="false" />
+    <arg name="use_sim_time" value="true"/>
     <arg name="gui" value="false" />
+    <arg name="headless" value="false" />
+    <arg name="debug" value="false" />
     <arg name="verbose" default="true" />
   </include>
 
@@ -35,5 +32,13 @@
       <arg name="mount_gps" default="$(arg mount_gps)"/>
       <arg name="use_advanced_gps_noise" default="$(arg use_advanced_gps_noise)"/>
     </include>
+  </group>
+
+  <group if="$(arg mount_gps)">
+    <group if="$(arg use_advanced_gps_noise)">
+      <include file="$(find crates_gnss)/launch/rtklib.launch">
+        <arg name="conf" default="$(find crates_gnss)/share/example/conf/code_autonomous.conf" />
+      </include>
+    </group>
   </group>
 </launch>
