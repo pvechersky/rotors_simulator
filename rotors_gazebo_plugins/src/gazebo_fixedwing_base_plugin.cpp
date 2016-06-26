@@ -184,11 +184,7 @@ void GazeboFixedWingBasePlugin::OnUpdate(const common::UpdateInfo& _info) {
   transform_broadcaster_.sendTransform(tf::StampedTransform(tf_, ros::Time::now(), cam_parent_frame_, cam_child_frame_));
 
   // Broadcast the transform to the base link
-  /*tf::Quaternion base_rot(base_ori.x, base_ori.y, base_ori.z, base_ori.w);
-  tf::Transform base_tf_(base_rot, pos);
-  transform_broadcaster_.sendTransform(tf::StampedTransform(base_tf_, ros::Time::now(), cam_parent_frame_, "base_link"));
-
-  math::Vector3 linear_vel_B = math::Vector3(10.0, 0.0, 0.0);
+  /*math::Vector3 linear_vel_B = math::Vector3(10.0, 0.0, 0.0);
   math::Vector3 linear_vel_W = base_ori.RotateVector(linear_vel_B);
   link_->SetLinearVel(linear_vel_W);*/
 }

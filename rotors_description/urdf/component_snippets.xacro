@@ -852,7 +852,7 @@
       accelerometer_bias_correlation_time="300.0"
       accelerometer_turn_on_bias_sigma="0.1960">
       <inertia ixx="0.00001" ixy="0.0" ixz="0.0" iyy="0.00001" iyz="0.0" izz="0.00001" />
-      <origin xyz="0 0 0" rpy="0 0 0" />
+      <origin xyz="0 0 0" rpy="3.1415926535897931 0 0" />
     </xacro:imu_plugin_macro>
   </xacro:macro>
 

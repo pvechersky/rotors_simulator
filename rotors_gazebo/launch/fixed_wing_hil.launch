@@ -1,6 +1,6 @@
 <launch>
   <arg name="uav_name" default="techpod"/>
-  <arg name="world_name" default="outdoor"/>
+  <arg name="world_name" default="zurich"/>
   <arg name="enable_logging" default="false"/>
   <arg name="enable_ground_truth" default="false"/>
   <arg name="log_file" default="$(arg uav_name)"/>

@@ -140,15 +140,15 @@ void HilSensorsInterface::GroundSpeedCallback(const geometry_msgs::Vector3ConstP
 
 void HilSensorsInterface::ImuCallback(const sensor_msgs::ImuConstPtr& imu_msg) {
   acc_x_ = imu_msg->linear_acceleration.x;
-  acc_y_ = imu_msg->linear_acceleration.y;
-  acc_z_ = imu_msg->linear_acceleration.z;
+  acc_y_ = -imu_msg->linear_acceleration.y;
+  acc_z_ = -imu_msg->linear_acceleration.z;
 
   att_ = tf::Quaternion(imu_msg->orientation.x, imu_msg->orientation.y, imu_msg->orientation.z, imu_msg->orientation.w);
   //att_ *= tf::Quaternion(0.0, 0.0, M_PI);
 
   gyro_x_ = imu_msg->angular_velocity.x;
-  gyro_y_ = imu_msg->angular_velocity.y;
-  gyro_z_ = imu_msg->angular_velocity.z;
+  gyro_y_ = -imu_msg->angular_velocity.y;
+  gyro_z_ = -imu_msg->angular_velocity.z;
 }
 
 void HilSensorsInterface::MagCallback(const sensor_msgs::MagneticFieldConstPtr &mag_msg) {
