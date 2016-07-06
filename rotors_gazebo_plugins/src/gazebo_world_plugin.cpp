@@ -40,7 +40,16 @@ GazeboWorldPlugin::~GazeboWorldPlugin() {
 void GazeboWorldPlugin::Load(physics::WorldPtr _world, sdf::ElementPtr _sdf) {
   world_ = _world;
 
-  if (_sdf->HasElement("robotNamespace"))
+  // Set the simulation time to current wall time
+  ros::Time current_ros_time = ros::Time::now();
+  common::Time new_sim_time(current_ros_time.sec, current_ros_time.nsec);
+  world_->SetSimTime(new_sim_time);
+
+  std::cout << "PAVEL - setting sim time" << std::endl;
+  std::cout << current_ros_time.sec << std::endl;
+  std::cout << current_ros_time.nsec << std::endl;
+
+  /*if (_sdf->HasElement("robotNamespace"))
     namespace_ = _sdf->GetElement("robotNamespace")->Get<std::string>();
   else
     gzerr << "[gazebo_world_plugin] Please specify a robotNamespace.\n";
@@ -60,10 +69,10 @@ void GazeboWorldPlugin::Load(physics::WorldPtr _world, sdf::ElementPtr _sdf) {
 
   camera_element_ = _sdf->GetElement("camera");
   if (!camera_element_)
-    gzerr << "[gazebo_world_plugin] Please specify a camera element.\n";
+    gzerr << "[gazebo_world_plugin] Please specify a camera element.\n";*/
 }
 
-void GazeboWorldPlugin::OnRenderUpdate() {
+/*void GazeboWorldPlugin::OnRenderUpdate() {
   ros::Time current_time = ros::Time::now();
 
   if ((current_time.toSec() - last_frame_pub_time_) >= frame_interval_) {
@@ -110,7 +119,7 @@ void GazeboWorldPlugin::WaitForSceneToLoad() {
       cam_params_.width = cam_->GetImageWidth();
 #endif
 
-      image_pub_ = it_node_->advertise("view_cam", 1, true);*/
+      image_pub_ = it_node_->advertise("view_cam", 1, true);
 
       //cam_->SetRenderRate(30.0);
       cam_->CreateRenderTexture("head_RTT");
@@ -122,9 +131,9 @@ void GazeboWorldPlugin::WaitForSceneToLoad() {
 
       event::Events::DisconnectWorldUpdateBegin(this->update_connection_);
 
-      /*this->update_connection_ =
+      this->update_connection_ =
         event::Events::ConnectRender(
-          boost::bind(&GazeboWorldPlugin::OnRenderUpdate, this));*/
+          boost::bind(&GazeboWorldPlugin::OnRenderUpdate, this));
     }
   }
 }
@@ -149,7 +158,7 @@ void GazeboWorldPlugin::PublishImageData(const unsigned char* img_data, ros::Tim
 
     image_pub_.publish(image_msg_);
   }
-}
+}*/
 
 GZ_REGISTER_WORLD_PLUGIN(GazeboWorldPlugin);
 }

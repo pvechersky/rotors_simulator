@@ -54,18 +54,18 @@ class GazeboWorldPlugin : public WorldPlugin {
  protected:
   void Load(physics::WorldPtr _world, sdf::ElementPtr _sdf);
 
-  void OnRenderUpdate();
+  //void OnRenderUpdate();
 
-  void WaitForSceneToLoad();
+  //void WaitForSceneToLoad();
 
-  void PublishImageData(const unsigned char* img_data, ros::Time time);
+  //void PublishImageData(const unsigned char* img_data, ros::Time time);
 
  private:
   event::ConnectionPtr update_connection_;
 
   physics::WorldPtr world_;
 
-  sdf::ElementPtr camera_element_;
+  /*sdf::ElementPtr camera_element_;
 
   std::string namespace_;
   std::string img_frame_name_;
@@ -73,7 +73,7 @@ class GazeboWorldPlugin : public WorldPlugin {
   rendering::ScenePtr scene_;
   rendering::CameraPtr cam_;
 
-  CamParams cam_params_;
+  CamParams cam_params_;*/
 
   ros::NodeHandle* ros_node_;
   image_transport::ImageTransport* it_node_;

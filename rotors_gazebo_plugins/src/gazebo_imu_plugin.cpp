@@ -47,6 +47,11 @@ void GazeboImuPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
   model_ = _model;
   world_ = model_->GetWorld();
 
+  // Set the simulation time to current wall time
+  ros::Time current_ros_time = ros::Time::now();
+  common::Time new_sim_time(current_ros_time.sec, current_ros_time.nsec);
+  world_->SetSimTime(new_sim_time);
+
   // default params
   namespace_.clear();
 
