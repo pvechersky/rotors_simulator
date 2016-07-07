@@ -8,6 +8,7 @@ from mavros_msgs.msg import State
 from mavros_msgs.srv import CommandBool
 from mavros_msgs.srv import CommandLong
 from mavros_msgs.srv import SetMode
+from mavros_msgs.srv import StreamRate
 from python_qt_binding import loadUi
 from python_qt_binding.QtGui import QWidget
 from python_qt_binding.QtGui import QFormLayout
@@ -41,6 +42,7 @@ class MavModeWidget(QWidget):
   STR_MAVROS_ARM_SERVICE_NAME = '/mavros/cmd/arming'
   STR_MAVROS_COMMAND_LONG_SERVICE_NAME = '/mavros/cmd/command'
   STR_MAVROS_SET_MODE_SERVICE_NAME = '/mavros/set_mode'
+  STR_MAVROS_SET_STREAM_RATE_SERVICE_NAME = '/mavros/set_stream_rate'
   STR_RESET_MODEL_SERVICE_NAME = 'reset_model'
   STR_SYS_STATUS_SUB_TOPIC = '/mavros/state'
 
@@ -78,12 +80,14 @@ class MavModeWidget(QWidget):
     self.button_reboot_autopilot.pressed.connect(self.on_reboot_autopilot_button_pressed)
     self.button_reset_model.pressed.connect(self.on_reset_model_button_pressed)
     self.button_reconstruct.pressed.connect(self.on_reconstruct_button_pressed)
+    self.button_set_rate.pressed.connect(self.on_set_rate_button_pressed)
 
     # Create ROS service proxies
     self.arm = rospy.ServiceProxy(self.STR_MAVROS_ARM_SERVICE_NAME, CommandBool)
     self.reset_model = rospy.ServiceProxy(self.STR_RESET_MODEL_SERVICE_NAME, Empty)
     self.send_command_long = rospy.ServiceProxy(self.STR_MAVROS_COMMAND_LONG_SERVICE_NAME, CommandLong)
     self.set_mode = rospy.ServiceProxy(self.STR_MAVROS_SET_MODE_SERVICE_NAME, SetMode)
+    self.set_stream_rate = rospy.ServiceProxy(self.STR_MAVROS_SET_STREAM_RATE_SERVICE_NAME, StreamRate)
     
     # Initialize ROS subscribers and publishers
     self.sys_status_sub = rospy.Subscriber(self.STR_SYS_STATUS_SUB_TOPIC, State, self.sys_status_callback, queue_size=1)
@@ -109,6 +113,10 @@ class MavModeWidget(QWidget):
     if not(self.reconstruction_started):
       self.start_reconstruction_pub.publish(True)
     self.reconstruction_started = True
+    self.button_reconstruct.setEnabled(False)
+
+  def on_set_rate_button_pressed(self):
+    self.set_stream_rate(33, 50, True)
     
   def sys_status_callback(self, msg):
     if (not self.connected and msg.connected):
