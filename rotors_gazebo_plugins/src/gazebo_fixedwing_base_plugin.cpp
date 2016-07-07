@@ -174,16 +174,15 @@ void GazeboFixedWingBasePlugin::OnUpdate(const common::UpdateInfo& _info) {
   link_->AddRelativeTorque(moments);
 
   // Broadcast the transform to the camera link
-  math::Pose cam_pose = link_->GetWorldPose();
+  /*math::Pose cam_pose = link_->GetWorldPose();
   math::Quaternion base_ori = link_->GetWorldPose().rot;
-  math::Quaternion shift = math::Quaternion(0.0, M_PI, M_PI);
-  math::Quaternion cam_ori = shift * base_ori;
+  //math::Quaternion shift = math::Quaternion(0.0, M_PI, M_PI);
+  math::Quaternion cam_ori = base_ori; //shift * base_ori;
   tf::Quaternion rot(cam_ori.x, cam_ori.y, cam_ori.z, cam_ori.w);
   tf::Vector3 pos(cam_pose.pos.x, cam_pose.pos.y, cam_pose.pos.z);
   tf_ = tf::Transform(rot, pos);
-  transform_broadcaster_.sendTransform(tf::StampedTransform(tf_, ros::Time::now(), cam_parent_frame_, cam_child_frame_));
+  transform_broadcaster_.sendTransform(tf::StampedTransform(tf_, ros::Time::now(), cam_parent_frame_, cam_child_frame_));*/
 
-  // Broadcast the transform to the base link
   /*math::Vector3 linear_vel_B = math::Vector3(10.0, 0.0, 0.0);
   math::Vector3 linear_vel_W = base_ori.RotateVector(linear_vel_B);
   link_->SetLinearVel(linear_vel_W);*/
