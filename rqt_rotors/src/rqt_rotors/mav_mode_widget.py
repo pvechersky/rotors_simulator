@@ -116,7 +116,7 @@ class MavModeWidget(QWidget):
     self.button_reconstruct.setEnabled(False)
 
   def on_set_rate_button_pressed(self):
-    self.set_stream_rate(33, 50, True)
+    self.set_stream_rate(33, 20, True)
     
   def sys_status_callback(self, msg):
     if (not self.connected and msg.connected):
