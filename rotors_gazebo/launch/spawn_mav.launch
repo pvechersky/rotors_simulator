@@ -10,6 +10,7 @@
   <arg name="enable_logging" default="false"/>
   <arg name="enable_ground_truth" default="true"/>
   <arg name="log_file" default="$(arg mav_name)"/>
+  <arg name="wait_to_record_bag" default="false"/>
   <arg name="mount_gps" default="false"/>
   <arg name="use_advanced_gps_noise" default="false"/>
   <arg name="enable_mavlink_interface" default="false"/>
@@ -21,6 +22,7 @@
     enable_ground_truth:=$(arg enable_ground_truth)
     enable_mavlink_interface:=$(arg enable_mavlink_interface)
     log_file:=$(arg log_file)
+    wait_to_record_bag:=$(arg wait_to_record_bag)
     mount_gps:=$(arg mount_gps)
     use_advanced_gps_noise:=$(arg use_advanced_gps_noise)
     mav_name:=$(arg mav_name)"
