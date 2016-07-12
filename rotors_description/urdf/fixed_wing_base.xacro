@@ -61,7 +61,7 @@
           <xacro:unless value="${use_mesh_file}">
             <box size="${length} ${width} ${height}" />
           </xacro:unless>-->
-          <mesh filename="package://rotors_gazebo/models/body.dae"
+          <mesh filename="package://rotors_description/meshes/techpod/techpod_body.dae"
               scale="0.2 0.2 0.2" />
         </geometry>
       </visual>
