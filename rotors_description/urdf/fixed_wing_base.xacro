@@ -37,11 +37,11 @@
   <!-- Fixed-wing fuselage link -->
   <xacro:macro name="fixed_wing_base_macro"
     params="robot_namespace mass length width height color use_mesh_file 
-      mesh_file reset_model_service_name *cog *inertia">
+      mesh_file reset_model_service_name *origin *inertia">
     <link name="${robot_namespace}/base_link"></link>
 
     <joint name="${robot_namespace}/base_joint" type="fixed">
-      <origin xyz="0 0 0" rpy="3.1415926535897931 0 0" />
+      <xacro:insert_block name="origin" />
       <parent link="${robot_namespace}/base_link" />
       <child link="${robot_namespace}/base_link_inertia" />
     </joint>
@@ -55,14 +55,12 @@
       <visual>
         <origin xyz="0 0 0" rpy="0 0 0" />
         <geometry>
-<!--          <xacro:if value="${use_mesh_file}">
+          <xacro:if value="${use_mesh_file}">
             <mesh filename="${mesh_file}" scale="1 1 1" />
           </xacro:if>
           <xacro:unless value="${use_mesh_file}">
             <box size="${length} ${width} ${height}" />
-          </xacro:unless>-->
-          <mesh filename="package://rotors_description/meshes/techpod/techpod_body.dae"
-              scale="0.2 0.2 0.2" />
+          </xacro:unless>
         </geometry>
       </visual>
       <collision>
@@ -80,95 +78,13 @@
 	<resetModelServiceName>${reset_model_service_name}</resetModelServiceName>
       </plugin>
     </gazebo>
-<!--    <gazebo reference="${robot_namespace}/base_link">
-      <material>Gazebo/${color}</material>
-    </gazebo>-->
-  </xacro:macro>
-
-  <!-- Wheel joint and link -->
-  <xacro:macro name="wheel"
-    params="robot_namespace suffix parent mass color use_mesh mesh radius width *origin *inertia">
-
-    <joint name="${robot_namespace}/wheel_${suffix}_joint" type="fixed">
-      <xacro:insert_block name="origin" />
-      <axis xyz="0 1 0" />
-      <parent link="${parent}" />
-      <child link="${robot_namespace}/wheel_${suffix}" />
-      <limit upper="0" lower="0" effort="0" velocity="0" />
-    </joint>
-
-    <link name="${robot_namespace}/wheel_${suffix}">
-      <inertial>
-        <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0" />
-        <mass value="${mass}" />
-        <xacro:insert_block name="inertia" />
-      </inertial>
-      <visual>
-        <geometry>
-          <xacro:if value="${use_mesh}">
-            <mesh filename="${mesh}"
-              scale="1 1 1" />
-          </xacro:if>
-          <xacro:unless value="${use_mesh}">
-            <cylinder length="${width}" radius="${radius}" />
-          </xacro:unless>
-        </geometry>
-      </visual>
-      <collision>
-        <geometry>
-          <cylinder length="${width}" radius="${radius}" />
-        </geometry>
-      </collision>
-    </link>
-
-    <gazebo reference="${robot_namespace}/wheel_${suffix}">
-      <material>Gazebo/${color}</material>
-    </gazebo>
-  </xacro:macro>
-
-  <!-- Vertical stabilizer joint and link -->
-  <xacro:macro name="vertical_stabilizer"
-    params="robot_namespace parent mass length width height color use_mesh mesh *origin *inertia">
-
-    <joint name="${robot_namespace}/vertical_stabilizer_joint" type="fixed">
-      <xacro:insert_block name="origin" />
-      <axis xyz="0 0 1" />
-      <parent link="${parent}" />
-      <child link="${robot_namespace}/vertical_stabilizer" />
-      <limit upper="0" lower="0" effort="0" velocity="0" />
-    </joint>
-
-    <link name="${robot_namespace}/vertical_stabilizer">
-      <inertial>
-        <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0" />
-        <mass value="${mass}" />
-        <xacro:insert_block name="inertia" />
-      </inertial>
-      <visual>
-        <geometry>
-          <xacro:if value="${use_mesh}">
-            <mesh filename="${mesh}"
-              scale="1 1 1" />
-          </xacro:if>
-          <xacro:unless value="${use_mesh}">
-            <box size="${length} ${width} ${height}" />
-          </xacro:unless>
-        </geometry>
-      </visual>
-      <collision>
-        <geometry>
-          <box size="${length} ${width} ${height}" />
-        </geometry>
-      </collision>
-    </link>
-
-    <gazebo reference="${robot_namespace}/vertical_stabilizer">
+    <gazebo reference="${robot_namespace}/base_link">
       <material>Gazebo/${color}</material>
     </gazebo>
   </xacro:macro>
 
   <!-- Propeller joint and link -->
-  <xacro:macro name="propeller"
+  <!--<xacro:macro name="propeller"
     params="robot_namespace direction motor_constant moment_constant parent mass radius 
       time_constant_up time_constant_down max_propeller_velocity motor_number 
       rotor_drag_coefficient rolling_moment_coefficient use_own_mesh mesh color *origin *inertia">
@@ -227,7 +143,7 @@
     <gazebo reference="${robot_namespace}/propeller">
       <material>Gazebo/${color}</material>
     </gazebo>
-  </xacro:macro>
+  </xacro:macro>-->
 
   <!-- Aerodynamic surface joint and link -->
   <xacro:macro name="aero_surface"
@@ -235,7 +151,7 @@
       positive_direction channel min_angle max_angle color use_mesh mesh surface_length
       surface_width surface_height *axis *joint_origin *link_origin *inertia">
 
-    <joint name="${robot_namespace}/${surface_name}_joint" type="fixed">
+    <joint name="${robot_namespace}/${surface_name}_joint" type="revolute">
       <xacro:insert_block name="joint_origin" />
       <xacro:insert_block name="axis" />
       <parent link="${parent}" />

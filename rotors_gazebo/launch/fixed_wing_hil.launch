@@ -1,6 +1,6 @@
 <launch>
   <arg name="uav_name" default="techpod"/>
-  <arg name="world_name" default="yosemite"/>
+  <arg name="world_name" default="basic"/>
   <arg name="enable_logging" default="false"/>
   <arg name="enable_ground_truth" default="true"/>
   <arg name="log_file" default="$(arg uav_name)"/>
@@ -24,12 +24,12 @@
       <arg name="enable_logging" value="$(arg enable_logging)" />
       <arg name="enable_ground_truth" value="$(arg enable_ground_truth)" />
       <arg name="log_file" value="$(arg log_file)" />
-      <arg name="x" value="-100" />
+      <arg name="x" value="0" />
       <arg name="y" value="0" />
       <arg name="z" value="0" />
     </include>
 
-    <node name="hil_sensors_interface" pkg="rotors_hil_interface" type="rotors_hil_sensors_interface" clear_params="true" output="screen">
+    <!--<node name="hil_sensors_interface" pkg="rotors_hil_interface" type="rotors_hil_sensors_interface" clear_params="true" output="screen">
       <param name="gps_topic" value="gps" />
       <param name="imu_topic" value="imu" />
       <param name="odometry_topic" value="ground_truth/odometry" />
@@ -46,6 +46,6 @@
       <param name="key_teleop" value="false" />
     </node>
 
-    <node name="rotors_gui" pkg="rqt_rotors" type="rqt_rotors" clear_params="true" output="screen" />
+    <node name="rotors_gui" pkg="rqt_rotors" type="rqt_rotors" clear_params="true" output="screen" />-->
   </group>
 </launch>
