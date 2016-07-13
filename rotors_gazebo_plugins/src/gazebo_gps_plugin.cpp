@@ -1,9 +1,5 @@
 /*
- * Copyright 2015 Fadri Furrer, ASL, ETH Zurich, Switzerland
- * Copyright 2015 Michael Burri, ASL, ETH Zurich, Switzerland
- * Copyright 2015 Mina Kamel, ASL, ETH Zurich, Switzerland
- * Copyright 2015 Janosch Nikolic, ASL, ETH Zurich, Switzerland
- * Copyright 2015 Markus Achtelik, ASL, ETH Zurich, Switzerland
+ * Copyright 2016 Pavel Vechersky, ASL, ETH Zurich, Switzerland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,7 +49,9 @@ void GazeboGpsPlugin::Load(sensors::SensorPtr _sensor, sdf::ElementPtr _sdf) {
   frame_id_ = link_name_;
 
   getSdfParam<std::string>(_sdf, "gpsTopic", gps_topic_,
-                             mav_msgs::default_topics::GPS);
+                           mav_msgs::default_topics::GPS);
+  getSdfParam<std::string>(_sdf, "groundSpeedTopic", ground_speed_topic_,
+                           kDefaultGroundSpeedPubTopic);
 
   // Connect to the sensor update event.
   this->updateConnection_ =
@@ -63,11 +61,13 @@ void GazeboGpsPlugin::Load(sensors::SensorPtr _sensor, sdf::ElementPtr _sdf) {
   // Make sure the parent sensor is active.
   parent_sensor_->SetActive(true);
 
-  // Initialize the ROS publisher for sending gps messages.
+  // Initialize the ROS publisher for sending gps location and ground speed
   gps_pub_ = node_handle_->advertise<sensor_msgs::NavSatFix>(gps_topic_, 1);
+  ground_speed_pub_ =
+          node_handle_->advertise<geometry_msgs::Vector3Stamped>(ground_speed_topic_, 1);
 
   // Get the sensor noise in case it is known.
-  u_int8_t position_covariance_type = sensor_msgs::NavSatFix::COVARIANCE_TYPE_UNKNOWN;
+  /*u_int8_t position_covariance_type = sensor_msgs::NavSatFix::COVARIANCE_TYPE_KNOWN;
 
   double std_dev_alt = 0.0;
   double std_dev_lat = 0.0;
@@ -96,36 +96,27 @@ void GazeboGpsPlugin::Load(sensors::SensorPtr _sensor, sdf::ElementPtr _sdf) {
         std::dynamic_pointer_cast<sensors::GaussianNoiseModel>(lon_noise);
     std_dev_lon = lon_gaussian_noise->GetStdDev();
     position_covariance_type = position_covariance_type & sensor_msgs::NavSatFix::COVARIANCE_TYPE_DIAGONAL_KNOWN;
-  }
+  }*/
 
   // Fill the GPS message.
   gps_message_.header.frame_id = frame_id_;
   gps_message_.status.service = sensor_msgs::NavSatStatus::SERVICE_GPS;
   gps_message_.status.status = sensor_msgs::NavSatStatus::STATUS_FIX;
-  gps_message_.position_covariance[0] = std_dev_lon * std_dev_lon;
-  gps_message_.position_covariance[4] = std_dev_lat * std_dev_lat;
-  gps_message_.position_covariance[8] = std_dev_alt * std_dev_alt;
-  gps_message_.position_covariance_type = position_covariance_type;
+  //gps_message_.position_covariance[0] = std_dev_lon * std_dev_lon;
+  //gps_message_.position_covariance[4] = std_dev_lat * std_dev_lat;
+  //gps_message_.position_covariance[8] = std_dev_alt * std_dev_alt;
+  //gps_message_.position_covariance_type = position_covariance_type;
 }
 
 void GazeboGpsPlugin::OnUpdate() {
+  // Get the time of the last measurement
   common::Time current_time;
-
-  // Fill the GPS message.
-#if GAZEBO_MAJOR_VERSION > 5
   current_time = parent_sensor_->LastMeasurementTime();
 
+  // Fill the GPS message.
   gps_message_.latitude = parent_sensor_->Latitude().Degree();
   gps_message_.longitude = parent_sensor_->Longitude().Degree();
   gps_message_.altitude = parent_sensor_->Altitude();
-#else
-  current_time = parent_sensor_->GetLastMeasurementTime();
-
-  gps_message_.latitude = parent_sensor_->GetLatitude().Degree();
-  gps_message_.longitude = parent_sensor_->GetLongitude().Degree();
-  gps_message_.altitude = parent_sensor_->GetAltitude();
-#endif
-
   gps_message_.header.stamp.sec = current_time.sec;
   gps_message_.header.stamp.nsec = current_time.nsec;
 
