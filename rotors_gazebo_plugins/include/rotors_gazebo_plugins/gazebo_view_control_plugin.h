@@ -40,8 +40,8 @@
 namespace gazebo
 {
 // Constants
-static const math::Vector3 kChaseCamOffset(-10.0, 0.0, 2.0);
-static const math::Vector3 kForwardCamOffset(0.5, 0.0, 0.5);
+static const math::Vector3 kChaseCamOffset(-10.0, 0.0, -2.0);
+static const math::Vector3 kForwardCamOffset(0.5, 0.0, -0.5);
 static const std::string kFrameName = "user_cam";
 
 // Defaults

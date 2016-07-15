@@ -155,10 +155,16 @@ void GazeboViewControlPlugin::OnUpdate() {
 
     // Align the camera with the orientation of the visual
     math::Pose new_cam_pose;
-    new_cam_pose.rot.w = visual_pose.rot.w;
+    math::Quaternion body_orientation(M_PI, 0.0, 0.0);
+    math::Quaternion cam_orientation = body_orientation * visual_pose.rot;
+    /*new_cam_pose.rot.w = visual_pose.rot.w;
     new_cam_pose.rot.x = visual_pose.rot.x;
     new_cam_pose.rot.y = visual_pose.rot.y;
-    new_cam_pose.rot.z = visual_pose.rot.z;
+    new_cam_pose.rot.z = visual_pose.rot.z;*/
+    new_cam_pose.rot.w = cam_orientation.w;
+    new_cam_pose.rot.x = cam_orientation.x;
+    new_cam_pose.rot.y = cam_orientation.y;
+    new_cam_pose.rot.z = cam_orientation.z;
 
     // Rotate the camera position offset vector into the visual's body frame
     math::Vector3 cam_offset_body_ = visual_pose.rot.RotateVector(cam_offset_);
