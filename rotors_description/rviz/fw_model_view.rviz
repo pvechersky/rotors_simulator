@@ -59,81 +59,36 @@ Visualization Manager:
         Expand Link Details: false
         Expand Tree: false
         Link Tree Style: Links in Alphabetic Order
-        atlantik_solar/aileron_left:
+        techpod/aileron_left:
           Alpha: 1
           Show Axes: true
           Show Trail: false
           Value: true
-        atlantik_solar/aileron_right:
+        techpod/aileron_right:
           Alpha: 1
           Show Axes: true
           Show Trail: false
           Value: true
-        atlantik_solar/base_link:
+        techpod/base_link:
+          Alpha: 1
+          Show Axes: true
+          Show Trail: false
+        techpod/base_link_inertia:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-        atlantik_solar/base_link_inertia:
+          Value: true
+        techpod/elevator:
           Alpha: 1
           Show Axes: true
           Show Trail: false
           Value: true
-        atlantik_solar/elevator_left:
+        techpod/propeller_:
           Alpha: 1
           Show Axes: true
           Show Trail: false
           Value: true
-        atlantik_solar/elevator_right:
-          Alpha: 1
-          Show Axes: true
-          Show Trail: false
-          Value: true
-        atlantik_solar/propeller:
-          Alpha: 1
-          Show Axes: true
-          Show Trail: false
-          Value: true
-        atlantik_solar/rudder:
-          Alpha: 1
-          Show Axes: true
-          Show Trail: false
-          Value: true
-        atlantik_solar/tail_left:
-          Alpha: 1
-          Show Axes: true
-          Show Trail: false
-          Value: true
-        atlantik_solar/tail_right:
-          Alpha: 1
-          Show Axes: true
-          Show Trail: false
-          Value: true
-        atlantik_solar/vertical_stabilizer:
-          Alpha: 1
-          Show Axes: true
-          Show Trail: false
-          Value: true
-        atlantik_solar/wheel_back:
-          Alpha: 1
-          Show Axes: true
-          Show Trail: false
-          Value: true
-        atlantik_solar/wheel_front_left:
-          Alpha: 1
-          Show Axes: true
-          Show Trail: false
-          Value: true
-        atlantik_solar/wheel_front_right:
-          Alpha: 1
-          Show Axes: true
-          Show Trail: false
-          Value: true
-        atlantik_solar/wing_left:
-          Alpha: 1
-          Show Axes: true
-          Show Trail: false
-          Value: true
-        atlantik_solar/wing_right:
+        techpod/rudder:
           Alpha: 1
           Show Axes: true
           Show Trail: false
@@ -154,7 +109,7 @@ Visualization Manager:
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
-    Fixed Frame: atlantik_solar/base_link
+    Fixed Frame: techpod/base_link_inertia
     Frame Rate: 30
   Name: root
   Tools:
@@ -175,22 +130,22 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 3.53837
+      Distance: 1.4047
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.06
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -0.52094
-        Y: 0.371504
-        Z: 0.376313
+        X: -0.202879
+        Y: 0.685257
+        Z: 0.321926
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: 0.480398
+      Pitch: 0.395398
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 2.39043
+      Yaw: 2.05543
     Saved: ~
 Window Geometry:
   Displays:
@@ -198,7 +153,7 @@ Window Geometry:
   Height: 876
   Hide Left Dock: false
   Hide Right Dock: false
-  QMainWindow State: 000000ff00000000fd0000000400000000000001c8000002e2fc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000006400fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c0061007900730100000028000002e2000000dd00fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000010f000002e2fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a005600690065007700730100000028000002e2000000b000fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000005ff0000003efc0100000002fb0000000800540069006d00650100000000000005ff000002f600fffffffb0000000800540069006d006501000000000000045000000000000000000000031c000002e200000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd0000000400000000000001b7000002e2fc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000006400fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c0061007900730100000028000002e2000000dd00fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000010f000002e2fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a005600690065007700730000000028000002e2000000b000fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000005ff0000003efc0100000002fb0000000800540069006d00650100000000000005ff000002f600fffffffb0000000800540069006d0065010000000000000450000000000000000000000442000002e200000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Time:
@@ -209,4 +164,4 @@ Window Geometry:
     collapsed: false
   Width: 1535
   X: 65
-  Y: 24
+  Y: 204

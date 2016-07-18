@@ -108,6 +108,10 @@ add_library(rotors_gazebo_view_control_plugin SHARED ${headers_MOC} src/gazebo_v
 target_link_libraries(rotors_gazebo_view_control_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES} ${QT_LIBRARIES} ${PROTOBUF_LIBRARIES})
 add_dependencies(rotors_gazebo_view_control_plugin ${catkin_EXPORTED_TARGETS})
 
+add_library(rotors_gazebo_control_surface_plugin src/gazebo_control_surface_plugin.cpp)
+target_link_libraries(rotors_gazebo_control_surface_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+add_dependencies(rotors_gazebo_control_surface_plugin ${catkin_EXPORTED_TARGETS})
+
 install(
   TARGETS
     rotors_gazebo_motor_model
@@ -124,6 +128,7 @@ install(
     rotors_gazebo_pressure_plugin
     rotors_gazebo_air_speed_plugin
     rotors_gazebo_view_control_plugin
+    rotors_gazebo_control_surface_plugin
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 )
