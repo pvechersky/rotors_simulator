@@ -1,10 +1,6 @@
 <?xml version="1.0"?>
 <!--
-  Copyright 2015 Fadri Furrer, ASL, ETH Zurich, Switzerland
-  Copyright 2015 Michael Burri, ASL, ETH Zurich, Switzerland
-  Copyright 2015 Mina Kamel, ASL, ETH Zurich, Switzerland
-  Copyright 2015 Janosch Nikolic, ASL, ETH Zurich, Switzerland
-  Copyright 2015 Markus Achtelik, ASL, ETH Zurich, Switzerland
+  Copyright 2016 Pavel Vechersky, ASL, ETH Zurich, Switzerland
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -34,10 +30,10 @@
       izz="${0.5 * mass * r * r}" />
   </xacro:macro>
 
-  <!-- Fixed-wing fuselage link -->
+  <!-- Fixed-wing main body link -->
   <xacro:macro name="fixed_wing_base_macro"
     params="robot_namespace mass length width height color use_mesh_file 
-      mesh_file reset_model_service_name *origin *inertia">
+      mesh_file *origin *inertia">
     <link name="${robot_namespace}/base_link"></link>
 
     <joint name="${robot_namespace}/base_joint" type="fixed">
@@ -75,7 +71,6 @@
       <plugin name="${robot_namespace}_base" filename="librotors_gazebo_fixedwing_base_plugin.so">
         <robotNamespace>${robot_namespace}</robotNamespace>
         <linkName>${robot_namespace}/base_link</linkName>
-	<resetModelServiceName>${reset_model_service_name}</resetModelServiceName>
       </plugin>
     </gazebo>
     <gazebo reference="${robot_namespace}/base_link">
@@ -83,82 +78,17 @@
     </gazebo>
   </xacro:macro>
 
-  <!-- Propeller joint and link -->
-  <!--<xacro:macro name="propeller"
-    params="robot_namespace direction motor_constant moment_constant parent mass radius 
-      time_constant_up time_constant_down max_propeller_velocity motor_number 
-      rotor_drag_coefficient rolling_moment_coefficient use_own_mesh mesh color *origin *inertia">
-
-    <joint name="${robot_namespace}/propeller_joint" type="continuous">
-      <xacro:insert_block name="origin" />
-      <axis xyz="0 0 1" />
-      <parent link="${parent}" />
-      <child link="${robot_namespace}/propeller" />
-    </joint>
-
-    <link name="${robot_namespace}/propeller">
-      <inertial>
-        <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0" />
-        <mass value="${mass_propeller}" />
-        <xacro:insert_block name="inertia" />
-      </inertial>
-      <visual>
-        <geometry>
-          <xacro:if value="${use_own_mesh}">
-            <mesh filename="${mesh}"
-              scale="1 1 1" />
-          </xacro:if>
-          <xacro:unless value="${use_own_mesh}">
-            <mesh filename="package://rotors_description/meshes/propeller_${direction}.dae"
-              scale="${radius_propeller} ${radius_propeller} ${radius_propeller}" />
-          </xacro:unless>
-        </geometry>
-      </visual>
-      <collision>
-        <geometry>
-          <cylinder length="0.005" radius="0.1" />
-        </geometry>
-      </collision>
-    </link>
-
-    <gazebo>
-      <plugin name="${robot_namespace}_propeller" filename="librotors_gazebo_motor_model.so">
-        <robotNamespace>${robot_namespace}</robotNamespace>
-        <jointName>${robot_namespace}/propeller_joint</jointName>
-        <linkName>${robot_namespace}/propeller</linkName>
-        <turningDirection>${direction}</turningDirection>
-        <timeConstantUp>${time_constant_up}</timeConstantUp>
-        <timeConstantDown>${time_constant_down}</timeConstantDown>
-        <maxRotVelocity>${max_propeller_velocity}</maxRotVelocity>
-        <motorConstant>${motor_constant}</motorConstant>
-        <momentConstant>${moment_constant}</momentConstant>
-        <commandSubTopic>gazebo/command/motor_speed</commandSubTopic>
-        <motorNumber>${motor_number}</motorNumber>
-        <rotorDragCoefficient>${rotor_drag_coefficient}</rotorDragCoefficient>
-        <rollingMomentCoefficient>${rolling_moment_coefficient}</rollingMomentCoefficient>
-        <motorSpeedPubTopic>motor_speed/${motor_number}</motorSpeedPubTopic>
-        <rotorVelocitySlowdownSim>${propeller_velocity_slowdown_sim}</rotorVelocitySlowdownSim>
-      </plugin>
-    </gazebo>
-    <gazebo reference="${robot_namespace}/propeller">
-      <material>Gazebo/${color}</material>
-    </gazebo>
-  </xacro:macro>-->
-
-  <!-- Aerodynamic surface joint and link -->
-  <xacro:macro name="aero_surface"
-    params="robot_namespace surface_name surface_type parent mass_surface joint_gain 
-      positive_direction channel min_angle max_angle color use_mesh mesh surface_length
-      surface_width surface_height *axis *joint_origin *link_origin *inertia">
-
+  <!-- Control surface joint and link -->
+  <xacro:macro name="control_surface"
+    params="robot_namespace surface_name parent mass_surface min_angle
+      max_angle color use_mesh_file mesh_file surface_length surface_width
+      surface_height *axis *joint_origin *link_origin *inertia">
     <joint name="${robot_namespace}/${surface_name}_joint" type="revolute">
       <xacro:insert_block name="joint_origin" />
       <xacro:insert_block name="axis" />
       <parent link="${parent}" />
       <child link="${robot_namespace}/${surface_name}" />
-      <limit upper="0" lower="0" effort="0" velocity="0" />
-      <!--<limit upper="${max_angle}" lower="${min_angle}" effort="200.0" velocity="1.0" />-->
-      <dynamics friction="${9.8 * mass_surface}" damping="${9.8 * mass_surface}" />
+      <limit upper="${max_angle}" lower="${min_angle}" effort="0" velocity="0" />
     </joint>
 
     <link name="${robot_namespace}/${surface_name}">
@@ -170,11 +100,10 @@
       <visual>
         <xacro:insert_block name="link_origin" />
         <geometry>
-          <xacro:if value="${use_mesh}">
-            <mesh filename="${mesh}"
-              scale="1 1 1" />
+          <xacro:if value="${use_mesh_file}">
+            <mesh filename="${mesh_file}" scale="1 1 1" />
           </xacro:if>
-          <xacro:unless value="${use_mesh}">
+          <xacro:unless value="${use_mesh_file}">
             <box size="${surface_length} ${surface_width} ${surface_height}" />
           </xacro:unless>
         </geometry>
@@ -182,27 +111,62 @@
       <collision>
         <xacro:insert_block name="link_origin" />
         <geometry>
-          <box size="${surface_length - 0.01} ${surface_width - 0.01} ${surface_height - 0.01}" />
+          <xacro:if value="${use_mesh_file}">
+            <mesh filename="${mesh_file}" scale="1 1 1" />
+          </xacro:if>
+          <xacro:unless value="${use_mesh_file}">
+            <box size="${surface_length} ${surface_width} ${surface_height}" />
+          </xacro:unless>
         </geometry>
       </collision>
     </link>
 
-<!--    <gazebo>
-      <plugin name="${robot_namespace}_${surface_name}" filename="librotors_gazebo_aero_surface_plugin.so">
-        <robotNamespace>${robot_namespace}</robotNamespace>
-        <jointName>${robot_namespace}/${surface_name}_joint</jointName>
-        <surfaceType>${surface_type}</surfaceType>
-        <positiveDirection>${positive_direction}</positiveDirection>
-        <commandSubTopic>gazebo/command/motor_speed</commandSubTopic>
-	<surfaceArea>${surface_length * surface_width}</surfaceArea>
-        <gain>${joint_gain}</gain>
-        <channel>${channel}</channel>
-        <minAngle>${min_angle}</minAngle>
-        <maxAngle>${max_angle}</maxAngle>
-      </plugin>
-    </gazebo>-->
-
     <gazebo reference="${robot_namespace}/${surface_name}">
+      <material>Gazebo/${color}</material>
+    </gazebo>
+  </xacro:macro>
+
+  <!-- Propeller joint and link -->
+  <xacro:macro name="propeller"
+    params="robot_namespace suffix parent mass_propeller propeller_radius color
+      use_mesh_file mesh_file *origin *inertia">
+    <joint name="${robot_namespace}/propeller_{suffix}_joint" type="continuous">
+      <xacro:insert_block name="origin" />
+      <axis xyz="0 0 1" />
+      <parent link="${parent}" />
+      <child link="${robot_namespace}/propeller_${suffix}" />
+    </joint>
+
+    <link name="${robot_namespace}/propeller_${suffix}">
+      <inertial>
+        <mass value="${mass_propeller}" />
+        <xacro:insert_block name="inertia" />
+      </inertial>
+      <visual>
+        <geometry>
+          <xacro:if value="${use_mesh_file}">
+            <mesh filename="${mesh_file}"
+              scale="${propeller_radius} ${propeller_radius} ${propeller_radius}" />
+          </xacro:if>
+          <xacro:unless value="${use_mesh_file}">
+            <cylinder length="0.005" radius="${propeller_radius}"/>
+          </xacro:unless>
+        </geometry>
+      </visual>
+      <collision>
+        <geometry>
+          <xacro:if value="${use_mesh_file}">
+            <mesh filename="${mesh_file}"
+              scale="${propeller_radius} ${propeller_radius} ${propeller_radius}" />
+          </xacro:if>
+          <xacro:unless value="${use_mesh_file}">
+            <cylinder length="0.005" radius="${propeller_radius}"/>
+          </xacro:unless>
+        </geometry>
+      </collision>
+    </link>
+
+    <gazebo reference="${robot_namespace}/propeller_${suffix}">
       <material>Gazebo/${color}</material>
     </gazebo>
   </xacro:macro>
