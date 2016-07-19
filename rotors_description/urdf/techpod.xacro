@@ -18,7 +18,7 @@
 <robot name="techpod" xmlns:xacro="http://ros.org/wiki/xacro">
   <!-- Global properties -->
   <xacro:property name="namespace" value="$(arg uav_name)" />
-  <!--<xacro:property name="propeller_velocity_slowdown_sim" value="10" />-->
+  <xacro:property name="propeller_velocity_slowdown_sim" value="10" />
   <xacro:property name="use_mesh" value="true" />
 
   <!-- Constants -->
@@ -36,11 +36,8 @@
   <xacro:property name="mass_rudder" value="0.1" /> <!-- [kg] -->
 
   <!-- Fuselage properties -->
-  <xacro:property name="body_length" value="2.0" /> <!-- [m] -->
-  <xacro:property name="body_width" value="0.1" /> <!-- [m] -->
-  <xacro:property name="body_height" value="0.1" /> <!-- [m] -->
   <xacro:property name="body_length" value="1.33" /> <!-- [m] -->
-  <xacro:property name="body_width" value="0.85" /> <!-- [m] -->
+  <xacro:property name="body_width" value="2.65" /> <!-- [m] -->
   <xacro:property name="body_height" value="0.25" /> <!-- [m] -->
   <xacro:property name="body_color" value="Gray" />
 
@@ -56,13 +53,13 @@
   <xacro:property name="rolling_moment_coefficient" value="0.000001" />
 
   <!-- Aileron properties -->
-  <!--<xacro:property name="aileron_length" value="${0.5 * root_chord}" />
+  <xacro:property name="aileron_length" value="${0.5 * root_chord}" />
   <xacro:property name="aileron_width" value="${0.5 * wing_width}" />
   <xacro:property name="aileron_height" value="0.02" />
   <xacro:property name="aileron_gain" value="2.0" />
   <xacro:property name="aileron_min_angle" value="-0.349066" />
   <xacro:property name="aileron_max_angle" value="0.349066" />
-  <xacro:property name="aileron_channel" value="0" />-->
+  <xacro:property name="aileron_channel" value="0" />
 
   <!-- Elevator properties -->
   <xacro:property name="elevator_length" value="0.1" />
@@ -196,7 +193,7 @@
   </xacro:aero_surface>-->
 
   <!-- Instantiate the elevators -->
-  <xacro:aero_surface
+  <!--<xacro:aero_surface
     robot_namespace="${namespace}"
     surface_name="elevator"
     surface_type="elevator"
@@ -217,7 +214,7 @@
     <origin xyz="-0.555 0.0 -0.26" rpy="0.0 0.0 0.0" />
     <origin xyz="0.0 0.0 0.0" rpy="${PI} 0.0 0.0" />
     <xacro:insert_block name="elevator_inertia" />
-  </xacro:aero_surface>
+  </xacro:aero_surface>-->
 
   <!-- Instantiate the rudder -->
   <!--<xacro:aero_surface
