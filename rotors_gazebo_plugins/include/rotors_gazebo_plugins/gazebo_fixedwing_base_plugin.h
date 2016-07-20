@@ -29,6 +29,7 @@
 #include <mav_msgs/Actuators.h>
 #include <nav_msgs/Odometry.h>
 #include <ros/ros.h>
+#include <rotors_comm/RegisterControlSurface.h>
 #include <std_msgs/Bool.h>
 #include <std_srvs/Empty.h>
 #include <tf/transform_broadcaster.h>
@@ -97,7 +98,6 @@ struct ControlSurface {
   double d_min;
   double d_max;
   double deflection;
-  int channel;
 };
 
 struct FixedWingAerodynamicParameters {
@@ -146,7 +146,7 @@ class GazeboFixedWingBasePlugin : public ModelPlugin {
   ros::NodeHandle* node_handle_;
   ros::Subscriber air_speed_sub_;
   ros::Subscriber command_sub_;
-
+  ros::ServiceServer register_control_surface_service_;
   ros::ServiceServer reset_model_service_;
 
   // Pointer to the world
@@ -170,10 +170,20 @@ class GazeboFixedWingBasePlugin : public ModelPlugin {
   double i_thrust_;
   Eigen::Matrix3d inertia_;
 
-  // Control surfaces
-  ControlSurface aileron_;
-  ControlSurface elevator_;
-  ControlSurface rudder_;
+  // Pointers to control surfaces joints
+  std::vector<physics::JointPtr> ailerons_;
+  std::vector<physics::JointPtr> elevators_;
+  physics::JointPtr rudder_;
+
+  // Control surfaces info
+  ControlSurface aileron_info_;
+  ControlSurface elevator_info_;
+  ControlSurface rudder_info_;
+
+  // Control surface channels
+  int aileron_channel_;
+  int elevator_channel_;
+  int rudder_channel_;
 
   double throttle_;
 
@@ -186,6 +196,9 @@ class GazeboFixedWingBasePlugin : public ModelPlugin {
 
   void AirSpeedCallback(const geometry_msgs::Vector3ConstPtr& air_speed_msg);
   void CommandCallback(const mav_msgs::ActuatorsConstPtr& command_msg);
+
+  bool RegisterControlSurfaceCallback(rotors_comm::RegisterControlSurface::Request& req,
+                                      rotors_comm::RegisterControlSurface::Response& res);
 
   bool ResetModelCallback(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
 

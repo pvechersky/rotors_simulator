@@ -16,22 +16,13 @@
 
 #include "rotors_gazebo_plugins/gazebo_control_surface_plugin.h"
 
-#include <chrono>
-#include <cmath>
-#include <iostream>
-#include <stdio.h>
-
-#include <boost/bind.hpp>
-
 namespace gazebo {
 
 GazeboControlSurfacePlugin::GazeboControlSurfacePlugin()
     : ModelPlugin(),
-      node_handle_(0),
-      ref_angle_(0.0) {}
+      node_handle_(0) {}
 
 GazeboControlSurfacePlugin::~GazeboControlSurfacePlugin() {
-  event::Events::DisconnectWorldUpdateBegin(updateConnection_);
   if (node_handle_) {
     node_handle_->shutdown();
     delete node_handle_;
@@ -39,9 +30,7 @@ GazeboControlSurfacePlugin::~GazeboControlSurfacePlugin() {
 }
 
 void GazeboControlSurfacePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
-  // Store the pointer to the model
-  model_ = _model;
-
+  // Get the robot namespace.
   if (_sdf->HasElement("robotNamespace")) {
     namespace_ = _sdf->GetElement("robotNamespace")->Get<std::string>();
     node_handle_ = new ros::NodeHandle(namespace_);
@@ -49,98 +38,48 @@ void GazeboControlSurfacePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr 
   else
     gzerr << "[gazebo_control_surface_plugin] Please specify a robotNamespace.\n";
 
-  // Get the pointer to the joint
-  if (_sdf->HasElement("linkName")) {
-    std::string link_name = _sdf->GetElement("linkName")->Get<std::string>();
-    link_ = model_->GetLink(link_name);
-    if (link_ == NULL)
-      gzthrow("[gazebo_control_surface_plugin] Couldn't find specified link \"" << link_name << "\".");
+  // Get the pointer to the joint.
+  if (_sdf->HasElement("jointName")) {
+    joint_name_ = _sdf->GetElement("jointName")->Get<std::string>();
   }
   else
-    gzerr << "[gazebo_control_surface_plugin] Please specify a linkName.\n";
+    gzerr << "[gazebo_control_surface_plugin] Please specify a jointName.\n";
 
-  //link_->SetGravityMode(false);
-  //link_->SetKinematic(true);
-
-  /*if (_sdf->HasElement("surfaceType")) {
-    std::string surface_type = _sdf->GetElement("surfaceType")->Get<std::string>();
-    if (surface_type == "wing")
-      surface_type_ = AERO_SURFACE_TYPE_WING;
-    else if (surface_type == "tail")
-      surface_type_ = AERO_SURFACE_TYPE_TAIL;
-    else if (surface_type == "aileron")
-      surface_type_ = AERO_SURFACE_TYPE_AILERON;
-    else if (surface_type == "elevator")
-      surface_type_ = AERO_SURFACE_TYPE_ELEVATOR;
-    else if (surface_type == "rudder")
-      surface_type_ = AERO_SURFACE_TYPE_RUDDER;
-    else
-      gzerr << "[gazebo_aero_surface_plugin] Please only use 'wing', 'aileron', 'elevator', or 'rudder' as surfaceType.\n";
+  // Get the type of the control surface.
+  if (_sdf->HasElement("surfaceType")) {
+    surface_type_ = _sdf->GetElement("surfaceType")->Get<std::string>();
+    if (!(surface_type_ == "aileron" || surface_type_ == "elevator" ||
+          surface_type_ == "rudder" || surface_type_ == "flap"))
+      gzerr << "[gazebo_control_surface_plugin] " <<
+               "Please only use 'aileron', 'elevator', 'rudder', or 'flap' as surfaceType.\n";
   }
   else
-    gzerr << "[gazebo_aero_surface_plugin] Please specify the surface type ('wing', 'aileron', 'elevator', or 'rudder').\n";
+    gzerr << "[gazebo_control_surface_plugin] " <<
+             "Please specify the surface type ('aileron', 'elevator', 'rudder', or 'flap').\n";
 
-  if (_sdf->HasElement("positiveDirection")) {
-    std::string positive_direction = _sdf->GetElement("positiveDirection")->Get<std::string>();
-    if (positive_direction == "cw")
-      positive_direction_ = positive_direction::CW;
-    else if (positive_direction == "ccw")
-      positive_direction_ = positive_direction::CCW;
-    else
-      gzerr << "[gazebo_aero_surface_plugin] Please only use 'cw' or 'ccw' as positiveDirection.\n";
-  }
-  else
-    gzerr << "[gazebo_aero_surface_plugin] Please specify a positive direction ('cw' or 'ccw').\n";
+  // For now don't register flaps
+  if (surface_type_ == "flap")
+    return;
 
-  std::string command_sub_topic;
-  double surface_area;
+  // Get the minimum and maximum deflection angles.
+  getSdfParam<double>(_sdf, "angleMin", angle_min_, kDefaultAngleMin);
+  getSdfParam<double>(_sdf, "angleMax", angle_max_, kDefaultAngleMax);
 
-  getSdfParam<std::string>(_sdf, "commandSubTopic", command_sub_topic, kDefaultCommandSubTopic);
-  getSdfParam<double>(_sdf, "surfaceArea", surface_area, kDefaultSurfaceArea);
-  getSdfParam<double>(_sdf, "gain", gain_, kDefaultGain);
-  getSdfParam<double>(_sdf, "minAngle", min_angle_, kDefaultMinAngle);
-  getSdfParam<double>(_sdf, "maxAngle", max_angle_, kDefaultMaxAngle);
-  getSdfParam<int>(_sdf, "channel", channel_, kDefaultChannel);
+  // Create the client for registering the control surface info.
+  register_control_surface_client_ =
+          node_handle_->serviceClient<rotors_comm::RegisterControlSurface>(
+              "register_control_surface");
 
-  register_aero_surface_client_ = node_handle_->serviceClient<rotors_gazebo_plugins::RegisterAeroSurface>("register_aero_surface");
+  // Generate the request for registering the control surface info.
+  rotors_comm::RegisterControlSurface control_surface_info;
+  control_surface_info.request.joint_name = joint_name_;
+  control_surface_info.request.surface_type = surface_type_;
+  control_surface_info.request.angle_min = angle_min_;
+  control_surface_info.request.angle_max = angle_max_;
 
-  rotors_gazebo_plugins::RegisterAeroSurface aero_surface_info;
-  aero_surface_info.request.link_name = joint_->GetChild()->GetName();
-  aero_surface_info.request.surface_area = surface_area;
-  aero_surface_info.request.surface_type = surface_type_;
-
-  if (!register_aero_surface_client_.call(aero_surface_info))
-    gzerr << "[gazebo_aero_surface_plugin] Unable to register the aerodynamic surface info.\n";
-
-  if (surface_type_ == AERO_SURFACE_TYPE_AILERON || surface_type_ == AERO_SURFACE_TYPE_ELEVATOR  ||
-          surface_type_ == AERO_SURFACE_TYPE_RUDDER) {
-    damping_ = joint_->GetDamping(0);
-
-    // Listen to the update event. This event is broadcast every
-    // simulation iteration.
-    this->updateConnection_ =
-        event::Events::ConnectWorldUpdateBegin(
-            boost::bind(&GazeboAeroSurfacePlugin::OnUpdate, this, _1));
-
-    command_sub_ = node_handle_->subscribe(command_sub_topic, 1, &GazeboAeroSurfacePlugin::AngleCallback, this);
-  }*/
-}
-
-void GazeboControlSurfacePlugin::AngleCallback(const mav_msgs::ActuatorsConstPtr& servo_angles) {
-  ROS_ASSERT_MSG(servo_angles->angles.size() > channel_,
-                 "You tried to access index %d of the Angles message array which is of size %d.",
-                 channel_, servo_angles->angles.size());
-  ref_angle_ = positive_direction_ *
-          ((max_angle_ + min_angle_) * 0.5 + (max_angle_ - min_angle_) * 0.5 * servo_angles->angles.at(channel_));
-}
-
-// This gets called by the world update start event.
-void GazeboControlSurfacePlugin::OnUpdate(const common::UpdateInfo& _info) {
-  //double current_angle = joint_->GetAngle(0).Radian();
-  //double err = ref_angle_ - current_angle;
-  //joint_->SetVelocity(0, err * gain_);
-  //joint_->SetForce(0, damping_ + err * gain_);
-  //joint_->SetPosition(0, ref_angle_);
+  // Send the control surface info.
+  if (!register_control_surface_client_.call(control_surface_info))
+    gzerr << "[gazebo_control_surface_plugin] Unable to register the control surface info.\n";
 }
 
 GZ_REGISTER_MODEL_PLUGIN(GazeboControlSurfacePlugin);

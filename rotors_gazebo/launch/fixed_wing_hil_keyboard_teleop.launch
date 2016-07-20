@@ -1,15 +1,18 @@
 <launch>
   <arg name="uav_name" default="techpod"/>
-  <arg name="world_name" default="outdoor"/>
+  <arg name="world_name" default="yosemite"/>
   <arg name="enable_logging" default="false"/>
-  <arg name="enable_ground_truth" default="false"/>
+  <arg name="enable_ground_truth" default="true"/>
   <arg name="log_file" default="$(arg uav_name)"/>
 
-  <env name="GAZEBO_MODEL_PATH" value="$(find drcsim_model_resources)/gazebo_models"/>
+  <env name="GAZEBO_MODEL_PATH" value="${GAZEBO_MODEL_PATH}:$(find rotors_gazebo)/models"/>
+  <env name="GAZEBO_RESOURCE_PATH" value="${GAZEBO_RESOURCE_PATH}:$(find rotors_gazebo)/models"/>
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
     <arg name="world_name" value="$(find rotors_gazebo)/worlds/$(arg world_name).world"/>
     <arg name="paused" value="false" />
     <arg name="gui" value="true" />
+    <arg name="use_sim_time" value="false" />
+    <arg name="verbose" value="false" />
   </include>
 
   <group ns="$(arg uav_name)">
@@ -21,7 +24,10 @@
       <arg name="model" value="$(find rotors_description)/urdf/$(arg uav_name)_base.xacro" />
       <arg name="enable_logging" value="$(arg enable_logging)" />
       <arg name="enable_ground_truth" value="$(arg enable_ground_truth)" />
-      <arg name="log_file" value="$(arg log_file)"/>
+      <arg name="log_file" value="$(arg log_file)" />
+      <arg name="x" value="-100" />
+      <arg name="y" value="0" />
+      <arg name="z" value="0" />
     </include>
 
     <node name="hil_sensors_interface" pkg="rotors_hil_interface" type="rotors_hil_sensors_interface" clear_params="true" output="screen">

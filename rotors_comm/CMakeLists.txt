@@ -7,6 +7,7 @@ find_package(catkin REQUIRED
 add_service_files(
   FILES
   Octomap.srv
+  RegisterControlSurface.srv
 )
 
 add_message_files(
@@ -14,7 +15,7 @@ add_message_files(
   WindSpeed.msg
 )
 
-generate_messages(DEPENDENCIES geometry_msgs octomap_msgs)
+generate_messages(DEPENDENCIES geometry_msgs octomap_msgs std_msgs)
 
 catkin_package(
   CATKIN_DEPENDS message_runtime

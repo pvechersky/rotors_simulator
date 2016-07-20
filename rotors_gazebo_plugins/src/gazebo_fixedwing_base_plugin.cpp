@@ -108,20 +108,20 @@ void GazeboFixedWingBasePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _
   pnh.param<double>("inertia/zz", inertia_(2, 2), kDefaultInertiaZz);
 
   // Read the control surface parameters from rosparam
-  std::string surface_string = "aileron";
-  pnh.param<double>(surface_string + "/min", aileron_.d_min, kDefaultControlSurfaceDeflectionMin);
-  pnh.param<double>(surface_string + "/max", aileron_.d_max, kDefaultControlSurfaceDeflectionMax);
-  pnh.param<int>(surface_string + "/channel", aileron_.channel, kDefaultAileronChannel);
+  //std::string surface_string = "aileron";
+  //pnh.param<double>(surface_string + "/min", aileron_.d_min, kDefaultControlSurfaceDeflectionMin);
+  //pnh.param<double>(surface_string + "/max", aileron_.d_max, kDefaultControlSurfaceDeflectionMax);
+  pnh.param<int>("aileron/channel", aileron_channel_, kDefaultAileronChannel);
 
-  surface_string = "elevator";
-  pnh.param<double>(surface_string + "/min", elevator_.d_min, kDefaultControlSurfaceDeflectionMin);
-  pnh.param<double>(surface_string + "/max", elevator_.d_max, kDefaultControlSurfaceDeflectionMax);
-  pnh.param<int>(surface_string + "/channel", elevator_.channel, kDefaultElevatorChannel);
+  //surface_string = "elevator";
+  //pnh.param<double>(surface_string + "/min", elevator_.d_min, kDefaultControlSurfaceDeflectionMin);
+  //pnh.param<double>(surface_string + "/max", elevator_.d_max, kDefaultControlSurfaceDeflectionMax);
+  pnh.param<int>("elevator/channel", elevator_channel_, kDefaultElevatorChannel);
 
-  surface_string = "rudder";
-  pnh.param<double>(surface_string + "/min", rudder_.d_min, kDefaultControlSurfaceDeflectionMin);
-  pnh.param<double>(surface_string + "/max", rudder_.d_max, kDefaultControlSurfaceDeflectionMax);
-  pnh.param<int>(surface_string + "/channel", rudder_.channel, kDefaultRudderChannel);
+  //surface_string = "rudder";
+  //pnh.param<double>(surface_string + "/min", rudder_.d_min, kDefaultControlSurfaceDeflectionMin);
+  //pnh.param<double>(surface_string + "/max", rudder_.d_max, kDefaultControlSurfaceDeflectionMax);
+  pnh.param<int>("rudder/channel", rudder_channel_, kDefaultRudderChannel);
 
   // Read the aerodynamic parameters from rosparam
   pnh.param<double>("cD0", aero_params_.cD0, kDefaultCD0);
@@ -159,9 +159,15 @@ void GazeboFixedWingBasePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _
   air_speed_sub_ = node_handle_->subscribe(air_speed_sub_topic, 1, &GazeboFixedWingBasePlugin::AirSpeedCallback, this);
   command_sub_ = node_handle_->subscribe(command_sub_topic, 1, &GazeboFixedWingBasePlugin::CommandCallback, this);
 
-  reset_model_service_ = node_handle_->advertiseService(reset_model_service_name,
-                                                        &GazeboFixedWingBasePlugin::ResetModelCallback,
-                                                        this);
+  register_control_surface_service_ =
+          node_handle_->advertiseService("register_control_surface",
+                                         &GazeboFixedWingBasePlugin::RegisterControlSurfaceCallback,
+                                         this);
+
+  reset_model_service_ =
+          node_handle_->advertiseService(reset_model_service_name,
+                                         &GazeboFixedWingBasePlugin::ResetModelCallback,
+                                         this);
 }
 
 void GazeboFixedWingBasePlugin::OnUpdate(const common::UpdateInfo& _info) {
@@ -172,6 +178,14 @@ void GazeboFixedWingBasePlugin::OnUpdate(const common::UpdateInfo& _info) {
 
   link_->AddLinkForce(forces);
   link_->AddRelativeTorque(moments);
+
+  /*for (int i = 0; i < ailerons_.size(); i++)
+    ailerons_.at(i)->SetPosition(0, aileron_info_.deflection);
+
+  for (int i = 0; i < elevators_.size(); i++)
+    elevators_.at(i)->SetPosition(0, elevator_info_.deflection);
+
+  rudder_->SetPosition(0, rudder_info_.deflection);*/
 
   // Broadcast the transform to the camera link
   /*math::Pose cam_pose = link_->GetWorldPose();
@@ -231,9 +245,9 @@ void GazeboFixedWingBasePlugin::ComputeAerodynamicForcesMoments(math::Vector3& f
   double r_hat = (V < 0.1) ? 0.0 : r * wingspan_ / (2.0 * V);
 
   // Get the control surfaces and throttle commands
-  double uE = elevator_.deflection;
-  double uA = aileron_.deflection;
-  double uR = rudder_.deflection;
+  double uE = elevator_info_.deflection;
+  double uA = aileron_info_.deflection;
+  double uR = rudder_info_.deflection;
   double uT = throttle_;
 
   // Compute the moment coefficients
@@ -261,11 +275,52 @@ void GazeboFixedWingBasePlugin::AirSpeedCallback(const geometry_msgs::Vector3Con
 }
 
 void GazeboFixedWingBasePlugin::CommandCallback(const mav_msgs::ActuatorsConstPtr& command_msg) {
-  aileron_.deflection = (aileron_.d_max + aileron_.d_min) * 0.5 + (aileron_.d_max - aileron_.d_min) * 0.5 * command_msg->normalized.at(aileron_.channel);
-  elevator_.deflection = (elevator_.d_max + elevator_.d_min) * 0.5 + (elevator_.d_max - elevator_.d_min) * 0.5 * command_msg->normalized.at(elevator_.channel);
-  rudder_.deflection = (rudder_.d_max + rudder_.d_min) * 0.5 + (rudder_.d_max - rudder_.d_min) * 0.5 * command_msg->normalized.at(rudder_.channel);
+  // Process the aileron command
+  aileron_info_.deflection = (aileron_info_.d_max + aileron_info_.d_min) * 0.5 +
+          (aileron_info_.d_max - aileron_info_.d_min) * 0.5 *
+          command_msg->normalized.at(aileron_channel_);
 
+  // Process the elevator command
+  elevator_info_.deflection = (elevator_info_.d_max + elevator_info_.d_min) * 0.5 +
+          (elevator_info_.d_max - elevator_info_.d_min) * 0.5 *
+          command_msg->normalized.at(elevator_channel_);
+
+  // Process the rudder command
+  rudder_info_.deflection = (rudder_info_.d_max + rudder_info_.d_min) * 0.5 +
+          (rudder_info_.d_max - rudder_info_.d_min) * 0.5 *
+          command_msg->normalized.at(rudder_channel_);
+
+  // Process the throttle command
   throttle_ = command_msg->normalized.at(3);
+}
+
+bool GazeboFixedWingBasePlugin::RegisterControlSurfaceCallback(
+        rotors_comm::RegisterControlSurface::Request& req,
+        rotors_comm::RegisterControlSurface::Response& res) {
+  ControlSurface surface;
+
+  surface.d_min = req.angle_min;
+  surface.d_max = req.angle_max;
+
+  if (req.surface_type == "aileron") {
+    aileron_info_ = surface;
+    ailerons_.push_back(model_->GetJoint(req.joint_name));
+  }
+  else if (req.surface_type == "elevator") {
+    elevator_info_ = surface;
+    elevators_.push_back(model_->GetJoint(req.joint_name));
+  }
+  else if (req.surface_type == "rudder") {
+    rudder_info_ = surface;
+    rudder_ = model_->GetJoint(req.joint_name);
+  }
+  else {
+    res.success = false;
+    return false;
+  }
+
+  res.success = true;
+  return true;
 }
 
 bool GazeboFixedWingBasePlugin::ResetModelCallback(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res) {
@@ -283,9 +338,19 @@ bool GazeboFixedWingBasePlugin::ResetModelCallback(std_srvs::Empty::Request &req
   ang_vel.z = 0.0;
   model_->SetAngularVel(ang_vel);
 
-  aileron_.deflection = 0.0;
-  elevator_.deflection = 0.0;
-  rudder_.deflection = 0.0;
+  aileron_info_.deflection = 0.0;
+  for (int i = 0; i < ailerons_.size(); i++) {
+    ailerons_.at(i)->SetPosition(0, 0.0);
+  }
+
+  elevator_info_.deflection = 0.0;
+  for (int i = 0; i < elevators_.size(); i++) {
+    elevators_.at(i)->SetPosition(0, 0.0);
+  }
+
+  rudder_info_.deflection = 0.0;
+  rudder_->SetPosition(0, 0.0);
+
   throttle_ = 0.0;
 
   return true;

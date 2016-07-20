@@ -17,68 +17,39 @@
 #ifndef ROTORS_GAZEBO_PLUGINS_CONTROL_SURFACE_PLUGIN_H
 #define ROTORS_GAZEBO_PLUGINS_CONTROL_SURFACE_PLUGIN_H
 
-#include <Eigen/Core>
 #include <gazebo/common/common.hh>
 #include <gazebo/common/Plugin.hh>
-#include <gazebo/gazebo.hh>
 #include <gazebo/physics/physics.hh>
-#include <mav_msgs/Actuators.h>
 #include <ros/ros.h>
+#include <rotors_comm/RegisterControlSurface.h>
 
 #include "rotors_gazebo_plugins/common.h"
 
-namespace positive_direction {
-  const static int CCW = 1;
-  const static int CW = -1;
-}
-
 namespace gazebo {
 // Default values
-static const std::string kDefaultCommandSubTopic = "gazebo/command/motor_speed";
-static constexpr double kDefaultSurfaceArea = 1.0;
-static constexpr double kDefaultGain = 1.0;
-static constexpr double kDefaultMinAngle = -M_PI * 0.25;
-static constexpr double kDefaultMaxAngle = M_PI * 0.25;
-static constexpr int kDefaultChannel = 0;
+static constexpr double kDefaultAngleMin = -0.349066;
+static constexpr double kDefaultAngleMax = 0.349066;
 
 class GazeboControlSurfacePlugin : public ModelPlugin {
  public:
 
   GazeboControlSurfacePlugin();
-  ~GazeboControlSurfacePlugin();
-
-  void AngleCallback(const mav_msgs::ActuatorsConstPtr& servo_angles);
+  virtual ~GazeboControlSurfacePlugin();
 
  protected:
   void Load(physics::ModelPtr _model, sdf::ElementPtr _sdf);
-  void OnUpdate(const common::UpdateInfo&);
 
  private:
+  // ROS interface
   std::string namespace_;
-
   ros::NodeHandle* node_handle_;
-  ros::ServiceClient register_aero_surface_client_;
-  ros::Subscriber command_sub_;
+  ros::ServiceClient register_control_surface_client_;
 
-  // Pointer to the model
-  physics::ModelPtr model_;
-  // Pointer to the joint
-  physics::JointPtr joint_;
-  // Pointer to the link
-  physics::LinkPtr link_;
-  // Pointer to the update event connection
-  event::ConnectionPtr updateConnection_;
-
-  double ref_angle_;
-  double min_angle_;
-  double max_angle_;
-
-  double gain_;
-  double damping_;
-
-  int channel_;
-  int positive_direction_;
-  int surface_type_;
+  // Control surface parameters
+  double angle_min_;
+  double angle_max_;
+  std::string joint_name_;
+  std::string surface_type_;
 };
 }
 

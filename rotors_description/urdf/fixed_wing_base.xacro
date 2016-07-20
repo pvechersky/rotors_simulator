@@ -80,8 +80,8 @@
 
   <!-- Control surface joint and link -->
   <xacro:macro name="control_surface"
-    params="robot_namespace surface_name parent mass_surface min_angle
-      max_angle color use_mesh_file mesh_file surface_length surface_width
+    params="robot_namespace surface_name parent mass_surface surface_type
+      min_angle max_angle color use_mesh_file mesh_file surface_length surface_width
       surface_height *axis *joint_origin *link_origin *inertia">
     <joint name="${robot_namespace}/${surface_name}_joint" type="revolute">
       <xacro:insert_block name="joint_origin" />
@@ -121,6 +121,15 @@
       </collision>
     </link>
 
+    <gazebo>
+      <plugin name="${robot_namespace}_base" filename="librotors_gazebo_control_surface_plugin.so">
+        <robotNamespace>${robot_namespace}</robotNamespace>
+        <jointName>${robot_namespace}/${surface_name}_joint</jointName>
+        <surfaceType>${surface_type}</surfaceType>
+        <angleMin>${min_angle}</angleMin>
+        <angleMax>${max_angle}</angleMax>
+      </plugin>
+    </gazebo>
     <gazebo reference="${robot_namespace}/${surface_name}">
       <material>Gazebo/${color}</material>
     </gazebo>

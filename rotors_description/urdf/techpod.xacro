@@ -25,8 +25,9 @@
   <xacro:property name="PI" value="3.1415926535897931" />
 
   <!-- Component masses -->
-  <xacro:property name="mass_fuselage" value="2.15" /> <!-- [kg] -->
-  <xacro:property name="mass_aileron" value="0.2" /> <!-- [kg] -->
+  <xacro:property name="mass_fuselage" value="2.05" /> <!-- [kg] -->
+  <xacro:property name="mass_aileron" value="0.1" /> <!-- [kg] -->
+  <xacro:property name="mass_flap" value="0.1" /> <!-- [kg] -->
   <xacro:property name="mass_elevator" value="0.1" /> <!-- [kg] -->
   <xacro:property name="mass_rudder" value="0.1" /> <!-- [kg] -->
   <xacro:property name="mass_propeller" value="0.1" /> <!-- [kg] -->
@@ -44,6 +45,14 @@
   <xacro:property name="aileron_min_angle" value="-0.349066" /> <!-- [rad] -->
   <xacro:property name="aileron_max_angle" value="0.349066" /> <!-- [rad] -->
   <xacro:property name="aileron_color" value="Red" />
+
+  <!-- Flap properties -->
+  <xacro:property name="flap_length" value="0.076" /> <!-- [m] -->
+  <xacro:property name="flap_width" value="0.459" /> <!-- [m] -->
+  <xacro:property name="flap_height" value="0.016" /> <!-- [m] -->
+  <xacro:property name="flap_min_angle" value="0.0" /> <!-- [rad] -->
+  <xacro:property name="flap_max_angle" value="0.0" /> <!-- [rad] -->
+  <xacro:property name="flap_color" value="Yellow" />
 
   <!-- Elevator properties -->
   <xacro:property name="elevator_length" value="0.051" /> <!-- [m] -->
@@ -75,6 +84,11 @@
   <!-- Inertia of the aileron, assuming it is a cuboid -->
   <xacro:property name="aileron_inertia">
     <xacro:box_inertia x="${aileron_length}" y="${aileron_width}" z="${aileron_height}" mass="${mass_aileron}" />
+  </xacro:property>
+
+  <!-- Inertia of the flap, assuming it is a cuboid -->
+  <xacro:property name="flap_inertia">
+    <xacro:box_inertia x="${flap_length}" y="${flap_width}" z="${flap_height}" mass="${mass_flap}" />
   </xacro:property>
 
   <!-- Inertia of the elevator, assuming it is a cuboid -->
@@ -115,6 +129,7 @@
     surface_name="aileron_left"
     parent="${namespace}/base_link"
     mass_surface="${mass_aileron}"
+    surface_type="aileron"
     min_angle="${aileron_min_angle}"
     max_angle="${aileron_max_angle}"
     color="${aileron_color}"
@@ -134,6 +149,7 @@
     surface_name="aileron_right"
     parent="${namespace}/base_link"
     mass_surface="${mass_aileron}"
+    surface_type="aileron"
     min_angle="${aileron_min_angle}"
     max_angle="${aileron_max_angle}"
     color="${aileron_color}"
@@ -148,12 +164,54 @@
     <xacro:insert_block name="aileron_inertia" />
   </xacro:control_surface>
 
+  <!-- Instantiate the flaps -->
+  <xacro:control_surface
+    robot_namespace="${namespace}"
+    surface_name="flap_left"
+    parent="${namespace}/base_link"
+    mass_surface="${mass_flap}"
+    surface_type="flap"
+    min_angle="${flap_min_angle}"
+    max_angle="${flap_max_angle}"
+    color="${flap_color}"
+    use_mesh_file="${use_mesh}"
+    mesh_file="package://rotors_description/meshes/techpod/techpod_flap_left.dae"
+    surface_length="${flap_length}"
+    surface_width="${flap_width}"
+    surface_height="${flap_height}">
+    <axis xyz="0 -1 0" />
+    <origin xyz="0.101 -0.382 -0.1185" rpy="0.0 0.0 0.0" />
+    <origin xyz="0.0 0.0 0.0" rpy="${PI} 0.0 0.0" />
+    <xacro:insert_block name="flap_inertia" />
+  </xacro:control_surface>
+
+  <xacro:control_surface
+    robot_namespace="${namespace}"
+    surface_name="flap_right"
+    parent="${namespace}/base_link"
+    mass_surface="${mass_flap}"
+    surface_type="flap"
+    min_angle="${flap_min_angle}"
+    max_angle="${flap_max_angle}"
+    color="${flap_color}"
+    use_mesh_file="${use_mesh}"
+    mesh_file="package://rotors_description/meshes/techpod/techpod_flap_right.dae"
+    surface_length="${flap_length}"
+    surface_width="${flap_width}"
+    surface_height="${flap_height}">
+    <axis xyz="0 1 0" />
+    <origin xyz="0.101 0.382 -0.1185" rpy="0.0 0.0 0.0" />
+    <origin xyz="0.0 0.0 0.0" rpy="${PI} 0.0 0.0" />
+    <xacro:insert_block name="flap_inertia" />
+  </xacro:control_surface>
+
   <!-- Instantiate the elevator(s) -->
   <xacro:control_surface
     robot_namespace="${namespace}"
     surface_name="elevator"
     parent="${namespace}/base_link"
     mass_surface="${mass_elevator}"
+    surface_type="elevator"
     min_angle="${elevator_min_angle}"
     max_angle="${elevator_max_angle}"
     color="${elevator_color}"
@@ -174,6 +232,7 @@
     surface_name="rudder"
     parent="${namespace}/base_link"
     mass_surface="${mass_rudder}"
+    surface_type="rudder"
     min_angle="${rudder_min_angle}"
     max_angle="${rudder_max_angle}"
     color="${rudder_color}"

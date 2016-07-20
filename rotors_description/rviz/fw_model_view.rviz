@@ -83,6 +83,16 @@ Visualization Manager:
           Show Axes: true
           Show Trail: false
           Value: true
+        techpod/flap_left:
+          Alpha: 1
+          Show Axes: true
+          Show Trail: false
+          Value: true
+        techpod/flap_right:
+          Alpha: 1
+          Show Axes: true
+          Show Trail: false
+          Value: true
         techpod/propeller_:
           Alpha: 1
           Show Axes: true
@@ -130,22 +140,22 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 1.4047
+      Distance: 1.13487
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.06
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -0.202879
-        Y: 0.685257
-        Z: 0.321926
+        X: -0.109925
+        Y: 0.741513
+        Z: 0.306419
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: 0.395398
+      Pitch: 0.615398
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 2.05543
+      Yaw: 2.11543
     Saved: ~
 Window Geometry:
   Displays:

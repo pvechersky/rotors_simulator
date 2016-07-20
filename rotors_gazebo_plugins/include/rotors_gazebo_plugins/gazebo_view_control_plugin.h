@@ -34,8 +34,8 @@
 namespace gazebo
 {
 // Constants
-static const math::Vector3 kChaseCamOffset(-5.0, 0.0, -0.5);
-static const math::Vector3 kForwardCamOffset(1.0, 0.0, 0.0);
+static const math::Vector3 kChaseCamOffset(-3.0, 0.0, -0.5);
+static const math::Vector3 kForwardCamOffset(0.5, 0.0, 0.2);
 
 class GAZEBO_VISIBLE GazeboViewControlPlugin : public GUIPlugin {
  Q_OBJECT
