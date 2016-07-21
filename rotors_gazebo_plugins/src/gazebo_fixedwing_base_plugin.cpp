@@ -179,13 +179,21 @@ void GazeboFixedWingBasePlugin::OnUpdate(const common::UpdateInfo& _info) {
   link_->AddLinkForce(forces);
   link_->AddRelativeTorque(moments);
 
-  /*for (int i = 0; i < ailerons_.size(); i++)
-    ailerons_.at(i)->SetPosition(0, aileron_info_.deflection);
+  if (!rudder_ || ailerons_.size() == 0 || elevators_.size() == 0)
+    return;
 
-  for (int i = 0; i < elevators_.size(); i++)
-    elevators_.at(i)->SetPosition(0, elevator_info_.deflection);
+  for (int i = 0; i < ailerons_.size(); i++) {
+    double aileron_angle = ailerons_.at(i)->GetAngle(0).Radian();
+    ailerons_.at(i)->SetVelocity(0, aileron_info_.deflection - aileron_angle);
+  }
 
-  rudder_->SetPosition(0, rudder_info_.deflection);*/
+  for (int i = 0; i < elevators_.size(); i++) {
+    double elevator_angle = elevators_.at(i)->GetAngle(0).Radian();
+    elevators_.at(i)->SetVelocity(0, elevator_info_.deflection - elevator_angle);
+  }
+
+  double rudder_angle = rudder_->GetAngle(0).Radian();
+  rudder_->SetVelocity(0, rudder_info_.deflection - rudder_angle);
 
   // Broadcast the transform to the camera link
   /*math::Pose cam_pose = link_->GetWorldPose();
@@ -301,6 +309,7 @@ bool GazeboFixedWingBasePlugin::RegisterControlSurfaceCallback(
 
   surface.d_min = req.angle_min;
   surface.d_max = req.angle_max;
+  surface.deflection = 0.0;
 
   if (req.surface_type == "aileron") {
     aileron_info_ = surface;
