@@ -93,7 +93,7 @@ def main():
         gt_quat.x = ab.quat[0].x[index]
         gt_quat.y = ab.quat[0].y[index]
         gt_quat.z = ab.quat[0].z[index]
-        rel_qt_quat = quat_relative_rotation(gt_quat, first_gt_quat)
+        rel_gt_quat = quat_relative_rotation(gt_quat, first_gt_quat)
 
         est_quat = analyze_bag.QuatWithTime()
         est_quat.w = ab.odom[0].rot.w[index]
@@ -106,7 +106,7 @@ def main():
     	position_errors.append(xyz_dist_error(gt_pos, est_pos))
 
         # Compute the error between the two quaternions
-        orientation_errors.append(quat_dist_error(rel_qt_quat, rel_est_quat))
+        orientation_errors.append(quat_dist_error(rel_gt_quat, rel_est_quat))
 
     # Plot the position errors
     if plot and len(position_errors) > 0:

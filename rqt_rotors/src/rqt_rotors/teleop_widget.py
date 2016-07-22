@@ -24,6 +24,12 @@ class TeleopWidget(QWidget):
     ui_file = os.path.join(rospkg.RosPack().get_path('rqt_rotors'), 'resource', 'teleop_widget.ui')
     loadUi(ui_file, self)
 
+    # Set the initial slider positions
+    self.slider_aileron.setSliderPosition(50)
+    self.slider_elevator.setSliderPosition(50)
+    self.slider_rudder.setSliderPosition(50)
+    self.slider_throttle.setSliderPosition(0)
+
     # Initialize ROS subscribers
     self.actuators_sub = rospy.Subscriber(self.STR_ACTUATORS_SUB_TOPIC, Actuators, self.actuators_callback, queue_size=1)
 
