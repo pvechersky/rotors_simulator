@@ -1,16 +1,11 @@
 /*
- * Copyright 2015 Fadri Furrer, ASL, ETH Zurich, Switzerland
- * Copyright 2015 Michael Burri, ASL, ETH Zurich, Switzerland
- * Copyright 2015 Mina Kamel, ASL, ETH Zurich, Switzerland
- * Copyright 2015 Janosch Nikolic, ASL, ETH Zurich, Switzerland
- * Copyright 2015 Markus Achtelik, ASL, ETH Zurich, Switzerland
+ * Copyright 2016 Pavel Vechersky, ASL, ETH Zurich, Switzerland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
-
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,7 +18,6 @@
 
 #include <random>
 
-#include <Eigen/Core>
 #include <gazebo/common/common.hh>
 #include <gazebo/common/Plugin.hh>
 #include <gazebo/gazebo.hh>
@@ -33,14 +27,15 @@
 #include <sensor_msgs/MagneticField.h>
 
 #include "rotors_gazebo_plugins/common.h"
+#include "rotors_gazebo_plugins/sdf_api_wrapper.hpp"
 
 namespace gazebo {
-// Default reference values (in Tesla), obtained from World Magnetic Model:
-// (https://www.ngdc.noaa.gov/geomag/WMM/calculators.shtml) for Zurich:
+// Default magnetic field [Tesla] in NED frame, obtained from World Magnetic
+// Model: (http://www.ngdc.noaa.gov/geomag-web/#igrfwmm) for Zurich:
 // lat=+47.3667degN, lon=+8.5500degE, h=+500m, WGS84
-static constexpr double kDefaultRefMagNorth = 0.000021475;
-static constexpr double kDefaultRefMagEast = 0.000000797;
-static constexpr double kDefaultRefMagDown = 0.000042817;
+static constexpr double kDefaultRefMagNorth = 0.000021493;
+static constexpr double kDefaultRefMagEast = 0.000000815;
+static constexpr double kDefaultRefMagDown = 0.000042795;
 
 class GazeboMagnetometerPlugin : public ModelPlugin {
  public:
@@ -72,10 +67,9 @@ class GazeboMagnetometerPlugin : public ModelPlugin {
 
   math::Vector3 mag_W_;
 
-  sensor_msgs::MagneticField magnetometer_message_;
+  sensor_msgs::MagneticField mag_message_;
 
   NormalDistribution noise_n_[3];
-  UniformDistribution noise_u_[3];
 
   std::random_device random_device_;
   std::mt19937 random_generator_;

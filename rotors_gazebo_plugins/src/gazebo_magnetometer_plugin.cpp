@@ -1,16 +1,11 @@
 /*
- * Copyright 2015 Fadri Furrer, ASL, ETH Zurich, Switzerland
- * Copyright 2015 Michael Burri, ASL, ETH Zurich, Switzerland
- * Copyright 2015 Mina Kamel, ASL, ETH Zurich, Switzerland
- * Copyright 2015 Janosch Nikolic, ASL, ETH Zurich, Switzerland
- * Copyright 2015 Markus Achtelik, ASL, ETH Zurich, Switzerland
+ * Copyright 2016 Pavel Vechersky, ASL, ETH Zurich, Switzerland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
-
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,13 +14,6 @@
  */
 
 #include "rotors_gazebo_plugins/gazebo_magnetometer_plugin.h"
-
-#include <chrono>
-#include <cmath>
-#include <iostream>
-#include <stdio.h>
-
-#include <boost/bind.hpp>
 
 namespace gazebo {
 
@@ -71,17 +59,18 @@ void GazeboMagnetometerPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _s
   double ref_mag_north;
   double ref_mag_east;
   double ref_mag_down;
-  sdf::Vector3 noise_normal;
-  sdf::Vector3 noise_uniform;
-  const sdf::Vector3 zeros3(0.0, 0.0, 0.0);
+  SdfVector3 noise_normal;
+  SdfVector3 noise_uniform_initial_bias;
+  const SdfVector3 zeros3(0.0, 0.0, 0.0);
 
   // Retrieve the rest of the SDF parameters
-  getSdfParam<std::string>(_sdf, "magnetometerTopic", magnetometer_topic_, mav_msgs::default_topics::MAGNETIC_FIELD);
-  getSdfParam<double>(_sdf, "referenceMagNorth", ref_mag_north, kDefaultRefMagNorth);
-  getSdfParam<double>(_sdf, "referenceMagEast", ref_mag_east, kDefaultRefMagEast);
-  getSdfParam<double>(_sdf, "referenceMagDown", ref_mag_down, kDefaultRefMagDown);
-  getSdfParam<sdf::Vector3>(_sdf, "noiseNormal", noise_normal, zeros3);
-  getSdfParam<sdf::Vector3>(_sdf, "noiseUniform", noise_uniform, zeros3);
+  getSdfParam<std::string>(_sdf, "magnetometerTopic", magnetometer_topic_,
+                           mav_msgs::default_topics::MAGNETIC_FIELD);
+  getSdfParam<double>(_sdf, "refMagNorth", ref_mag_north, kDefaultRefMagNorth);
+  getSdfParam<double>(_sdf, "refMagEast", ref_mag_east, kDefaultRefMagEast);
+  getSdfParam<double>(_sdf, "refMagDown", ref_mag_down, kDefaultRefMagDown);
+  getSdfParam<SdfVector3>(_sdf, "noiseNormal", noise_normal, zeros3);
+  getSdfParam<SdfVector3>(_sdf, "noiseUniformInitialBias", noise_uniform_initial_bias, zeros3);
 
   // Listen to the update event. This event is broadcast every simulation iteration.
   this->updateConnection_ =
@@ -90,53 +79,55 @@ void GazeboMagnetometerPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _s
 
   magnetometer_pub_ = node_handle_->advertise<sensor_msgs::MagneticField>(magnetometer_topic_, 1);
 
-  mag_W_ = math::Vector3(ref_mag_north, ref_mag_east, ref_mag_down);
+  // Create the normal noise distributions
+  noise_n_[0] = NormalDistribution(0, noise_normal.X());
+  noise_n_[1] = NormalDistribution(0, noise_normal.Y());
+  noise_n_[2] = NormalDistribution(0, noise_normal.Z());
 
-  // Fill magnetometer message
-  magnetometer_message_.header.frame_id = frame_id_;
-  magnetometer_message_.magnetic_field.x = mag_W_.x;
-  magnetometer_message_.magnetic_field.y = mag_W_.y;
-  magnetometer_message_.magnetic_field.z = mag_W_.z;
-  magnetometer_message_.magnetic_field_covariance.fill(0.0);
+  // Create the uniform noise distribution for initial bias
+  UniformDistribution initial_bias[3];
+  initial_bias[0] = UniformDistribution(-noise_uniform_initial_bias.X(),
+                                        noise_uniform_initial_bias.X());
+  initial_bias[1] = UniformDistribution(-noise_uniform_initial_bias.Y(),
+                                        noise_uniform_initial_bias.Y());
+  initial_bias[2] = UniformDistribution(-noise_uniform_initial_bias.Z(),
+                                        noise_uniform_initial_bias.Z());
 
-  // Create the noise distributions
-  noise_n_[0] = NormalDistribution(0, noise_normal.x);
-  noise_n_[1] = NormalDistribution(0, noise_normal.y);
-  noise_n_[2] = NormalDistribution(0, noise_normal.z);
+  // Initialize the reference magnetic field vector in world frame, taking into
+  // account the initial bias
+  mag_W_ = math::Vector3(ref_mag_north + initial_bias[0](random_generator_),
+                         ref_mag_east + initial_bias[1](random_generator_),
+                         ref_mag_down + initial_bias[2](random_generator_));
 
-  noise_u_[0] = UniformDistribution(-noise_uniform.x, noise_uniform.x);
-  noise_u_[1] = UniformDistribution(-noise_uniform.y, noise_uniform.y);
-  noise_u_[2] = UniformDistribution(-noise_uniform.z, noise_uniform.z);
+  // Fill the magnetometer message
+  mag_message_.header.frame_id = frame_id_;
+  mag_message_.magnetic_field_covariance[0] = noise_normal.X() * noise_normal.X();
+  mag_message_.magnetic_field_covariance[4] = noise_normal.Y() * noise_normal.Y();
+  mag_message_.magnetic_field_covariance[8] = noise_normal.Z() * noise_normal.Z();
 }
 
 void GazeboMagnetometerPlugin::OnUpdate(const common::UpdateInfo& _info) {
   // Get the current pose and time from Gazebo
-  math::Pose gazebo_pose = link_->GetWorldPose();
+  math::Pose T_W_B = link_->GetWorldPose();
   common::Time current_time  = world_->GetSimTime();
 
-  // Fill the magnetic field message header
-  magnetometer_message_.header.stamp.sec = current_time.sec;
-  magnetometer_message_.header.stamp.nsec = current_time.nsec;
-
-  // Calculate the distortion in the orientation
-  math::Quaternion q_noise;
-  q_noise.SetFromEuler(noise_n_[0](random_generator_) + noise_u_[0](random_generator_),
-          noise_n_[1](random_generator_) + noise_u_[1](random_generator_),
-          noise_n_[2](random_generator_) + noise_u_[2](random_generator_));
-
-  // Add distortion to current orientation
-  math::Quaternion att = gazebo_pose.rot * q_noise;
+  // Calculate the magnetic field noise.
+  math::Vector3 mag_noise(noise_n_[0](random_generator_),
+                          noise_n_[1](random_generator_),
+                          noise_n_[2](random_generator_));
 
   // Rotate the earth magnetic field into the inertial frame
-  math::Vector3 field = att.RotateVectorReverse(mag_W_);
+  math::Vector3 field_B = T_W_B.rot.RotateVectorReverse(mag_W_ + mag_noise);
 
-  // Fill the message values
-  magnetometer_message_.magnetic_field.x = field.x;
-  magnetometer_message_.magnetic_field.y = field.y;
-  magnetometer_message_.magnetic_field.z = field.z;
+  // Fill the magnetic field message
+  mag_message_.header.stamp.sec = current_time.sec;
+  mag_message_.header.stamp.nsec = current_time.nsec;
+  mag_message_.magnetic_field.x = field_B.x;
+  mag_message_.magnetic_field.y = field_B.y;
+  mag_message_.magnetic_field.z = field_B.z;
 
   // Publish the message
-  magnetometer_pub_.publish(magnetometer_message_);
+  magnetometer_pub_.publish(mag_message_);
 }
 
 GZ_REGISTER_MODEL_PLUGIN(GazeboMagnetometerPlugin);

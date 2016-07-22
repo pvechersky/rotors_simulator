@@ -421,16 +421,16 @@
     </gazebo>
   </xacro:macro>
 
-  <!-- Macro to add a magnetometer sensor. -->
+  <!-- Macro to add a magnetometer. -->
   <xacro:macro name="magnetometer_plugin_macro"
-    params="namespace magnetometer_suffix parent_link magnetometer_topic mass_magnetometer
-      reference_magnetic_field_north reference_magnetic_field_east reference_magnetic_field_down
-      noise_normal noise_uniform *inertia *origin">
+    params="namespace magnetometer_suffix parent_link magnetometer_topic
+      mass_magnetometer_sensor ref_mag_north ref_mag_east ref_mag_down 
+      noise_normal noise_uniform_initial_bias *inertia *origin">
     <!-- Magnetometer link -->
     <link name="${namespace}/magnetometer${magnetometer_suffix}_link">
       <inertial>
         <xacro:insert_block name="inertia" />
-        <mass value="${mass_magnetometer}" />  <!-- [kg] -->
+        <mass value="${mass_magnetometer_sensor}" />  <!-- [kg] -->
         <origin xyz="0 0 0" rpy="0 0 0" />
       </inertial>
     </link>
@@ -446,15 +446,15 @@
         <robotNamespace>${namespace}</robotNamespace> <!-- (string, required): ros namespace in which the messages are published -->
         <linkName>${namespace}/magnetometer${magnetometer_suffix}_link</linkName> <!-- (string, required): name of the body which holds the magnetometer -->
         <magnetometerTopic>${magnetometer_topic}</magnetometerTopic> <!-- (string): name of the sensor output topic and prefix of service names (defaults to 'magnetic_field') -->
-        <!-- [Tesla] Below are the North, East, and Down components of the Earth's magnetic field at the reference location.
+        <!-- [Tesla] Below is the reference Earth's magnetic field at the reference location in NED frame.
              The default reference location is Zurich (lat=+47.3667degN, lon=+8.5500degE, h=+500m, WGS84).
 	     You can obtain the magnetic field strength for your location using the World Magnetic Model: 
-             https://www.ngdc.noaa.gov/geomag/WMM/calculators.shtml -->
-        <referenceMagNorth>${reference_magnetic_field_north}</referenceMagNorth>
-        <referenceMagEast>${reference_magnetic_field_east}</referenceMagEast>
-        <referenceMagDown>${reference_magnetic_field_down}</referenceMagDown>
-        <noiseNormal>${noise_normal}</noiseNormal> <!-- standard deviation of additive white gaussian noise [rad] -->
-        <noiseUniform>${noise_uniform}</noiseUniform> <!-- symmetric bounds of uniform noise [rad] -->
+             http://www.ngdc.noaa.gov/geomag-web/#igrfwmm -->
+        <refMagNorth>${ref_mag_north}</refMagNorth>
+        <refMagEast>${ref_mag_east}</refMagEast>
+        <refMagDown>${ref_mag_down}</refMagDown>
+        <noiseNormal>${noise_normal}</noiseNormal> <!-- standard deviation of additive white gaussian noise [Tesla] -->
+        <noiseUniformInitialBias>${noise_uniform_initial_bias}</noiseUniformInitialBias> <!-- symmetric bounds of uniform noise for initial sensor bias [Tesla] -->
       </plugin>
     </gazebo>
   </xacro:macro>
@@ -848,9 +848,9 @@
       gyroscope_bias_correlation_time="1000.0"
       gyroscope_turn_on_bias_sigma="0.0087"
       accelerometer_noise_density="0.004"
-      accelerometer_random_walk="0.006"
+      accelerometer_random_walk="0.0"
       accelerometer_bias_correlation_time="300.0"
-      accelerometer_turn_on_bias_sigma="0.1960">
+      accelerometer_turn_on_bias_sigma="0.0">
       <inertia ixx="0.00001" ixy="0.0" ixz="0.0" iyy="0.00001" iyz="0.0" izz="0.00001" />
       <origin xyz="0 0 0" rpy="3.1415926535897931 0 0" />
     </xacro:imu_plugin_macro>
@@ -876,19 +876,20 @@
   </xacro:macro>
 
   <xacro:macro name="default_magnetometer" params="namespace parent_link">
+    <!-- ADIS16448 Magnetometer. -->
     <xacro:magnetometer_plugin_macro
       namespace="${namespace}"
       magnetometer_suffix=""
       parent_link="${parent_link}"
       magnetometer_topic="magnetic_field"
-      mass_magnetometer="0.015"
-      reference_magnetic_field_north="0.000021475"
-      reference_magnetic_field_east="0.000000797"
-      reference_magnetic_field_down="0.000042817"
-      noise_normal="0 0 0"
-      noise_uniform="0 0 0">
+      mass_magnetometer_sensor="0.015"
+      ref_mag_north="0.000021493"
+      ref_mag_east="0.000000815"
+      ref_mag_down="0.000042795"
+      noise_normal="0.000000080 0.000000080 0.000000080"
+      noise_uniform_initial_bias="0.000000400 0.000000400 0.000000400">
       <inertia ixx="0.00001" ixy="0.0" ixz="0.0" iyy="0.00001" iyz="0.0" izz="0.00001" />
-      <origin xyz="0 0 0" rpy="0 0 0" />
+      <origin xyz="0 0 0" rpy="3.1415926535897931 0 0" />
     </xacro:magnetometer_plugin_macro>
   </xacro:macro>
 
