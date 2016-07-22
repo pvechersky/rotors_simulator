@@ -28,7 +28,7 @@ HilSensorsInterface::HilSensorsInterface():
   temperature_(15.0),
   eph_(100),
   epv_(100),
-  cog_(0),
+  cog_(65535),
   ind_airspeed_(0),
   true_airspeed_(0),
   satellites_visible_(5)
