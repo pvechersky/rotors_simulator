@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef ROTORS_GAZEBO_PLUGINS_VIEW_CONTROL_PLUGIN_H
-#define ROTORS_GAZEBO_PLUGINS_VIEW_CONTROL_PLUGIN_H
+#ifndef ROTORS_GAZEBO_PLUGINS_MAP_TRACKER_PLUGIN_H
+#define ROTORS_GAZEBO_PLUGINS_MAP_TRACKER_PLUGIN_H
 
 #include <boost/bind.hpp>
 #include <gazebo/common/common.hh>
@@ -29,39 +29,27 @@
 
 namespace gazebo
 {
-// Constants
-static const math::Vector3 kChaseCamOffset(-3.0, 0.0, -0.5);
-static const math::Vector3 kForwardCamOffset(0.5, 0.0, 0.2);
 
-class GAZEBO_VISIBLE GazeboViewControlPlugin : public GUIPlugin {
+class GAZEBO_VISIBLE GazeboMapTrackerPlugin : public GUIPlugin {
  Q_OBJECT
 
  public:
-  GazeboViewControlPlugin();
-  virtual ~GazeboViewControlPlugin();
+  GazeboMapTrackerPlugin();
+  virtual ~GazeboMapTrackerPlugin();
 
  protected:
   void Load(sdf::ElementPtr _sdf);
 
  protected slots:
-  void OnForwardButton();
-  void OnChaseButton();
-  void OnStopButton();
+  //void OnForwardButton();
+  //void OnChaseButton();
+  //void OnStopButton();
 
  private:
   void OnUpdate();
 
-  bool is_tracking_;
-
   event::ConnectionPtr update_connection_;
-
-  math::Vector3 cam_offset_;
-
-  rendering::UserCameraPtr user_cam_;
-
-  // Pointer to the visual of the object we want to track
-  rendering::VisualPtr visual_;
 };
 }
 
-#endif // ROTORS_GAZEBO_PLUGINS_VIEW_CONTROL_PLUGIN_H
+#endif // ROTORS_GAZEBO_PLUGINS_MAP_TRACKER_PLUGIN_H
