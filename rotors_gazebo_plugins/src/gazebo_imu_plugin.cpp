@@ -249,11 +249,32 @@ void GazeboImuPlugin::OnUpdate(const common::UpdateInfo& _info) {
 
   addNoise(&linear_acceleration_I, &angular_velocity_I, dt);
 
+  math::Vector3 acceleration_drift =
+      C_W_I.RotateVector(math::Vector3(accelerometer_bias_[0],
+                                       accelerometer_bias_[1],
+                                       accelerometer_bias_[2]));
+  double yaw_error = 0.0; //yawModel.getCurrentBias();
+
+  // Yaw error quaternion
+  math::Quaternion yaw_error_quat(cos(yaw_error / 2),
+                                  0.0,
+                                  0.0,
+                                  sin(yaw_error / 2));
+
+  // Roll and pitch error quaternion
+  math::Quaternion roll_pitch_error_quat(1.0,
+                                         0.5 * acceleration_drift.y / imu_parameters_.gravity_magnitude,
+                                         0.5 * -acceleration_drift.x / imu_parameters_.gravity_magnitude,
+                                         0.0);
+
+  math::Quaternion orientation_error(yaw_error_quat * roll_pitch_error_quat);
+  orientation_error.Normalize();
+  C_W_I = orientation_error * C_W_I;
+
   // Fill IMU message.
   imu_message_.header.stamp.sec = current_time.sec;
   imu_message_.header.stamp.nsec = current_time.nsec;
 
-  // TODO(burrimi): Add orientation estimator.
   imu_message_.orientation.w = C_W_I.w;
   imu_message_.orientation.x = C_W_I.x;
   imu_message_.orientation.y = C_W_I.y;
