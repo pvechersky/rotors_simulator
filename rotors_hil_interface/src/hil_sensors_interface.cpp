@@ -132,8 +132,8 @@ void HilSensorsInterface::GpsCallback(const sensor_msgs::NavSatFixConstPtr& gps_
 
 void HilSensorsInterface::GroundSpeedCallback(const geometry_msgs::Vector3ConstPtr& ground_speed_msg) {
   vn_ = ground_speed_msg->x * 100.0;
-  ve_ = ground_speed_msg->y * 100.0;
-  vd_ = ground_speed_msg->z * 100.0;
+  ve_ = -ground_speed_msg->y * 100.0;
+  vd_ = -ground_speed_msg->z * 100.0;
 
   vel_ = sqrt(vn_^2 + ve_^2 + vd_^2);
 }
@@ -155,8 +155,8 @@ void HilSensorsInterface::MagCallback(const sensor_msgs::MagneticFieldConstPtr &
   // ROS magnetic field sensor message is in Tesla, while MAVLINK HIL_SENSOR message
   // measures magnetic field in Gauss. 1 Tesla = 10000 Gauss
   mag_x_ = mag_msg->magnetic_field.x * 10000;
-  mag_y_ = mag_msg->magnetic_field.y * 10000;
-  mag_z_ = mag_msg->magnetic_field.z * 10000;
+  mag_y_ = -mag_msg->magnetic_field.y * 10000;
+  mag_z_ = -mag_msg->magnetic_field.z * 10000;
 }
 
 void HilSensorsInterface::PressureCallback(const sensor_msgs::FluidPressureConstPtr &pressure_msg) {

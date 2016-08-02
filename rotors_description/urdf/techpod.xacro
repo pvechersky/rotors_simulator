@@ -119,7 +119,7 @@
     color="${body_color}"
     use_mesh_file="${use_mesh}"
     mesh_file="package://rotors_description/meshes/techpod/techpod_body.dae">
-    <origin xyz="0 0 0" rpy="${PI} 0 0" />
+    <origin xyz="0 0 0" rpy="0 0 0" />
     <xacro:insert_block name="body_inertia" />
   </xacro:fixed_wing_base_macro>
 
@@ -138,9 +138,9 @@
     surface_length="${aileron_length}"
     surface_width="${aileron_width}"
     surface_height="${aileron_height}">
-    <axis xyz="0 1 0" />
-    <origin xyz="0.1095 -0.99245 -0.115" rpy="0.0 0.0 0.0" />
-    <origin xyz="0.0 0.0 0.0" rpy="${PI} 0.0 0.0" />
+    <axis xyz="0 -1 0" />
+    <origin xyz="0.1095 0.99245 0.115" rpy="0 0 0" />
+    <origin xyz="0 0 0" rpy="0 0 0" />
     <xacro:insert_block name="aileron_inertia" />
   </xacro:control_surface>
 
@@ -158,9 +158,9 @@
     surface_length="${aileron_length}"
     surface_width="${aileron_width}"
     surface_height="${aileron_height}">
-    <axis xyz="0 -1 0" />
-    <origin xyz="0.1095 0.99245 -0.115" rpy="0.0 0.0 0.0" />
-    <origin xyz="0.0 0.0 0.0" rpy="${PI} 0.0 0.0" />
+    <axis xyz="0 1 0" />
+    <origin xyz="0.1095 -0.99245 0.115" rpy="0 0 0" />
+    <origin xyz="0 0 0" rpy="0 0 0" />
     <xacro:insert_block name="aileron_inertia" />
   </xacro:control_surface>
 
@@ -180,8 +180,8 @@
     surface_width="${flap_width}"
     surface_height="${flap_height}">
     <axis xyz="0 -1 0" />
-    <origin xyz="0.101 -0.382 -0.1185" rpy="0.0 0.0 0.0" />
-    <origin xyz="0.0 0.0 0.0" rpy="${PI} 0.0 0.0" />
+    <origin xyz="0.101 0.382 0.1185" rpy="0 0 0" />
+    <origin xyz="0 0 0" rpy="0 0 0" />
     <xacro:insert_block name="flap_inertia" />
   </xacro:control_surface>
 
@@ -200,8 +200,8 @@
     surface_width="${flap_width}"
     surface_height="${flap_height}">
     <axis xyz="0 1 0" />
-    <origin xyz="0.101 0.382 -0.1185" rpy="0.0 0.0 0.0" />
-    <origin xyz="0.0 0.0 0.0" rpy="${PI} 0.0 0.0" />
+    <origin xyz="0.101 -0.382 0.1185" rpy="0 0 0" />
+    <origin xyz="0 0 0" rpy="0 0 0" />
     <xacro:insert_block name="flap_inertia" />
   </xacro:control_surface>
 
@@ -220,9 +220,9 @@
     surface_length="${elevator_length}"
     surface_width="${elevator_width}"
     surface_height="${elevator_height}">
-    <axis xyz="0 1 0" />
-    <origin xyz="-0.555 0.0 -0.26" rpy="0.0 0.0 0.0" />
-    <origin xyz="0.0 0.0 0.0" rpy="${PI} 0.0 0.0" />
+    <axis xyz="0 -1 0" />
+    <origin xyz="-0.555 0.0 0.26" rpy="0 0 0" />
+    <origin xyz="0 0 0" rpy="0 0 0" />
     <xacro:insert_block name="elevator_inertia" />
   </xacro:control_surface>
 
@@ -241,14 +241,14 @@
     surface_length="${rudder_length}"
     surface_width="${rudder_width}"
     surface_height="${rudder_height}">
-    <axis xyz="0 0 -1" />
-    <origin xyz="-0.428 0.0 0.0" rpy="0.0 0.25 0.0" />
-    <origin xyz="0.0 0.0 0.0" rpy="${PI} -0.25 0.0" />
+    <axis xyz="0 0 1" />
+    <origin xyz="-0.428 0.0 0.0" rpy="0 0.25 0" />
+    <origin xyz="0 0 0" rpy="0 -0.25 0" />
     <xacro:insert_block name="rudder_inertia" />
   </xacro:control_surface>
 
   <!-- Instantiate the propeller -->
-  <xacro:propeller
+  <!--<xacro:propeller
     robot_namespace="${namespace}"
     suffix=""
     parent="${namespace}/base_link"
@@ -257,8 +257,8 @@
     color="${propeller_color}"
     use_mesh_file="${use_mesh}"
     mesh_file="package://rotors_description/meshes/propeller_${propeller_direction}.dae">
-    <origin xyz="-0.025 0.0 -0.15" rpy="0.0 ${-0.5*PI} 0.0" />
+    <origin xyz="-0.025 0 -0.15" rpy="0 ${-0.5*PI} 0" />
     <xacro:insert_block name="propeller_inertia" />
-  </xacro:propeller>
+  </xacro:propeller>-->
 
 </robot>

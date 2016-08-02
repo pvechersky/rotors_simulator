@@ -58,16 +58,16 @@
     noise_stddev="0.007"
     enable_visual="false">
     <mesh filename="package://rotors_description/meshes/vi_camera.dae" scale="1 1 1" />
-    <origin xyz="0 0 0" rpy="0 -1.5707 1.5707" />
+    <origin xyz="0 0 0" rpy="0 1.5707 1.5707" />
   </xacro:camera_macro>
 
   <!-- Mount a downward-looking laser sensor. -->
-  <xacro:laser_sensor_plugin_macro
+  <!--<xacro:laser_sensor_plugin_macro
     namespace="${namespace}"
     parent_link="${namespace}/base_link"
     laser_suffix="downward">
     <origin xyz="0 0 0" rpy="0 -1.5707 -1.5707" />
-  </xacro:laser_sensor_plugin_macro>
+  </xacro:laser_sensor_plugin_macro>-->
 
   <xacro:if value="$(arg enable_ground_truth)">
     <xacro:ground_truth_imu_and_odometry namespace="${namespace}" parent_link="${namespace}/base_link_inertia" />
