@@ -32,29 +32,32 @@
 #include "rotors_gazebo_plugins/common.h"
 
 namespace gazebo {
-// Default topic names
+// Default values
 static const std::string kDefaultAirSpeedPubTopic = "air_speed";
 static const std::string kDefaultGroundSpeedSubTopic = "ground_speed";
 static const std::string kDefaultWindSpeedSubTopic = "gazebo/wind_speed";
+static constexpr double kDefaultAirSpeedVariance = 0.1;
 
 class GazeboAirSpeedPlugin : public ModelPlugin {
+ typedef std::normal_distribution<> NormalDistribution;
+
  public:
   GazeboAirSpeedPlugin();
   virtual ~GazeboAirSpeedPlugin();
 
-  void GroundSpeedCallback(const geometry_msgs::Vector3ConstPtr& ground_speed_msg);
+  //void GroundSpeedCallback(const geometry_msgs::Vector3ConstPtr& ground_speed_msg);
   void WindSpeedCallback(const rotors_comm::WindSpeedConstPtr& wind_speed_msg);
 
  protected:
   void Load(physics::ModelPtr _model, sdf::ElementPtr _sdf);
-  void OnUpdate(const common::UpdateInfo&);
+  //void OnUpdate(const common::UpdateInfo&);
 
  private:
   std::string namespace_;
 
   ros::NodeHandle* node_handle_;
   ros::Publisher air_speed_pub_;
-  ros::Subscriber ground_speed_sub_;
+  //ros::Subscriber ground_speed_sub_;
   ros::Subscriber wind_speed_sub_;
 
   // Pointer to the world
@@ -64,8 +67,13 @@ class GazeboAirSpeedPlugin : public ModelPlugin {
   // Pointer to the update event connection
   event::ConnectionPtr updateConnection_;
 
-  math::Vector3 ground_speed_;
-  math::Vector3 wind_speed_;
+  std::random_device random_device_;
+  std::mt19937 random_generator_;
+
+  NormalDistribution air_speed_n_;
+
+  //math::Vector3 ground_speed_;
+  //math::Vector3 wind_speed_;
 
   geometry_msgs::Vector3 air_speed_msg_;
 };

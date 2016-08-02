@@ -129,7 +129,7 @@ void GazeboWindPlugin::OnUpdate(const common::UpdateInfo& _info) {
   wind_pub_.publish(wrench_msg);
 
   // Calculate the wind speed
-  double wind_speed = wind_speed_mean_ + wind_speed_n_(random_generator_);
+  double wind_speed = wind_speed_mean_; // + wind_speed_n_(random_generator_);
   math::Vector3 wind_velocity = wind_speed * wind_direction_;
 
   // Publish the wind speed

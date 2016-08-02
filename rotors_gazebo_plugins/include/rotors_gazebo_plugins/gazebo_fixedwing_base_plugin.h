@@ -25,7 +25,6 @@
 #include <gazebo/common/Plugin.hh>
 #include <gazebo/gazebo.hh>
 #include <gazebo/physics/physics.hh>
-#include <geometry_msgs/Vector3.h>
 #include <mav_msgs/Actuators.h>
 #include <nav_msgs/Odometry.h>
 #include <ros/ros.h>
@@ -34,11 +33,12 @@
 #include <std_srvs/Empty.h>
 #include <tf/transform_broadcaster.h>
 
+#include "rotors_comm/WindSpeed.h"
 #include "rotors_gazebo_plugins/common.h"
 
 namespace gazebo {
 // Default topic names
-static const std::string kDefaultAirSpeedSubTopic = "air_speed";
+static const std::string kDefaultWindSpeedSubTopic = "gazebo/wind_speed";
 static const std::string kDefaultCommandSubTopic = "gazebo/command/motor_speed";
 static const std::string kDefaultResetModelServiceName = "reset_model";
 
@@ -144,7 +144,7 @@ class GazeboFixedWingBasePlugin : public ModelPlugin {
   std::string namespace_;
 
   ros::NodeHandle* node_handle_;
-  ros::Subscriber air_speed_sub_;
+  ros::Subscriber wind_speed_sub_;
   ros::Subscriber command_sub_;
   ros::ServiceServer register_control_surface_service_;
   ros::ServiceServer reset_model_service_;
@@ -187,14 +187,14 @@ class GazeboFixedWingBasePlugin : public ModelPlugin {
 
   double throttle_;
 
-  math::Vector3 air_speed_;
+  math::Vector3 air_speed_body_;
 
   math::Pose start_pose_;
 
   tf::Transform tf_;
   tf::TransformBroadcaster transform_broadcaster_;
 
-  void AirSpeedCallback(const geometry_msgs::Vector3ConstPtr& air_speed_msg);
+  void WindSpeedCallback(const rotors_comm::WindSpeedConstPtr& wind_speed_msg);
   void CommandCallback(const mav_msgs::ActuatorsConstPtr& command_msg);
 
   bool RegisterControlSurfaceCallback(rotors_comm::RegisterControlSurface::Request& req,
