@@ -80,7 +80,8 @@ class MavModeWidget(QWidget):
     self.button_reboot_autopilot.pressed.connect(self.on_reboot_autopilot_button_pressed)
     self.button_reset_model.pressed.connect(self.on_reset_model_button_pressed)
     self.button_reconstruct.pressed.connect(self.on_reconstruct_button_pressed)
-    self.button_set_rate.pressed.connect(self.on_set_rate_button_pressed)
+    self.button_set_position_rate.pressed.connect(self.on_set_position_rate_button_pressed)
+    self.button_set_imu_rate.pressed.connect(self.on_set_imu_rate_button_pressed)
 
     # Create ROS service proxies
     self.arm = rospy.ServiceProxy(self.STR_MAVROS_ARM_SERVICE_NAME, CommandBool)
@@ -115,8 +116,11 @@ class MavModeWidget(QWidget):
     self.reconstruction_started = True
     self.button_reconstruct.setEnabled(False)
 
-  def on_set_rate_button_pressed(self):
+  def on_set_position_rate_button_pressed(self):
     self.set_stream_rate(33, 20, True)
+
+  def on_set_imu_rate_button_pressed(self):
+    self.set_stream_rate(105, 20, True)
     
   def sys_status_callback(self, msg):
     if (not self.connected and msg.connected):
