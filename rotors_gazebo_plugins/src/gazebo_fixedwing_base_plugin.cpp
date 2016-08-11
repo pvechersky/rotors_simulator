@@ -184,22 +184,22 @@ void GazeboFixedWingBasePlugin::OnUpdate(const common::UpdateInfo& _info) {
 
   for (int i = 0; i < ailerons_.size(); i++) {
     double aileron_angle = ailerons_.at(i)->GetAngle(0).Radian();
-    ailerons_.at(i)->SetVelocity(0, aileron_info_.deflection - aileron_angle);
+    ailerons_.at(i)->SetVelocity(0, 2.0 * (aileron_info_.deflection - aileron_angle));
   }
 
   for (int i = 0; i < elevators_.size(); i++) {
     double elevator_angle = elevators_.at(i)->GetAngle(0).Radian();
-    elevators_.at(i)->SetVelocity(0, elevator_info_.deflection - elevator_angle);
+    elevators_.at(i)->SetVelocity(0, 2.0 * (elevator_info_.deflection - elevator_angle));
   }
 
   double rudder_angle = rudder_->GetAngle(0).Radian();
-  rudder_->SetVelocity(0, rudder_info_.deflection - rudder_angle);
+  rudder_->SetVelocity(0, 2.0 * (rudder_info_.deflection - rudder_angle));
 
   // Broadcast the transform to the camera link
   /*math::Pose cam_pose = link_->GetWorldPose();
   math::Quaternion base_ori = link_->GetWorldPose().rot;
-  //math::Quaternion shift = math::Quaternion(0.0, M_PI, M_PI);
-  math::Quaternion cam_ori = base_ori; //shift * base_ori;
+  math::Quaternion shift = math::Quaternion(0.0, M_PI, M_PI);
+  math::Quaternion cam_ori = shift * base_ori;
   tf::Quaternion rot(cam_ori.x, cam_ori.y, cam_ori.z, cam_ori.w);
   tf::Vector3 pos(cam_pose.pos.x, cam_pose.pos.y, cam_pose.pos.z);
   tf_ = tf::Transform(rot, pos);
@@ -211,17 +211,19 @@ void GazeboFixedWingBasePlugin::OnUpdate(const common::UpdateInfo& _info) {
 }
 
 void GazeboFixedWingBasePlugin::ComputeAerodynamicForcesMoments(math::Vector3& forces, math::Vector3& moments) {
+  math::Quaternion orientation = link_->GetWorldPose().rot;
+  math::Vector3 air_speed_body = orientation.RotateVectorReverse(link_->GetWorldLinearVel() - wind_speed_);
   math::Vector3 ang_vel_body = link_->GetRelativeAngularVel();
 
-  double u = air_speed_body_.x;
-  double v = -air_speed_body_.y;
-  double w = -air_speed_body_.z;
+  double u = air_speed_body.x;
+  double v = -air_speed_body.y;
+  double w = -air_speed_body.z;
 
   double p = ang_vel_body.x;
   double q = -ang_vel_body.y;
   double r = -ang_vel_body.z;
 
-  double V = air_speed_body_.GetLength();
+  double V = air_speed_body.GetLength();
 
   double beta = (V < 0.1) ? 0.0 : asin(v / V);
   double alpha = (V < 0.1) ? 0.0 : atan(w / u);
@@ -274,12 +276,9 @@ void GazeboFixedWingBasePlugin::ComputeAerodynamicForcesMoments(math::Vector3& f
 }
 
 void GazeboFixedWingBasePlugin::WindSpeedCallback(const rotors_comm::WindSpeedConstPtr& wind_speed_msg) {
-  math::Quaternion orientation = link_->GetWorldPose().rot;
-
-  math::Vector3 air_speed = link_->GetWorldLinearVel() -
-          math::Vector3(wind_speed_msg->velocity.x, wind_speed_msg->velocity.y, wind_speed_msg->velocity.z);
-
-  air_speed_body_ = orientation.RotateVectorReverse(air_speed);
+  wind_speed_ = math::Vector3(wind_speed_msg->velocity.x,
+                              wind_speed_msg->velocity.y,
+                              wind_speed_msg->velocity.z);
 }
 
 void GazeboFixedWingBasePlugin::CommandCallback(const mav_msgs::ActuatorsConstPtr& command_msg) {

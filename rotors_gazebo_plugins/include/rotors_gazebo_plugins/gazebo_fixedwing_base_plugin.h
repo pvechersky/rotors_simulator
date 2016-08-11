@@ -187,7 +187,7 @@ class GazeboFixedWingBasePlugin : public ModelPlugin {
 
   double throttle_;
 
-  math::Vector3 air_speed_body_;
+  math::Vector3 wind_speed_;
 
   math::Pose start_pose_;
 

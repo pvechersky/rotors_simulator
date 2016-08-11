@@ -249,7 +249,7 @@ void GazeboImuPlugin::OnUpdate(const common::UpdateInfo& _info) {
 
   addNoise(&linear_acceleration_I, &angular_velocity_I, dt);
 
-  math::Vector3 acceleration_drift =
+  /*math::Vector3 acceleration_drift =
       C_W_I.RotateVector(math::Vector3(accelerometer_bias_[0],
                                        accelerometer_bias_[1],
                                        accelerometer_bias_[2]));
@@ -269,7 +269,7 @@ void GazeboImuPlugin::OnUpdate(const common::UpdateInfo& _info) {
 
   math::Quaternion orientation_error(yaw_error_quat * roll_pitch_error_quat);
   orientation_error.Normalize();
-  C_W_I = orientation_error * C_W_I;
+  C_W_I = orientation_error * C_W_I;*/
 
   // Fill IMU message.
   imu_message_.header.stamp.sec = current_time.sec;
