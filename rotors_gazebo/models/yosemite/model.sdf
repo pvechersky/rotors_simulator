@@ -7,7 +7,7 @@
         <geometry>
           <heightmap>
             <uri>model://yosemite/materials/textures/yosemite.png</uri>
-            <size>1000 1000 100</size>
+            <size>1000 1000 125</size>
             <pos>0 0 -15</pos>
           </heightmap>
         </geometry>
@@ -29,19 +29,23 @@
               <size>50</size>
             </texture>
 	    <texture>
-	      <diffuse>file://media/materials/textures/terrain_detail.jpg</diffuse>
+	      <!--<diffuse>file://media/materials/textures/dirt_diffusespecular.png</diffuse>-->
+              <diffuse>file://media/materials/textures/granite.jpg</diffuse>
               <normal>file://media/materials/textures/flat_normal.png</normal>
-              <size>75</size>
+              <size>50</size>
             </texture>
             <texture>
-	      <diffuse>file://vrc_heightmap_1/materials/textures/texture_forest.png</diffuse>
+	      <!--<diffuse>file://vrc_heightmap_1/materials/textures/texture_forest.png</diffuse>-->
+              <!--<diffuse>file://yosemite/materials/textures/grass_dry.png</diffuse>-->
+              <diffuse>file://media/materials/textures/grass_diffusespecular.png</diffuse>
               <normal>file://media/materials/textures/flat_normal.png</normal>
-              <size>100</size>
+              <size>50</size>
             </texture>
             <texture>
-              <diffuse>file://vrc_heightmap_1/materials/textures/texture_mountains.png</diffuse>
+              <!--<diffuse>file://vrc_heightmap_1/materials/textures/texture_mountains.png</diffuse>-->
+              <diffuse>file://media/materials/textures/fungus_diffusespecular.png</diffuse>
               <normal>file://media/materials/textures/flat_normal.png</normal>
-              <size>30</size>
+              <size>50</size>
             </texture>
             <blend>
               <min_height>10</min_height>
@@ -50,19 +54,19 @@
               <fade_dist>10</fade_dist>-->
             </blend>
 	    <blend>
-              <min_height>45</min_height>
+              <min_height>60</min_height>
               <fade_dist>5</fade_dist>
 	      <!--<min_height>90</min_height>
               <fade_dist>10</fade_dist>-->
             </blend>
 	    <blend>
-              <min_height>75</min_height>
+              <min_height>85</min_height>
               <fade_dist>5</fade_dist>
               <!--<min_height>150</min_height>
               <fade_dist>10</fade_dist>-->
             </blend>
             <uri>model://yosemite/materials/textures/yosemite.png</uri>
-            <size>1000 1000 100</size>
+            <size>1000 1000 125</size>
             <pos>0 0 -15</pos>
           </heightmap>
         </geometry>

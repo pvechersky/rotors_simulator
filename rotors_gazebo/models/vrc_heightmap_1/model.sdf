@@ -22,14 +22,11 @@
               <size>50</size>
             </texture>
             <texture>
-	      <diffuse>file://vrc_heightmap_1/materials/textures/texture_forest.png</diffuse>
+	      <!--<diffuse>file://vrc_heightmap_1/materials/textures/texture_forest.png</diffuse>-->
+              <diffuse>file://vrc_heightmap_1/materials/textures/bern.png</diffuse>
               <normal>file://media/materials/textures/flat_normal.png</normal>
-              <size>100</size>
-            </texture>
-            <texture>
-              <diffuse>file://media/materials/textures/fungus_diffusespecular.png</diffuse>
-              <normal>file://media/materials/textures/flat_normal.png</normal>
-              <size>30</size>
+              <size>250</size>
+              <!--<size>100</size>-->
             </texture>
 	    <texture>
               <diffuse>file://vrc_heightmap_1/materials/textures/texture_mountains.png</diffuse>
@@ -37,12 +34,8 @@
               <size>30</size>
             </texture>
             <blend>
-              <min_height>50</min_height>
+              <min_height>15</min_height>
               <fade_dist>5</fade_dist>
-            </blend>
-            <blend>
-              <min_height>30</min_height>
-              <fade_dist>10</fade_dist>
             </blend>
 	    <blend>
               <min_height>60</min_height>
