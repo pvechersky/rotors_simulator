@@ -1,0 +1,271 @@
+material Rafz/Rafz1
+{
+  technique
+  {
+    pass
+    {
+      depth_write off
+      lighting off
+
+      texture_unit
+      {
+        texture rafz_1.jpg
+      }
+    }
+  }
+}
+
+material Rafz/Rafz2
+{
+  technique
+  {
+    pass
+    {
+      depth_write off
+      lighting off
+
+      texture_unit
+      {
+        texture rafz_2.jpg
+      }
+    }
+  }
+}
+
+material Rafz/Rafz3
+{
+  technique
+  {
+    pass
+    {
+      depth_write off
+      lighting off
+
+      texture_unit
+      {
+        texture rafz_3.jpg
+      }
+    }
+  }
+}
+
+material Rafz/Rafz4
+{
+  technique
+  {
+    pass
+    {
+      depth_write off
+      lighting off
+
+      texture_unit
+      {
+        texture rafz_4.jpg
+      }
+    }
+  }
+}
+
+material Rafz/Rafz5
+{
+  technique
+  {
+    pass
+    {
+      depth_write off
+      lighting off
+
+      texture_unit
+      {
+        texture rafz_5.jpg
+      }
+    }
+  }
+}
+
+material Rafz/Rafz6
+{
+  technique
+  {
+    pass
+    {
+      depth_write off
+      lighting off
+
+      texture_unit
+      {
+        texture rafz_6.jpg
+      }
+    }
+  }
+}
+
+material Rafz/Rafz7
+{
+  technique
+  {
+    pass
+    {
+      depth_write off
+      lighting off
+
+      texture_unit
+      {
+        texture rafz_7.jpg
+      }
+    }
+  }
+}
+
+material Rafz/Rafz8
+{
+  technique
+  {
+    pass
+    {
+      depth_write off
+      lighting off
+
+      texture_unit
+      {
+        texture rafz_8.jpg
+      }
+    }
+  }
+}
+
+material Rafz/Rafz9
+{
+  technique
+  {
+    pass
+    {
+      depth_write off
+      lighting off
+
+      texture_unit
+      {
+        texture rafz_9.jpg
+      }
+    }
+  }
+}
+
+material Rafz/Rafz10
+{
+  technique
+  {
+    pass
+    {
+      depth_write off
+      lighting off
+
+      texture_unit
+      {
+        texture rafz_10.jpg
+      }
+    }
+  }
+}
+
+material Rafz/Rafz11
+{
+  technique
+  {
+    pass
+    {
+      depth_write off
+      lighting off
+
+      texture_unit
+      {
+        texture rafz_11.jpg
+      }
+    }
+  }
+}
+
+material Rafz/Rafz12
+{
+  technique
+  {
+    pass
+    {
+      depth_write off
+      lighting off
+
+      texture_unit
+      {
+        texture rafz_12.jpg
+      }
+    }
+  }
+}
+
+material Rafz/Rafz13
+{
+  technique
+  {
+    pass
+    {
+      depth_write off
+      lighting off
+
+      texture_unit
+      {
+        texture rafz_13.jpg
+      }
+    }
+  }
+}
+
+material Rafz/Rafz14
+{
+  technique
+  {
+    pass
+    {
+      depth_write off
+      lighting off
+
+      texture_unit
+      {
+        texture rafz_14.jpg
+      }
+    }
+  }
+}
+
+material Rafz/Rafz15
+{
+  technique
+  {
+    pass
+    {
+      depth_write off
+      lighting off
+
+      texture_unit
+      {
+        texture rafz_15.jpg
+      }
+    }
+  }
+}
+
+material Rafz/Rafz16
+{
+  technique
+  {
+    pass
+    {
+      depth_write off
+      lighting off
+
+      texture_unit
+      {
+        texture rafz_16.jpg
+      }
+    }
+  }
+}
