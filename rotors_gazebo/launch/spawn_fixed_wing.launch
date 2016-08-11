@@ -14,6 +14,7 @@
   <arg name="enable_logging" default="false"/>
   <arg name="enable_ground_truth" default="true"/>
   <arg name="log_file" default="$(arg uav_name)"/>
+  <arg name="wait_to_record_bag" default="false"/>
 
   <!-- send the robot XML to param server -->
   <param name="robot_description" command="
@@ -21,6 +22,7 @@
     enable_logging:=$(arg enable_logging)
     enable_ground_truth:=$(arg enable_ground_truth)
     log_file:=$(arg log_file)
+    wait_to_record_bag:=$(arg wait_to_record_bag)
     uav_name:=$(arg uav_name)
     namespace:=$(arg namespace)"
   />

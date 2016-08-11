@@ -130,10 +130,10 @@ void HilSensorsInterface::GpsCallback(const sensor_msgs::NavSatFixConstPtr& gps_
   pressure_alt_ = gps_msg->altitude;
 }
 
-void HilSensorsInterface::GroundSpeedCallback(const geometry_msgs::Vector3ConstPtr& ground_speed_msg) {
-  vn_ = ground_speed_msg->x * 100.0;
-  ve_ = -ground_speed_msg->y * 100.0;
-  vd_ = -ground_speed_msg->z * 100.0;
+void HilSensorsInterface::GroundSpeedCallback(const geometry_msgs::TwistStampedConstPtr &ground_speed_msg) {
+  vn_ = ground_speed_msg->twist.linear.x * 100.0;
+  ve_ = -ground_speed_msg->twist.linear.y * 100.0;
+  vd_ = -ground_speed_msg->twist.linear.z * 100.0;
 
   vel_ = sqrt(vn_^2 + ve_^2 + vd_^2);
 }

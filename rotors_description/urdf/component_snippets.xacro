@@ -24,7 +24,7 @@
 
   <!-- Macro to add logging to a bag file. -->
   <xacro:macro name="bag_plugin_macro"
-    params="namespace bag_file rotor_velocity_slowdown_sim">
+    params="namespace bag_file rotor_velocity_slowdown_sim wait_to_record_bag">
     <gazebo>
       <plugin filename="librotors_gazebo_bag_plugin.so" name="rosbag">
         <robotNamespace>${namespace}</robotNamespace>
@@ -32,6 +32,7 @@
         <linkName>${namespace}/base_link</linkName>
         <frameId>${namespace}/base_link</frameId>
         <rotorVelocitySlowdownSim>${rotor_velocity_slowdown_sim}</rotorVelocitySlowdownSim>
+        <waitToRecordBag>${wait_to_record_bag}</waitToRecordBag>
       </plugin>
     </gazebo>
   </xacro:macro>
@@ -385,11 +386,10 @@
   </xacro:macro>
 
   <!-- Macro to add a GPS sensor. -->
-  <xacro:macro name="gps_plugin_macro" 
+  <xacro:macro name="gps_plugin_macro"
     params="namespace gps_suffix parent_link gps_topic ground_speed_topic
-      mass_gps_sensor reference_latitude reference_longitude reference_altitude
-      reference_heading noise_normal_position noise_uniform_position
-      *inertia *origin">
+      mass_gps_sensor horizontal_pos_std_dev vertical_pos_std_dev
+      horizontal_vel_std_dev vertical_vel_std_dev *inertia *origin">
     <!-- GPS link -->
     <link name="${namespace}/gps${gps_suffix}_link">
       <inertial>
@@ -405,19 +405,61 @@
       <child link="${namespace}/gps${gps_suffix}_link" />
       <limit upper="0" lower="0" effort="0" velocity="0" />
     </joint>
-    <gazebo>
-      <plugin filename="librotors_gazebo_gps_plugin.so" name="rotors_gazebo_gps${gps_suffix}_plugin">
-        <robotNamespace>${namespace}</robotNamespace> <!-- (string, required): ros namespace in which the messages are published -->
-        <linkName>${namespace}/gps${gps_suffix}_link</linkName> <!-- (string, required): name of the body which holds the GPS sensor -->
-        <gpsTopic>${gps_topic}</gpsTopic> <!-- (string): name of the sensor output topic and prefix of service names (defaults to 'gps') -->
-        <groundSpeedTopic>${ground_speed_topic}</groundSpeedTopic> <!-- (string): name of the ground speed output topic (defaults to 'ground_speed') -->
-        <referenceLatitude>${reference_latitude}</referenceLatitude> <!-- the initial latitude [degrees [-90, 90]] -->
-        <referenceLongitude>${reference_longitude}</referenceLongitude> <!-- the initial longitude [degrees [-180, 180]] -->
-        <referenceAltitude>${reference_altitude}</referenceAltitude> <!-- the initial altitude [m] -->
-        <referenceHeading>${reference_heading}</referenceHeading> <!-- the initial degrees, measured from North [deg] -->
-        <noiseNormalPosition>${noise_normal_position}</noiseNormalPosition> <!-- standard deviation of additive white gaussian noise [m] -->
-        <noiseUniformPosition>${noise_uniform_position}</noiseUniformPosition> <!-- symmetric bounds of uniform noise [m] -->
-      </plugin>
+    <gazebo reference="${namespace}/gps${gps_suffix}_link">
+      <sensor type="gps" name="${namespace}_gps${gps_suffix}">
+        <pose>0 0 0 0 0 0</pose>
+        <visualize>0</visualize>
+        <always_on>1</always_on>
+        <update_rate>5</update_rate>
+        <gps>
+          <position_sensing>
+            <horizontal>
+              <noise type="gaussian">
+                <mean>0.0</mean>
+                <stddev>${horizontal_pos_std_dev}</stddev>
+                <bias_mean>0.0</bias_mean>
+                <bias_stddev>0.0</bias_stddev>
+              </noise>
+            </horizontal>
+            <vertical>
+              <noise type="gaussian">
+                <mean>0.0</mean>
+                <stddev>${vertical_pos_std_dev}</stddev>
+                <bias_mean>0.0</bias_mean>
+                <bias_stddev>0.0</bias_stddev>
+              </noise>
+            </vertical>
+          </position_sensing>
+          <velocity_sensing>
+            <horizontal>
+              <noise type="gaussian">
+                <mean>0.0</mean>
+                <stddev>${horizontal_vel_std_dev}</stddev>
+                <bias_mean>0.0</bias_mean>
+                <bias_stddev>0.0</bias_stddev>
+              </noise>
+            </horizontal>
+            <vertical>
+              <noise type="gaussian">
+                <mean>0.0</mean>
+                <stddev>${vertical_vel_std_dev}</stddev>
+                <bias_mean>0.0</bias_mean>
+                <bias_stddev>0.0</bias_stddev>
+              </noise>
+            </vertical>
+          </velocity_sensing>
+        </gps>
+        <plugin filename="librotors_gazebo_gps_plugin.so" name="rotors_gazebo_gps${gps_suffix}_plugin">
+          <robotNamespace>${namespace}</robotNamespace> <!-- (string, required): ros namespace in which the messages are published -->
+          <linkName>${namespace}/gps${gps_suffix}_link</linkName> <!-- (string, required): name of the body which holds the GPS sensor -->
+          <gpsTopic>${gps_topic}</gpsTopic> <!-- (string): name of the sensor output topic and prefix of service names (defaults to 'gps') -->
+          <groundSpeedTopic>${ground_speed_topic}</groundSpeedTopic> <!-- (string): name of the ground speed output topic (defaults to 'ground_speed') -->
+          <horPosStdDev>${horizontal_pos_std_dev}</horPosStdDev> <!-- standard deviation for horizontal position noise [m] -->
+          <verPosStdDev>${vertical_pos_std_dev}</verPosStdDev> <!-- standard deviation for vertical position noise [m] -->
+          <horVelStdDev>${horizontal_vel_std_dev}</horVelStdDev> <!-- standard deviation for horizontal speed noise [m/s] -->
+          <verVelStdDev>${vertical_vel_std_dev}</verVelStdDev> <!-- standard deviation for vertical speed noise [m/s] -->
+        </plugin>
+      </sensor>
     </gazebo>
   </xacro:macro>
 
@@ -848,15 +890,16 @@
       gyroscope_bias_correlation_time="1000.0"
       gyroscope_turn_on_bias_sigma="0.0087"
       accelerometer_noise_density="0.004"
-      accelerometer_random_walk="0.0"
+      accelerometer_random_walk="0.006"
       accelerometer_bias_correlation_time="300.0"
-      accelerometer_turn_on_bias_sigma="0.0">
+      accelerometer_turn_on_bias_sigma="0.1960">
       <inertia ixx="0.00001" ixy="0.0" ixz="0.0" iyy="0.00001" iyz="0.0" izz="0.00001" />
       <origin xyz="0 0 0" rpy="0 0 0" />
     </xacro:imu_plugin_macro>
   </xacro:macro>
 
   <xacro:macro name="default_gps" params="namespace parent_link">
+    <!-- Default GPS. -->
     <xacro:gps_plugin_macro
       namespace="${namespace}"
       gps_suffix=""
@@ -864,12 +907,10 @@
       gps_topic="gps"
       ground_speed_topic="ground_speed"
       mass_gps_sensor="0.015"
-      reference_latitude="47.3667"
-      reference_longitude="8.5500"
-      reference_altitude="500.0"
-      reference_heading="0.0"
-      noise_normal_position="0 0 0"
-      noise_uniform_position="0 0 0">
+      horizontal_pos_std_dev="3.0"
+      vertical_pos_std_dev="6.0"
+      horizontal_vel_std_dev="0.1"
+      vertical_vel_std_dev="0.1">
       <inertia ixx="0.00001" ixy="0.0" ixz="0.0" iyy="0.00001" iyz="0.0" izz="0.00001" />
       <origin xyz="0 0 0" rpy="0 0 0" />
     </xacro:gps_plugin_macro>

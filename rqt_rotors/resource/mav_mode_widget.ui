@@ -358,6 +358,22 @@ QGroupBox::title {
     </item>
    </layout>
   </widget>
+  <widget class="QPushButton" name="button_record_rosbag">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>440</y>
+     <width>158</width>
+     <height>27</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Record Bag</string>
+   </property>
+  </widget>
  </widget>
  <resources/>
  <connections/>

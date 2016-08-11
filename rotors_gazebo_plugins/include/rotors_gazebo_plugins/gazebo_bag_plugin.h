@@ -32,16 +32,20 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/TwistStamped.h>
 #include <geometry_msgs/WrenchStamped.h>
+#include <image_transport/image_transport.h>
 #include <mav_msgs/Actuators.h>
 #include <mav_msgs/AttitudeThrust.h>
 #include <mav_msgs/default_topics.h>
 #include <mav_msgs/RateThrust.h>
+#include <nav_msgs/Odometry.h>
 #include <ros/ros.h>
 #include <rosbag/bag.h>
+#include <sensor_msgs/Image.h>
 #include <sensor_msgs/Imu.h>
 #include <std_msgs/Float32.h>
 #include <trajectory_msgs/MultiDOFJointTrajectory.h>
 
+#include "rotors_comm/RecordRosbag.h"
 #include "rotors_gazebo_plugins/common.h"
 
 
@@ -50,6 +54,9 @@ namespace gazebo {
 static const std::string kDefaultFrameId = "ground_truth_pose";
 static const std::string kDefaultLinkName = "base_link";
 static const std::string kDefaultBagFilename_ = "simulator.bag";
+static const std::string kDefaultRecordingServiceName = "record_rosbag";
+static constexpr bool kDefaultWaitToRecord = false;
+static constexpr bool kDefaultIsRecording = false;
 
 /// \brief This plugin is used to create rosbag files from within gazebo.
 class GazeboBagPlugin : public ModelPlugin {
@@ -73,8 +80,12 @@ class GazeboBagPlugin : public ModelPlugin {
         frame_id_(kDefaultFrameId),
         link_name_(kDefaultLinkName),
         bag_filename_(kDefaultBagFilename_),
+        recording_service_name_(kDefaultRecordingServiceName),
         rotor_velocity_slowdown_sim_(kDefaultRotorVelocitySlowdownSim),
-        node_handle_(NULL) {}
+        wait_to_record_(kDefaultWaitToRecord),
+        is_recording_(kDefaultIsRecording),
+        node_handle_(NULL),
+        it_(NULL) {}
 
   virtual ~GazeboBagPlugin();
 
@@ -87,6 +98,12 @@ class GazeboBagPlugin : public ModelPlugin {
   /// \brief Called when the world is updated.
   /// \param[in] _info Update timing information.
   void OnUpdate(const common::UpdateInfo& /*_info*/);
+
+  /// \brief Starting recording the rosbag
+  void StartRecording();
+
+  /// \brief Stop recording the rosbag
+  void StopRecording();
 
   /// \brief Called when an IMU message is received.
   /// \param[in] imu_msg A IMU message from sensor_msgs.
@@ -116,6 +133,14 @@ class GazeboBagPlugin : public ModelPlugin {
   /// \param[in] control_msg A RateThrust message from mav_msgs.
   void RateThrustCallback(const mav_msgs::RateThrustConstPtr& control_msg);
 
+  /// \brief Called when an Image message is received.
+  /// \param[in] image_msg An Image message from sensor_msgs.
+  void ImageCallback(const sensor_msgs::ImageConstPtr& image_msg);
+
+  /// \brief Called when an state estimate message is received.
+  /// \param[in] state_est_msg A state estimate message from nav_msgs.
+  void StateEstimateCallback(const nav_msgs::OdometryConstPtr& state_est_msg);
+
   /// \brief Log the ground truth pose and twist.
   /// \param[in] now The current gazebo common::Time
   void LogGroundTruth(const common::Time now);
@@ -127,6 +152,12 @@ class GazeboBagPlugin : public ModelPlugin {
   /// \brief Log all the wrenches.
   /// \param[in] now The current gazebo common::Time
   void LogWrenches(const common::Time now);
+
+  /// \brief Called when a request to start or stop recording is received.
+  /// \param[in] req The request to start or stop recording.
+  /// \param[out] res The response to be sent back to the client.
+  bool RecordingServiceCallback(rotors_comm::RecordRosbag::Request& req,
+                                rotors_comm::RecordRosbag::Response& res);
 
  private:
   /// \brief Pointer to the update event connection.
@@ -159,10 +190,17 @@ class GazeboBagPlugin : public ModelPlugin {
   std::string frame_id_;
   std::string link_name_;
   std::string bag_filename_;
+  std::string recording_service_name_;
   double rotor_velocity_slowdown_sim_;
 
-  /// \brief Mutex lock for thread safty of writing bag files
+  /// \brief Mutex lock for thread safety of writing bag files
   boost::mutex mtx_;
+
+  /// \brief Whether the plugin should wait for user command to start recording
+  bool wait_to_record_;
+
+  /// \brief Whether the plugin is currenly recording a rosbag
+  bool is_recording_;
 
   rosbag::Bag bag_;
   ros::NodeHandle *node_handle_;
@@ -175,6 +213,14 @@ class GazeboBagPlugin : public ModelPlugin {
   ros::Subscriber control_motor_speed_sub_;
   ros::Subscriber control_rate_thrust_sub_;
   ros::Subscriber command_pose_sub_;
+  ros::Subscriber state_est_sub_;
+
+  // Image transport interface
+  image_transport::ImageTransport *it_;
+  image_transport::Subscriber image_sub_;
+
+  // Ros service server
+  ros::ServiceServer recording_service_;
 
   std::ofstream csvOut;
 

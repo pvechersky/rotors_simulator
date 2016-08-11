@@ -1,9 +1,5 @@
 /*
- * Copyright 2015 Fadri Furrer, ASL, ETH Zurich, Switzerland
- * Copyright 2015 Michael Burri, ASL, ETH Zurich, Switzerland
- * Copyright 2015 Mina Kamel, ASL, ETH Zurich, Switzerland
- * Copyright 2015 Janosch Nikolic, ASL, ETH Zurich, Switzerland
- * Copyright 2015 Markus Achtelik, ASL, ETH Zurich, Switzerland
+ * Copyright 2016 Pavel Vechersky, ASL, ETH Zurich, Switzerland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,72 +17,69 @@
 #ifndef ROTORS_GAZEBO_PLUGINS_GPS_PLUGIN_H
 #define ROTORS_GAZEBO_PLUGINS_GPS_PLUGIN_H
 
-#include <Eigen/Core>
-#include <gazebo/common/common.hh>
-#include <gazebo/common/Plugin.hh>
+#include <random>
+
 #include <gazebo/gazebo.hh>
 #include <gazebo/physics/physics.hh>
-#include <geometry_msgs/Vector3.h>
-#include <mav_msgs/default_topics.h>
+#include <gazebo/sensors/sensors.hh>
+#include <geometry_msgs/TwistStamped.h>
 #include <ros/ros.h>
 #include <sensor_msgs/NavSatFix.h>
 
 #include "rotors_gazebo_plugins/common.h"
 
 namespace gazebo {
-// WGS84 constants
-static constexpr double kEquatorialRadius = 6378137.0;
-static constexpr double kPolarRadius = 6356752.3;
-static constexpr double kFlattening = 1.0 / 298.257223563;
-static constexpr double kEccentrity2 = 2 * kFlattening - kFlattening * kFlattening;
-
-// Default reference values (Zurich: lat=+47.3667degN, lon=+8.5500degE, h=+500m, WGS84)
-static constexpr double kDefaultRefLat = 47.3667;
-static constexpr double kDefaultRefLon = 8.5500;
-static constexpr double kDefaultRefAlt = 500.0;
-static constexpr double kDefaultRefHeading = 0.0;
-
-// Default ground speed topic name
+// Default values
 static const std::string kDefaultGroundSpeedPubTopic = "ground_speed";
+static constexpr double kDefaultHorPosStdDev = 3.0;
+static constexpr double kDefaultVerPosStdDev = 6.0;
+static constexpr double kDefaultHorVelStdDev = 0.1;
+static constexpr double kDefaultVerVelStdDev = 0.1;
 
-class GazeboGpsPlugin : public ModelPlugin {
+class GazeboGpsPlugin : public SensorPlugin {
  public:
+  typedef std::normal_distribution<> NormalDistribution;
+
   GazeboGpsPlugin();
   virtual ~GazeboGpsPlugin();
 
  protected:
-  void Load(physics::ModelPtr _model, sdf::ElementPtr _sdf);
-  void OnUpdate(const common::UpdateInfo&);
+  void Load(sensors::SensorPtr _sensor, sdf::ElementPtr _sdf);
+
+  void OnUpdate();
 
  private:
-  std::string namespace_;
-  std::string frame_id_;
-
+  // ROS interface
   ros::NodeHandle* node_handle_;
   ros::Publisher gps_pub_;
   ros::Publisher ground_speed_pub_;
+  std::string gps_topic_;
+  std::string ground_speed_topic_;
+
+  // Pointer to the parent sensor
+  sensors::GpsSensorPtr parent_sensor_;
 
   // Pointer to the world
   physics::WorldPtr world_;
-  // Pointer to the model
-  physics::ModelPtr model_;
-  // Pointer to the link
+
+  // Pointer to the sensor link
   physics::LinkPtr link_;
+
   // Pointer to the update event connection
   event::ConnectionPtr updateConnection_;
 
-  int gps_sequence_;
-
-  double ref_lat_;
-  double ref_lon_;
-  double ref_alt_;
-  double ref_heading_;
-  double earth_radius_;
-  double radius_north_;
-  double radius_east_;
-
+  // GPS message to be published on sensor update
   sensor_msgs::NavSatFix gps_message_;
-  geometry_msgs::Vector3 ground_speed_msg_;
+
+  // Ground speed message to be publised on sensor update
+  geometry_msgs::TwistStamped ground_speed_message_;
+
+  // Normal distributions for ground speed noise in x, y, and z directions
+  NormalDistribution ground_speed_n_[3];
+
+  // Random number generator
+  std::random_device random_device_;
+  std::mt19937 random_generator_;
 };
 }
 

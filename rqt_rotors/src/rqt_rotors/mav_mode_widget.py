@@ -13,6 +13,7 @@ from python_qt_binding import loadUi
 from python_qt_binding.QtGui import QWidget
 from python_qt_binding.QtGui import QFormLayout
 from python_qt_binding.QtCore import QTimer, Slot
+from rotors_comm.srv import RecordRosbag
 from std_msgs.msg import Bool
 from std_srvs.srv import Empty
 
@@ -39,14 +40,19 @@ class MavModeWidget(QWidget):
 
   # String constants
   STR_UNKNOWN = 'N/A'
+
   STR_MAVROS_ARM_SERVICE_NAME = '/mavros/cmd/arming'
   STR_MAVROS_COMMAND_LONG_SERVICE_NAME = '/mavros/cmd/command'
   STR_MAVROS_SET_MODE_SERVICE_NAME = '/mavros/set_mode'
   STR_MAVROS_SET_STREAM_RATE_SERVICE_NAME = '/mavros/set_stream_rate'
+  STR_RECORD_ROSBAG_SERVICE_NAME = 'record_rosbag'
   STR_RESET_MODEL_SERVICE_NAME = 'reset_model'
-  STR_SYS_STATUS_SUB_TOPIC = '/mavros/state'
 
+  STR_SYS_STATUS_SUB_TOPIC = '/mavros/state'
   STR_START_RECONSTRUCTION_PUB_TOPIC = 'start_reconstruction'
+
+  STR_BUTTON_LABEL_RECORD_BAG = 'Record Bag'
+  STR_BUTTON_LABEL_STOP_RECORDING_BAG = 'Stop Recording'
 
   def __init__(self, parent):
     # Init QWidget
@@ -72,12 +78,14 @@ class MavModeWidget(QWidget):
     self.connected = False
     self.guided = False
     self.hil_enabled = False
+    self.is_recording = False
     self.reconstruction_started = False
     
     # Set the functions that are called when signals are emitted
     self.button_set_hil_mode.pressed.connect(self.on_set_hil_mode_button_pressed)
     self.button_arm.pressed.connect(self.on_arm_button_pressed)
     self.button_reboot_autopilot.pressed.connect(self.on_reboot_autopilot_button_pressed)
+    self.button_record_rosbag.pressed.connect(self.on_record_rosbag_button_pressed)
     self.button_reset_model.pressed.connect(self.on_reset_model_button_pressed)
     self.button_reconstruct.pressed.connect(self.on_reconstruct_button_pressed)
     self.button_set_position_rate.pressed.connect(self.on_set_position_rate_button_pressed)
@@ -85,6 +93,7 @@ class MavModeWidget(QWidget):
 
     # Create ROS service proxies
     self.arm = rospy.ServiceProxy(self.STR_MAVROS_ARM_SERVICE_NAME, CommandBool)
+    self.record_rosbag = rospy.ServiceProxy(self.STR_RECORD_ROSBAG_SERVICE_NAME, RecordRosbag)
     self.reset_model = rospy.ServiceProxy(self.STR_RESET_MODEL_SERVICE_NAME, Empty)
     self.send_command_long = rospy.ServiceProxy(self.STR_MAVROS_COMMAND_LONG_SERVICE_NAME, CommandLong)
     self.set_mode = rospy.ServiceProxy(self.STR_MAVROS_SET_MODE_SERVICE_NAME, SetMode)
@@ -106,6 +115,16 @@ class MavModeWidget(QWidget):
 
   def on_reboot_autopilot_button_pressed(self):
     self.send_command_long(False, 246, 1, 1, 0, 0, 0, 0, 0, 0)
+
+  def on_record_rosbag_button_pressed(self):
+    if not(self.is_recording):
+      self.is_recording = True
+      self.record_rosbag(self.is_recording)
+      self.button_record_rosbag.setText(self.STR_BUTTON_LABEL_STOP_RECORDING_BAG)
+    else:
+      self.is_recording = False
+      self.record_rosbag(self.is_recording)
+      self.button_record_rosbag.setText(self.STR_BUTTON_LABEL_RECORD_BAG)
 
   def on_reset_model_button_pressed(self):
     self.reset_model()

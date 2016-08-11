@@ -1,9 +1,15 @@
 <launch>
   <arg name="uav_name" default="techpod"/>
-  <arg name="world_name" default="yosemite"/>
-  <arg name="enable_logging" default="false"/>
+  <arg name="world_name" default="rafz"/>
+  <arg name="enable_logging" default="true"/>
   <arg name="enable_ground_truth" default="true"/>
   <arg name="log_file" default="$(arg uav_name)"/>
+
+  <remap from="/techpod/imu" to="/imu0" />
+  <remap from="/techpod/gps" to="/gps_llh" />
+  <remap from="/techpod/camera_downward/image_raw" to="/cam0/image_raw" />
+  <remap from="/techpod/camera_downward/camera_info" to="/cam0/camera_info" />
+  <remap from="/techpod/ground_truth/pose" to="/ground_truth/pose" />
 
   <env name="GAZEBO_MODEL_PATH" value="${GAZEBO_MODEL_PATH}:$(find rotors_gazebo)/models"/>
   <env name="GAZEBO_RESOURCE_PATH" value="${GAZEBO_RESOURCE_PATH}:$(find rotors_gazebo)/models"/>
@@ -24,9 +30,10 @@
       <arg name="enable_logging" value="$(arg enable_logging)" />
       <arg name="enable_ground_truth" value="$(arg enable_ground_truth)" />
       <arg name="log_file" value="$(arg log_file)" />
-      <arg name="x" value="-100" />
+      <arg name="wait_to_record_bag" value="true" />
+      <arg name="x" value="0" />
       <arg name="y" value="0" />
-      <arg name="z" value="0" />
+      <arg name="z" value="0.1" />
     </include>
 
     <node name="hil_sensors_interface" pkg="rotors_hil_interface" type="rotors_hil_sensors_interface" clear_params="true" output="screen">
