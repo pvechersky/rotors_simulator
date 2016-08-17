@@ -176,7 +176,8 @@ void GazeboFixedWingBasePlugin::OnUpdate(const common::UpdateInfo& _info) {
 
   ComputeAerodynamicForcesMoments(forces, moments);
 
-  link_->AddLinkForce(forces);
+  //link_->AddLinkForce(forces);
+  link_->AddRelativeForce(forces);
   link_->AddRelativeTorque(moments);
 
   if (!rudder_ || ailerons_.size() == 0 || elevators_.size() == 0)

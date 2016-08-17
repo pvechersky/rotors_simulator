@@ -11,7 +11,12 @@ find_package(catkin REQUIRED COMPONENTS
   std_srvs
 )
 
-catkin_package()
+catkin_package(
+  INCLUDE_DIRS
+  LIBRARIES
+  CATKIN_DEPENDS mavros_msgs rospy rotors_comm rqt_gui rqt_gui_py std_msgs std_srvs
+  DEPENDS
+)
 catkin_python_setup()
 
 install(FILES plugin.xml

@@ -1,3 +1,20 @@
+material Rafz/Rafz
+{
+  technique
+  {
+    pass
+    {
+      depth_write off
+      lighting off
+
+      texture_unit
+      {
+        texture rafz.png
+      }
+    }
+  }
+}
+
 material Rafz/Rafz1
 {
   technique
