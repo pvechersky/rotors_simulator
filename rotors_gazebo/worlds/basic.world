@@ -2,7 +2,7 @@
 <sdf version="1.4">
   <world name="default">
     <gui>
-      <plugin name="view_selection" filename="librotors_gazebo_gui_view_control_plugin.so"/>
+      <plugin name="view_selection" filename="librotors_gazebo_gui_rotors_toolbar_plugin.so"/>
     </gui>
     <include>
       <uri>model://ground_plane</uri>

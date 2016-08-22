@@ -33,14 +33,20 @@ catkin_package(
 )
 
 QT4_WRAP_CPP(headers_view_control include/rotors_gazebo_gui_plugins/gazebo_gui_view_control_plugin.h)
+QT4_WRAP_CPP(headers_point_coordinates include/rotors_gazebo_gui_plugins/gazebo_gui_rotors_toolbar_plugin.h)
 
 add_library(rotors_gazebo_gui_view_control_plugin SHARED ${headers_view_control} src/gazebo_gui_view_control_plugin.cpp)
 target_link_libraries(rotors_gazebo_gui_view_control_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES} ${QT_LIBRARIES} ${PROTOBUF_LIBRARIES})
 add_dependencies(rotors_gazebo_gui_view_control_plugin ${catkin_EXPORTED_TARGETS})
 
+add_library(rotors_gazebo_gui_rotors_toolbar_plugin SHARED ${headers_point_coordinates} src/gazebo_gui_rotors_toolbar_plugin.cpp)
+target_link_libraries(rotors_gazebo_gui_rotors_toolbar_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES} ${QT_LIBRARIES} ${PROTOBUF_LIBRARIES})
+add_dependencies(rotors_gazebo_gui_rotors_toolbar_plugin ${catkin_EXPORTED_TARGETS})
+
 install(
   TARGETS
     rotors_gazebo_gui_view_control_plugin
+    rotors_gazebo_gui_rotors_toolbar_plugin
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 )
