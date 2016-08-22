@@ -12,6 +12,10 @@
       <uri>model://rafz</uri>
     </include>
 
+    <include>
+      <uri>model://runway</uri>
+    </include>
+
     <spherical_coordinates>
       <surface_model>EARTH_WGS84</surface_model>
       <latitude_deg>47.3667</latitude_deg>

@@ -1,0 +1,34 @@
+material Runway/Zurich
+{
+  technique
+  {
+    pass
+    {
+      depth_write off
+      lighting off
+
+      texture_unit
+      {
+        texture zurich.jpg
+      }
+    }
+  }
+}
+
+material Runway/Runway
+{
+  technique
+  {
+    pass
+    {
+      depth_write off
+      lighting off
+
+      texture_unit
+      {
+        texture runway.png
+      }
+    }
+  }
+}
+
