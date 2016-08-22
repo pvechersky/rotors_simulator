@@ -14,45 +14,25 @@
  * limitations under the License.
  */
 
-#ifndef ROTORS_GAZEBO_GUI_ROTORS_TOOLBAR_PLUGIN_H
-#define ROTORS_GAZEBO_GUI_ROTORS_TOOLBAR_PLUGIN_H
+#ifndef ROTORS_GAZEBO_GUI_POINT_COORDINATES_DIALOG_H
+#define ROTORS_GAZEBO_GUI_POINT_COORDINATES_DIALOG_H
 
 #include <boost/bind.hpp>
 #include <gazebo/common/common.hh>
-#include <gazebo/common/Plugin.hh>
 #include <gazebo/gazebo.hh>
 #include <gazebo/gui/gui.hh>
-#include <gazebo/gui/GuiPlugin.hh>
-#include <gazebo/rendering/rendering.hh>
-
-#include <rotors_gazebo_gui_plugins/point_coordinates_dialog.h>
+#include "gazebo/gui/qt.h"
+#include "gazebo/util/system.hh"
 
 namespace gazebo {
 
-class GAZEBO_VISIBLE GazeboGuiRotorsToolbarPlugin : public GUIPlugin {
+class GAZEBO_VISIBLE PointCoordinatesDialog : public QDialog {
  Q_OBJECT
 
  public:
-  GazeboGuiRotorsToolbarPlugin();
-  virtual ~GazeboGuiRotorsToolbarPlugin();
-
- protected:
-  void Load(sdf::ElementPtr _sdf);
-
- protected slots:
-  void PointCoordinatesMode();
-  void SelectView();
-
- private:
-  //void OnUpdate();
-
-  //event::ConnectionPtr update_connection_;
-
-  QToolBar *toolbar_;
-
-  QAction *point_coordinates_action_;
-  QAction *view_selection_action_;
+  PointCoordinatesDialog(QWidget *_parent = 0);
+  virtual ~PointCoordinatesDialog();
 };
 }
 
-#endif // ROTORS_GAZEBO_GUI_ROTORS_TOOLBAR_PLUGIN_H
+#endif // ROTORS_GAZEBO_GUI_POINT_COORDINATES_DIALOG_H

@@ -18,14 +18,8 @@
 
 namespace gazebo {
 
-GazeboGuiRotorsToolbarPlugin::GazeboGuiRotorsToolbarPlugin():
+GazeboGuiRotorsToolbarPlugin::GazeboGuiRotorsToolbarPlugin() :
     GUIPlugin() {
-  this->main_window_ = gui::get_main_window();
-  toolbar_ = this->main_window_->GetRenderWidget()->GetToolbar();
-
-  point_coordinates_action_ = new QAction(QIcon("/home/pavel/thesis_ws/src/rotors_simulator/rotors_gazebo_gui_plugins/images/point_coordinates.png"), tr("TEST"), this);
-  toolbar_->addAction(point_coordinates_action_);
-
   QHBoxLayout *mainLayout = new QHBoxLayout;
   QPushButton *forward_button = new QPushButton(tr("Forward"));
   mainLayout->addWidget(forward_button);
@@ -34,19 +28,42 @@ GazeboGuiRotorsToolbarPlugin::GazeboGuiRotorsToolbarPlugin():
 }
 
 GazeboGuiRotorsToolbarPlugin::~GazeboGuiRotorsToolbarPlugin() {
+  delete this->toolbar_;
+  this->toolbar_ = NULL;
 }
 
 void GazeboGuiRotorsToolbarPlugin::Load(sdf::ElementPtr _sdf) {
+  this->toolbar_ = gui::get_main_window()->GetRenderWidget()->GetToolbar();
+
+  this->point_coordinates_action_ = new QAction(QIcon("/home/pavel/thesis_ws/src/rotors_simulator/rotors_gazebo_gui_plugins/images/point_coordinates.png"), tr("TEST"), this);
+  this->point_coordinates_action_->setStatusTip(tr("TEST"));
+  this->point_coordinates_action_->setCheckable(true);
+  this->point_coordinates_action_->setToolTip(tr("TEST"));
+  connect(this->point_coordinates_action_, SIGNAL(triggered()), this, SLOT(PointCoordinatesMode()));
+
+  this->view_selection_action_ = new QAction(QIcon("/home/pavel/thesis_ws/src/rotors_simulator/rotors_gazebo_gui_plugins/images/view_selection.png"), tr("TEST"), this);
+  this->view_selection_action_->setStatusTip(tr("TEST"));
+  this->view_selection_action_->setCheckable(true);
+  this->view_selection_action_->setToolTip(tr("TEST"));
+  connect(this->view_selection_action_, SIGNAL(triggered()), this, SLOT(SelectView()));
+
+  this->toolbar_->addSeparator();
+  this->toolbar_->addAction(this->point_coordinates_action_);
+  this->toolbar_->addAction(this->view_selection_action_);
+}
+
+void GazeboGuiRotorsToolbarPlugin::PointCoordinatesMode() {
+  PointCoordinatesDialog *point_coordinates_dialog = new PointCoordinatesDialog(this);
+  point_coordinates_dialog->show();
+}
+
+void GazeboGuiRotorsToolbarPlugin::SelectView() {
 
 }
 
-void GazeboGuiRotorsToolbarPlugin::OnForwardButton() {
+/*void GazeboGuiRotorsToolbarPlugin::OnUpdate() {
 
-}
-
-void GazeboGuiRotorsToolbarPlugin::OnUpdate() {
-
-}
+}*/
 
 // Register this plugin with the simulator
 GZ_REGISTER_GUI_PLUGIN(GazeboGuiRotorsToolbarPlugin);
