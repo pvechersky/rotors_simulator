@@ -19,10 +19,12 @@
 
 #include <boost/bind.hpp>
 #include <gazebo/common/common.hh>
+#include <gazebo/common/MouseEvent.hh>
 #include <gazebo/common/Plugin.hh>
 #include <gazebo/gazebo.hh>
 #include <gazebo/gui/gui.hh>
 #include <gazebo/gui/GuiPlugin.hh>
+#include <gazebo/gui/MouseEventHandler.hh>
 #include <gazebo/rendering/rendering.hh>
 
 #include "rotors_gazebo_plugins/common.h"
@@ -50,6 +52,8 @@ class GAZEBO_VISIBLE GazeboViewControlPlugin : public GUIPlugin {
 
  private:
   void OnUpdate();
+
+  bool OnMousePress(const common::MouseEvent& _event);
 
   bool is_tracking_;
 

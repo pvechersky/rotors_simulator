@@ -80,6 +80,8 @@ void GazeboViewControlPlugin::Load(sdf::ElementPtr _sdf) {
       event::Events::ConnectRender(
           boost::bind(&GazeboViewControlPlugin::OnUpdate, this));
 
+  //gui::MouseEventHandler::Instance()->AddPressFilter(
+  //            "rotors", boost::bind(&GazeboViewControlPlugin::OnMousePress, this, _1));
 }
 
 void GazeboViewControlPlugin::OnForwardButton() {
@@ -127,6 +129,18 @@ void GazeboViewControlPlugin::OnUpdate() {
     // Set the new camera pose
     user_cam_->SetWorldPose(new_cam_pose);
   }
+}
+
+bool GazeboViewControlPlugin::OnMousePress(const common::MouseEvent& _event) {
+  math::Vector3 world_pos;
+  math::Vector2i click_pos = _event.pos;
+  rendering::ScenePtr scene = rendering::get_scene();
+
+  scene->GetFirstContact(user_cam_, click_pos, world_pos);
+
+  std::cout << world_pos.x << ", " << world_pos.y << ", " << world_pos.z << std::endl;
+
+  return true;
 }
 
 // Register this plugin with the simulator
