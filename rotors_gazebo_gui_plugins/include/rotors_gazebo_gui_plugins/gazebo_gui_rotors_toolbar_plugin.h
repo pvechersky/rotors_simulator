@@ -52,6 +52,8 @@ class GAZEBO_VISIBLE GazeboGuiRotorsToolbarPlugin : public GUIPlugin {
 
   QAction *point_coordinates_action_;
   QAction *view_selection_action_;
+
+  PointCoordinatesDialog *point_coordinates_dialog_;
 };
 }
 

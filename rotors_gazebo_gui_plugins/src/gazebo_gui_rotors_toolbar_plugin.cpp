@@ -53,8 +53,17 @@ void GazeboGuiRotorsToolbarPlugin::Load(sdf::ElementPtr _sdf) {
 }
 
 void GazeboGuiRotorsToolbarPlugin::PointCoordinatesMode() {
-  PointCoordinatesDialog *point_coordinates_dialog = new PointCoordinatesDialog(this);
-  point_coordinates_dialog->show();
+  bool is_checked = this->view_selection_action_->isEnabled();
+
+  if (is_checked) {
+    this->point_coordinates_dialog_ = new PointCoordinatesDialog(this);
+    this->point_coordinates_dialog_->show();
+  }
+  else {
+    this->point_coordinates_dialog_->hide();
+    delete this->point_coordinates_dialog_;
+    this->point_coordinates_dialog_ = NULL;
+  }
 }
 
 void GazeboGuiRotorsToolbarPlugin::SelectView() {
