@@ -108,6 +108,10 @@ add_library(rotors_gazebo_control_surface_plugin src/gazebo_control_surface_plug
 target_link_libraries(rotors_gazebo_control_surface_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
 add_dependencies(rotors_gazebo_control_surface_plugin ${catkin_EXPORTED_TARGETS})
 
+add_library(rotors_gazebo_camera_plugin src/gazebo_camera_plugin.cpp)
+target_link_libraries(rotors_gazebo_camera_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+add_dependencies(rotors_gazebo_camera_plugin ${catkin_EXPORTED_TARGETS})
+
 add_library(rotors_gazebo_view_control_plugin SHARED ${headers_view_control} src/gazebo_view_control_plugin.cpp)
 target_link_libraries(rotors_gazebo_view_control_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES} ${QT_LIBRARIES} ${PROTOBUF_LIBRARIES})
 add_dependencies(rotors_gazebo_view_control_plugin ${catkin_EXPORTED_TARGETS})
@@ -132,6 +136,7 @@ install(
     rotors_gazebo_pressure_plugin
     rotors_gazebo_air_speed_plugin
     rotors_gazebo_control_surface_plugin
+    rotors_gazebo_camera_plugin
     rotors_gazebo_view_control_plugin
     rotors_gazebo_map_tracker_plugin
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

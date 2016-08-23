@@ -7,7 +7,7 @@
 
   <remap from="/techpod/imu" to="/imu0" />
   <remap from="/techpod/gps" to="/gps_llh" />
-  <remap from="/techpod/camera_downward/image_raw" to="/cam0/image_raw" />
+  <remap from="/techpod/camera" to="/cam0/image_raw" />
   <remap from="/techpod/camera_downward/camera_info" to="/cam0/camera_info" />
   <remap from="/techpod/ground_truth/pose" to="/ground_truth/pose" />
 

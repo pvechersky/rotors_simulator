@@ -43,7 +43,7 @@
   <xacro:default_air_speed_sensor namespace="${namespace}" parent_link="${namespace}/base_link" />
 
   <!-- Mount a downward-looking camera. -->
-  <xacro:camera_macro 
+  <xacro:raw_camera_macro 
     namespace="${namespace}"
     parent_link="${namespace}/base_link" 
     camera_suffix="downward"
@@ -58,8 +58,8 @@
     noise_stddev="0.007"
     enable_visual="false">
     <mesh filename="package://rotors_description/meshes/vi_camera.dae" scale="1 1 1" />
-    <origin xyz="5 0 2.5" rpy="0 1.5707 1.5707" />
-  </xacro:camera_macro>
+    <origin xyz="15 0 7.5" rpy="0 1.5707 1.5707" />
+  </xacro:raw_camera_macro>
 
   <!-- Mount a downward-looking laser sensor. -->
   <!--<xacro:laser_sensor_plugin_macro
