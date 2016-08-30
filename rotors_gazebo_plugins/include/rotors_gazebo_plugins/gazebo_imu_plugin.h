@@ -111,6 +111,12 @@ class GazeboImuPlugin : public ModelPlugin {
       Eigen::Vector3d* angular_velocity,
       const double dt);
 
+  void ComplementaryFilter(const Eigen::Vector3d linear_acceleration,
+                           const Eigen::Vector3d angular_velocity,
+                           double dt);
+
+  Eigen::Quaterniond QuaternionFromEuler(Eigen::Vector3d euler);
+
   void OnUpdate(const common::UpdateInfo&);
 
  private:
@@ -148,6 +154,10 @@ class GazeboImuPlugin : public ModelPlugin {
   Eigen::Vector3d accelerometer_turn_on_bias_;
 
   ImuParameters imu_parameters_;
+
+  double roll_;
+  double pitch_;
+  double yaw_;
 };
 }
 

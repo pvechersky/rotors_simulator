@@ -32,7 +32,10 @@ namespace gazebo {
 GazeboImuPlugin::GazeboImuPlugin()
     : ModelPlugin(),
       node_handle_(0),
-      velocity_prev_W_(0, 0, 0) {}
+      velocity_prev_W_(0, 0, 0),
+      roll_(0.0),
+      pitch_(0.0),
+      yaw_(0.0) {}
 
 GazeboImuPlugin::~GazeboImuPlugin() {
   event::Events::DisconnectWorldUpdateBegin(updateConnection_);
@@ -168,7 +171,7 @@ void GazeboImuPlugin::addNoise(Eigen::Vector3d* linear_acceleration,
   ROS_ASSERT(angular_velocity != nullptr);
   ROS_ASSERT(dt > 0.0);
 
-  // Gyrosocpe
+  // Gyroscope
   double tau_g = imu_parameters_.gyroscope_bias_correlation_time;
   // Discrete-time standard deviation equivalent to an "integrating" sampler
   // with integration time dt.
@@ -212,7 +215,28 @@ void GazeboImuPlugin::addNoise(Eigen::Vector3d* linear_acceleration,
         sigma_a_d * standard_normal_distribution_(random_generator_) +
         accelerometer_turn_on_bias_[i];
   }
+}
 
+void GazeboImuPlugin::ComplementaryFilter(const Eigen::Vector3d linear_acceleration,
+                                          const Eigen::Vector3d angular_velocity,
+                                          double dt) {
+  roll_ += angular_velocity[0] * dt;
+  pitch_ += angular_velocity[1] * dt;
+
+  double roll_acc = atan2(linear_acceleration[1], linear_acceleration[2]);
+  double pitch_acc = atan2(linear_acceleration[0], linear_acceleration[2]);
+
+  roll_ = 0.98 * roll_ + 0.02 * roll_acc;
+  pitch_ = 0.98 * pitch_ + 0.02 * pitch_acc;
+}
+
+Eigen::Quaterniond GazeboImuPlugin::QuaternionFromEuler(Eigen::Vector3d euler) {
+  Eigen::AngleAxisd roll_angle(euler[0], Eigen::Vector3d::UnitX());
+  Eigen::AngleAxisd pitch_angle(euler[1], Eigen::Vector3d::UnitY());
+  Eigen::AngleAxisd yaw_angle(euler[2], Eigen::Vector3d::UnitZ());
+
+  Eigen::Quaterniond q = roll_angle * pitch_angle * yaw_angle;
+  return q;
 }
 
 // This gets called by the world update start event.
@@ -249,6 +273,8 @@ void GazeboImuPlugin::OnUpdate(const common::UpdateInfo& _info) {
 
   addNoise(&linear_acceleration_I, &angular_velocity_I, dt);
 
+  //ComplementaryFilter(linear_acceleration_I, angular_velocity_I, dt);
+
   /*math::Vector3 acceleration_drift =
       C_W_I.RotateVector(math::Vector3(accelerometer_bias_[0],
                                        accelerometer_bias_[1],
@@ -271,6 +297,10 @@ void GazeboImuPlugin::OnUpdate(const common::UpdateInfo& _info) {
   orientation_error.Normalize();
   C_W_I = orientation_error * C_W_I;*/
 
+  //Eigen::Vector3d theta;
+  //theta << roll_, pitch_, yaw_;
+  //Eigen::Quaterniond orientation = QuaternionFromEuler(theta);
+
   // Fill IMU message.
   imu_message_.header.stamp.sec = current_time.sec;
   imu_message_.header.stamp.nsec = current_time.nsec;
@@ -279,6 +309,11 @@ void GazeboImuPlugin::OnUpdate(const common::UpdateInfo& _info) {
   imu_message_.orientation.x = C_W_I.x;
   imu_message_.orientation.y = C_W_I.y;
   imu_message_.orientation.z = C_W_I.z;
+
+  /*imu_message_.orientation.w = orientation.w();
+  imu_message_.orientation.x = orientation.x();
+  imu_message_.orientation.y = orientation.y();
+  imu_message_.orientation.z = orientation.z();*/
 
   imu_message_.linear_acceleration.x = linear_acceleration_I[0];
   imu_message_.linear_acceleration.y = linear_acceleration_I[1];

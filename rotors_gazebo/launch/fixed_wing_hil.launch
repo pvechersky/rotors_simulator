@@ -6,9 +6,7 @@
   <arg name="log_file" default="$(arg uav_name)"/>
 
   <remap from="/techpod/imu" to="/imu0" />
-  <remap from="/techpod/gps" to="/gps_llh" />
   <remap from="/techpod/camera" to="/cam0/image_raw" />
-  <remap from="/techpod/camera_downward/camera_info" to="/cam0/camera_info" />
   <remap from="/techpod/ground_truth/pose" to="/ground_truth/pose" />
 
   <env name="GAZEBO_MODEL_PATH" value="${GAZEBO_MODEL_PATH}:$(find rotors_gazebo)/models"/>

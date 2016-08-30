@@ -66,10 +66,12 @@ void GazeboFixedWingBasePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _
   if (link_ == NULL)
     gzthrow("[gazebo_fixedwing_base_plugin] Couldn't find specified link \"" << link_name << "\".");
 
-  std::string wind_speed_sub_topic;
+  //std::string wind_speed_sub_topic;
+  std::string air_speed_sub_topic;
   std::string command_sub_topic;
   std::string reset_model_service_name;
-  getSdfParam<std::string>(_sdf, "windSpeedSubTopic", wind_speed_sub_topic, kDefaultWindSpeedSubTopic);
+  //getSdfParam<std::string>(_sdf, "windSpeedSubTopic", wind_speed_sub_topic, kDefaultWindSpeedSubTopic);
+  getSdfParam<std::string>(_sdf, "airSpeedSubTopic", air_speed_sub_topic, kDefaultAirSpeedSubTopic);
   getSdfParam<std::string>(_sdf, "commandSubTopic", command_sub_topic, kDefaultCommandSubTopic);
   getSdfParam<std::string>(_sdf, "resetModelServiceName", reset_model_service_name,
                            kDefaultResetModelServiceName);
@@ -156,7 +158,8 @@ void GazeboFixedWingBasePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _
       event::Events::ConnectWorldUpdateBegin(
           boost::bind(&GazeboFixedWingBasePlugin::OnUpdate, this, _1));
 
-  wind_speed_sub_ = node_handle_->subscribe(wind_speed_sub_topic, 1, &GazeboFixedWingBasePlugin::WindSpeedCallback, this);
+  //wind_speed_sub_ = node_handle_->subscribe(wind_speed_sub_topic, 1, &GazeboFixedWingBasePlugin::WindSpeedCallback, this);
+  air_speed_sub_ = node_handle_->subscribe(air_speed_sub_topic, 1,&GazeboFixedWingBasePlugin::AirSpeedCallback, this);
   command_sub_ = node_handle_->subscribe(command_sub_topic, 1, &GazeboFixedWingBasePlugin::CommandCallback, this);
 
   register_control_surface_service_ =
@@ -213,18 +216,24 @@ void GazeboFixedWingBasePlugin::OnUpdate(const common::UpdateInfo& _info) {
 
 void GazeboFixedWingBasePlugin::ComputeAerodynamicForcesMoments(math::Vector3& forces, math::Vector3& moments) {
   math::Quaternion orientation = link_->GetWorldPose().rot;
-  math::Vector3 air_speed_body = orientation.RotateVectorReverse(link_->GetWorldLinearVel() - wind_speed_);
+  //math::Vector3 air_speed_body = orientation.RotateVectorReverse(link_->GetWorldLinearVel() - wind_speed_);
+  math::Vector3 lin_vel_body = orientation.RotateVectorReverse(air_speed_);
   math::Vector3 ang_vel_body = link_->GetRelativeAngularVel();
 
-  double u = air_speed_body.x;
-  double v = -air_speed_body.y;
-  double w = -air_speed_body.z;
+  //double u = air_speed_body.x;
+  //double v = -air_speed_body.y;
+  //double w = -air_speed_body.z;
+
+  double u = lin_vel_body.x;
+  double v = -lin_vel_body.y;
+  double w = -lin_vel_body.z;
 
   double p = ang_vel_body.x;
   double q = -ang_vel_body.y;
   double r = -ang_vel_body.z;
 
-  double V = air_speed_body.GetLength();
+  //double V = air_speed_body.GetLength();
+  double V = lin_vel_body.GetLength();
 
   double beta = (V < 0.1) ? 0.0 : asin(v / V);
   double alpha = (V < 0.1) ? 0.0 : atan(w / u);
@@ -276,10 +285,16 @@ void GazeboFixedWingBasePlugin::ComputeAerodynamicForcesMoments(math::Vector3& f
   moments = math::Vector3(Lm, -Mm, -Nm);
 }
 
-void GazeboFixedWingBasePlugin::WindSpeedCallback(const rotors_comm::WindSpeedConstPtr& wind_speed_msg) {
+/*void GazeboFixedWingBasePlugin::WindSpeedCallback(const rotors_comm::WindSpeedConstPtr& wind_speed_msg) {
   wind_speed_ = math::Vector3(wind_speed_msg->velocity.x,
                               wind_speed_msg->velocity.y,
                               wind_speed_msg->velocity.z);
+}*/
+
+void GazeboFixedWingBasePlugin::AirSpeedCallback(const geometry_msgs::Vector3ConstPtr& air_speed_msg) {
+  air_speed_.x = air_speed_msg->x;
+  air_speed_.y = air_speed_msg->y;
+  air_speed_.z = air_speed_msg->z;
 }
 
 void GazeboFixedWingBasePlugin::CommandCallback(const mav_msgs::ActuatorsConstPtr& command_msg) {

@@ -42,6 +42,7 @@
 #include <rosbag/bag.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/Imu.h>
+#include <sensor_msgs/NavSatFix.h>
 #include <std_msgs/Float32.h>
 #include <trajectory_msgs/MultiDOFJointTrajectory.h>
 
@@ -73,6 +74,7 @@ class GazeboBagPlugin : public ModelPlugin {
         control_motor_speed_topic_(mav_msgs::default_topics::COMMAND_ACTUATORS),
         control_rate_thrust_topic_(mav_msgs::default_topics::COMMAND_RATE_THRUST),
         motor_topic_(mav_msgs::default_topics::MOTOR_MEASUREMENT),
+        gps_topic_(mav_msgs::default_topics::GPS),
         wrench_topic_(mav_msgs::default_topics::WRENCH),
         wind_topic_(mav_msgs::default_topics::WIND),
         waypoint_topic_(mav_msgs::default_topics::COMMAND_TRAJECTORY),
@@ -109,6 +111,8 @@ class GazeboBagPlugin : public ModelPlugin {
   /// \param[in] imu_msg A IMU message from sensor_msgs.
   void ImuCallback(const sensor_msgs::ImuConstPtr& imu_msg);
 
+  void MavrosImuCallback(const sensor_msgs::ImuConstPtr& imu_msg);
+
   /// \brief Called when an Wind message is received.
   /// \param[in] wind_msg A WrenchStamped message from geometry_msgs.
   void WindCallback(const geometry_msgs::WrenchStampedConstPtr& wind_msg);
@@ -140,6 +144,12 @@ class GazeboBagPlugin : public ModelPlugin {
   /// \brief Called when an state estimate message is received.
   /// \param[in] state_est_msg A state estimate message from nav_msgs.
   void StateEstimateCallback(const nav_msgs::OdometryConstPtr& state_est_msg);
+
+  /// \brief Called when a GPS message is received.
+  /// \param[in] gps_msg A GPS message from sensor_msgs.
+  void GpsCallback(const sensor_msgs::NavSatFixConstPtr& gps_msg);
+
+  void MavrosGpsCallback(const sensor_msgs::NavSatFixConstPtr& gps_msg);
 
   /// \brief Log the ground truth pose and twist.
   /// \param[in] now The current gazebo common::Time
@@ -187,6 +197,7 @@ class GazeboBagPlugin : public ModelPlugin {
   std::string control_rate_thrust_topic_;
   std::string wrench_topic_;
   std::string motor_topic_;
+  std::string gps_topic_;
   std::string frame_id_;
   std::string link_name_;
   std::string bag_filename_;
@@ -214,6 +225,10 @@ class GazeboBagPlugin : public ModelPlugin {
   ros::Subscriber control_rate_thrust_sub_;
   ros::Subscriber command_pose_sub_;
   ros::Subscriber state_est_sub_;
+  ros::Subscriber gps_sub_;
+
+  ros::Subscriber mavros_imu_sub_;
+  ros::Subscriber mavros_gps_sub_;
 
   // Image transport interface
   image_transport::ImageTransport *it_;

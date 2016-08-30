@@ -17,6 +17,78 @@
 #ifndef ROTORS_GAZEBO_PLUGINS_GPS_PLUGIN_H
 #define ROTORS_GAZEBO_PLUGINS_GPS_PLUGIN_H
 
+#include <Eigen/Core>
+#include <gazebo/common/common.hh>
+#include <gazebo/common/Plugin.hh>
+#include <gazebo/gazebo.hh>
+#include <gazebo/physics/physics.hh>
+#include <geometry_msgs/TwistStamped.h>
+#include <mav_msgs/default_topics.h>
+#include <ros/ros.h>
+#include <sensor_msgs/NavSatFix.h>
+
+#include "rotors_gazebo_plugins/common.h"
+
+namespace gazebo {
+// WGS84 constants
+static constexpr double kEquatorialRadius = 6378137.0;
+static constexpr double kPolarRadius = 6356752.3;
+static constexpr double kFlattening = 1.0 / 298.257223563;
+static constexpr double kEccentrity2 = 2 * kFlattening - kFlattening * kFlattening;
+
+// Default reference values (Zurich: lat=+47.3667degN, lon=+8.5500degE, h=+500m, WGS84)
+static constexpr double kDefaultRefLat = 47.3667;
+static constexpr double kDefaultRefLon = 8.5500;
+static constexpr double kDefaultRefAlt = 500.0;
+static constexpr double kDefaultRefHeading = 0.0;
+
+// Default ground speed topic name
+static const std::string kDefaultGroundSpeedPubTopic = "ground_speed";
+
+class GazeboGpsPlugin : public ModelPlugin {
+ public:
+  GazeboGpsPlugin();
+  virtual ~GazeboGpsPlugin();
+
+ protected:
+  void Load(physics::ModelPtr _model, sdf::ElementPtr _sdf);
+  void OnUpdate(const common::UpdateInfo&);
+
+ private:
+  std::string namespace_;
+  std::string frame_id_;
+
+  ros::NodeHandle* node_handle_;
+  ros::Publisher gps_pub_;
+  ros::Publisher ground_speed_pub_;
+
+  // Pointer to the world
+  physics::WorldPtr world_;
+  // Pointer to the model
+  physics::ModelPtr model_;
+  // Pointer to the link
+  physics::LinkPtr link_;
+  // Pointer to the update event connection
+  event::ConnectionPtr updateConnection_;
+
+  double ref_lat_;
+  double ref_lon_;
+  double ref_alt_;
+  double ref_heading_;
+  double earth_radius_;
+  double radius_north_;
+  double radius_east_;
+
+  sensor_msgs::NavSatFix gps_message_;
+  geometry_msgs::TwistStamped ground_speed_msg_;
+};
+}
+
+#endif // ROTORS_GAZEBO_PLUGINS_GPS_PLUGIN_H
+
+/*#ifndef ROTORS_GAZEBO_PLUGINS_GPS_PLUGIN_H
+#define ROTORS_GAZEBO_PLUGINS_GPS_PLUGIN_H
+
 #include <random>
 
 #include <gazebo/gazebo.hh>
@@ -83,4 +155,4 @@ class GazeboGpsPlugin : public SensorPlugin {
 };
 }
 
-#endif // ROTORS_GAZEBO_PLUGINS_GPS_PLUGIN_H
+#endif // ROTORS_GAZEBO_PLUGINS_GPS_PLUGIN_H*/

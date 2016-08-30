@@ -28,6 +28,8 @@
 #include <geometry_msgs/Vector3.h>
 #include <ros/ros.h>
 
+#include <geometry_msgs/TwistStamped.h>
+
 #include "rotors_comm/WindSpeed.h"
 #include "rotors_gazebo_plugins/common.h"
 
@@ -45,19 +47,19 @@ class GazeboAirSpeedPlugin : public ModelPlugin {
   GazeboAirSpeedPlugin();
   virtual ~GazeboAirSpeedPlugin();
 
-  //void GroundSpeedCallback(const geometry_msgs::Vector3ConstPtr& ground_speed_msg);
+  void GroundSpeedCallback(const geometry_msgs::TwistStampedConstPtr& ground_speed_msg);
   void WindSpeedCallback(const rotors_comm::WindSpeedConstPtr& wind_speed_msg);
 
  protected:
   void Load(physics::ModelPtr _model, sdf::ElementPtr _sdf);
-  //void OnUpdate(const common::UpdateInfo&);
+  void OnUpdate(const common::UpdateInfo&);
 
  private:
   std::string namespace_;
 
   ros::NodeHandle* node_handle_;
   ros::Publisher air_speed_pub_;
-  //ros::Subscriber ground_speed_sub_;
+  ros::Subscriber ground_speed_sub_;
   ros::Subscriber wind_speed_sub_;
 
   // Pointer to the world
@@ -72,8 +74,8 @@ class GazeboAirSpeedPlugin : public ModelPlugin {
 
   NormalDistribution air_speed_n_;
 
-  //math::Vector3 ground_speed_;
-  //math::Vector3 wind_speed_;
+  math::Vector3 ground_speed_;
+  math::Vector3 wind_speed_;
 
   geometry_msgs::Vector3 air_speed_msg_;
 };

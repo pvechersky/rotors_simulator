@@ -67,17 +67,17 @@ void GazeboAirSpeedPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) 
   air_speed_n_ = NormalDistribution(0, sqrt(air_speed_variance));
 
   // Listen to the update event. This event is broadcast every simulation iteration
-  /*this->updateConnection_ =
+  this->updateConnection_ =
       event::Events::ConnectWorldUpdateBegin(
-          boost::bind(&GazeboAirSpeedPlugin::OnUpdate, this, _1));*/
+          boost::bind(&GazeboAirSpeedPlugin::OnUpdate, this, _1));
 
   air_speed_pub_ = node_handle_->advertise<geometry_msgs::Vector3>(air_speed_topic_, 1);
 
-  //ground_speed_sub_ = node_handle_->subscribe(ground_speed_topic, 1, &GazeboAirSpeedPlugin::GroundSpeedCallback, this);
+  ground_speed_sub_ = node_handle_->subscribe(ground_speed_topic, 1, &GazeboAirSpeedPlugin::GroundSpeedCallback, this);
   wind_speed_sub_ = node_handle_->subscribe(wind_speed_topic, 1, &GazeboAirSpeedPlugin::WindSpeedCallback, this);
 }
 
-/*void GazeboAirSpeedPlugin::OnUpdate(const common::UpdateInfo& _info) {
+void GazeboAirSpeedPlugin::OnUpdate(const common::UpdateInfo& _info) {
   math::Vector3 air_speed = ground_speed_ - wind_speed_;
 
   air_speed_msg_.x = air_speed.x;
@@ -87,14 +87,17 @@ void GazeboAirSpeedPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) 
   air_speed_pub_.publish(air_speed_msg_);
 }
 
-void GazeboAirSpeedPlugin::GroundSpeedCallback(const geometry_msgs::Vector3ConstPtr& ground_speed_msg) {
-  ground_speed_.x = ground_speed_msg->x;
-  ground_speed_.y = ground_speed_msg->y;
-  ground_speed_.z = ground_speed_msg->z;
-}*/
+void GazeboAirSpeedPlugin::GroundSpeedCallback(const geometry_msgs::TwistStampedConstPtr &ground_speed_msg) {
+  ground_speed_.x = ground_speed_msg->twist.linear.x;
+  ground_speed_.y = ground_speed_msg->twist.linear.y;
+  ground_speed_.z = ground_speed_msg->twist.linear.z;
+}
 
 void GazeboAirSpeedPlugin::WindSpeedCallback(const rotors_comm::WindSpeedConstPtr& wind_speed_msg) {
-  math::Vector3 ground_speed = model_->GetWorldLinearVel();
+  wind_speed_.x = wind_speed_msg->velocity.x;
+  wind_speed_.y = wind_speed_msg->velocity.y;
+  wind_speed_.z = wind_speed_msg->velocity.z;
+  /*math::Vector3 ground_speed = model_->GetWorldLinearVel();
   math::Vector3 wind_speed(wind_speed_msg->velocity.x,
                            wind_speed_msg->velocity.y,
                            wind_speed_msg->velocity.z);
@@ -107,7 +110,7 @@ void GazeboAirSpeedPlugin::WindSpeedCallback(const rotors_comm::WindSpeedConstPt
   air_speed_msg_.y = 0.0;
   air_speed_msg_.z = 0.0;
 
-  air_speed_pub_.publish(air_speed_msg_);
+  air_speed_pub_.publish(air_speed_msg_);*/
 }
 
 GZ_REGISTER_MODEL_PLUGIN(GazeboAirSpeedPlugin);

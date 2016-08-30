@@ -84,6 +84,7 @@ void GazeboBagPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
   getSdfParam<std::string>(_sdf, "commandRateThrustTopic", control_rate_thrust_topic_,
                            control_rate_thrust_topic_);
   getSdfParam<std::string>(_sdf, "motorTopic", motor_topic_, motor_topic_);
+  getSdfParam<std::string>(_sdf, "gpsTopic", gps_topic_, gps_topic_);
   getSdfParam<std::string>(_sdf, "poseTopic", ground_truth_pose_topic_, ground_truth_pose_topic_);
   getSdfParam<std::string>(_sdf, "twistTopic", ground_truth_twist_topic_, ground_truth_twist_topic_);
   getSdfParam<std::string>(_sdf, "wrenchesTopic", wrench_topic_, wrench_topic_);
@@ -173,6 +174,8 @@ void GazeboBagPlugin::StartRecording() {
   // Subscriber to IMU sensor_msgs::Imu Message.
   imu_sub_ = node_handle_->subscribe(imu_topic_, 10, &GazeboBagPlugin::ImuCallback, this);
 
+  mavros_imu_sub_ = node_handle_->subscribe("/mavros/imu/data", 10, &GazeboBagPlugin::MavrosImuCallback, this);
+
   // Subscriber to Wind WrenchStamped Message.
   //wind_sub_ = node_handle_->subscribe(wind_topic_, 10, &GazeboBagPlugin::WindCallback, this);
 
@@ -200,6 +203,11 @@ void GazeboBagPlugin::StartRecording() {
   // Subscriber to the state estimate messages.
   state_est_sub_ = node_handle_->subscribe("/mavros/global_position/local", 1, &GazeboBagPlugin::StateEstimateCallback, this);
 
+  // Subscriber to the GPS messages.
+  gps_sub_ = node_handle_->subscribe(gps_topic_, 1, &GazeboBagPlugin::GpsCallback, this);
+
+  mavros_gps_sub_ = node_handle_->subscribe("/mavros/global_position/global", 1, &GazeboBagPlugin::MavrosGpsCallback, this);
+
   // Listen to the update event. This event is broadcast every
   // simulation iteration.
   update_connection_ = event::Events::ConnectWorldUpdateBegin(boost::bind(&GazeboBagPlugin::OnUpdate,
@@ -214,6 +222,7 @@ void GazeboBagPlugin::StartRecording() {
 void GazeboBagPlugin::StopRecording() {
   // Shutdown all the subscribers.
   imu_sub_.shutdown();
+  mavros_imu_sub_.shutdown();
   //wind_sub_.shutdown();
   //waypoint_sub_.shutdown();
   //command_pose_sub_.shutdown();
@@ -222,6 +231,9 @@ void GazeboBagPlugin::StopRecording() {
   //control_rate_thrust_sub_.shutdown();
   image_sub_.shutdown();
   state_est_sub_.shutdown();
+  gps_sub_.shutdown();
+
+  mavros_gps_sub_.shutdown();
 
   // Disconnect the update event.
   event::Events::DisconnectWorldUpdateBegin(update_connection_);
@@ -238,7 +250,13 @@ void GazeboBagPlugin::StopRecording() {
 void GazeboBagPlugin::ImuCallback(const sensor_msgs::ImuConstPtr& imu_msg) {
   common::Time now = world_->GetSimTime();
   ros::Time ros_now = ros::Time(now.sec, now.nsec);
-  writeBag("/imu0", ros_now, imu_msg);
+  writeBag(namespace_ + "/" + imu_topic_, ros_now, imu_msg);
+}
+
+void GazeboBagPlugin::MavrosImuCallback(const sensor_msgs::ImuConstPtr& imu_msg) {
+  common::Time now = world_->GetSimTime();
+  ros::Time ros_now = ros::Time(now.sec, now.nsec);
+  writeBag("/mavros/imu/data", ros_now, imu_msg);
 }
 
 void GazeboBagPlugin::WindCallback(const geometry_msgs::WrenchStampedConstPtr& wind_msg) {
@@ -291,6 +309,18 @@ void GazeboBagPlugin::StateEstimateCallback(const nav_msgs::OdometryConstPtr& st
   writeBag("/mavros/global_position/local", ros_now, state_est_msg);
 }
 
+void GazeboBagPlugin::GpsCallback(const sensor_msgs::NavSatFixConstPtr& gps_msg) {
+  common::Time now = world_->GetSimTime();
+  ros::Time ros_now = ros::Time(now.sec, now.nsec);
+  writeBag(namespace_ + "/" + gps_topic_, ros_now, gps_msg);
+}
+
+void GazeboBagPlugin::MavrosGpsCallback(const sensor_msgs::NavSatFixConstPtr& gps_msg) {
+  common::Time now = world_->GetSimTime();
+  ros::Time ros_now = ros::Time(now.sec, now.nsec);
+  writeBag("/mavros/global_position/global", ros_now, gps_msg);
+}
+
 void GazeboBagPlugin::LogMotorVelocities(const common::Time now) {
   ros::Time ros_now = ros::Time(now.sec, now.nsec);
 
@@ -327,7 +357,7 @@ void GazeboBagPlugin::LogGroundTruth(const common::Time now) {
   pose_msg.pose.orientation.y = pose.rot.y;
   pose_msg.pose.orientation.z = pose.rot.z;
 
-  writeBag("/" + ground_truth_pose_topic_, ros_now, pose_msg);
+  writeBag(namespace_ + "/" + ground_truth_pose_topic_, ros_now, pose_msg);
 
   // Get twist and update the message.
   math::Vector3 linear_veloctiy = link_->GetWorldLinearVel();
@@ -342,7 +372,7 @@ void GazeboBagPlugin::LogGroundTruth(const common::Time now) {
   twist_msg.twist.angular.y = angular_veloctiy.y;
   twist_msg.twist.angular.z = angular_veloctiy.z;
 
-  writeBag("/" + ground_truth_twist_topic_, ros_now, twist_msg);
+  writeBag(namespace_ + "/" + ground_truth_twist_topic_, ros_now, twist_msg);
 }
 
 void GazeboBagPlugin::LogWrenches(const common::Time now) {
