@@ -24,20 +24,27 @@ HilInterfaceNode::HilInterfaceNode() :
 
   bool sensor_level_hil;
   double hil_frequency;
+  std::string actuators_pub_topic;
   std::string mavlink_pub_topic;
+  std::string hil_controls_sub_topic;
 
   pnh.param("sensor_level_hil", sensor_level_hil, kDefaultSensorLevelHil);
   pnh.param("hil_frequency", hil_frequency, kDefaultHilFrequency);
+  pnh.param("actuators_pub_topic", actuators_pub_topic, kDefaultActuatorsPubTopic);
   pnh.param("mavlink_pub_topic", mavlink_pub_topic, kDefaultMavlinkPubTopic);
+  pnh.param("hil_controls_sub_topic", hil_controls_sub_topic, kDefaultHilControlsSubTopic);
 
   if (sensor_level_hil)
-    hil_interface_ = std::unique_ptr<HilSensorLevelInterface>();
+    hil_interface_ = std::auto_ptr<HilSensorLevelInterface>(new HilSensorLevelInterface);
   else
-    hil_interface_ = std::unique_ptr<HilStateLevelInterface>();
+    hil_interface_ = std::auto_ptr<HilStateLevelInterface>(new HilStateLevelInterface);
 
   rate_ = ros::Rate(hil_frequency);
 
+  actuators_pub_ = nh_.advertise<mav_msgs::Actuators>(actuators_pub_topic, 1);
   mavlink_pub_ = nh_.advertise<mavros_msgs::Mavlink>(mavlink_pub_topic, 5);
+  hil_controls_sub_ = nh_.subscribe(hil_controls_sub_topic, 1,
+                                        &HilInterfaceNode::HilControlsCallback, this);
 }
 
 HilInterfaceNode::~HilInterfaceNode() {
@@ -55,6 +62,23 @@ void HilInterfaceNode::MainTask() {
     ros::spinOnce();
     rate_.sleep();
   }
+}
+
+void HilInterfaceNode::HilControlsCallback(const mavros_msgs::HilControlsConstPtr& hil_controls_msg) {
+  mav_msgs::Actuators act_msg;
+
+  ros::Time current_time = ros::Time::now();
+
+  act_msg.normalized.push_back(hil_controls_msg->roll_ailerons);
+  act_msg.normalized.push_back(hil_controls_msg->pitch_elevator);
+  act_msg.normalized.push_back(hil_controls_msg->yaw_rudder);
+
+  act_msg.normalized.push_back(hil_controls_msg->throttle);
+
+  act_msg.header.stamp.sec = current_time.sec;
+  act_msg.header.stamp.nsec = current_time.nsec;
+
+  actuators_pub_.publish(act_msg);
 }
 
 }

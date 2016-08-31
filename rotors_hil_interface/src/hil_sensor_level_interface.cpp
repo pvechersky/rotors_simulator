@@ -19,64 +19,135 @@
 namespace rotors_hil {
 
 HilSensorLevelInterface::HilSensorLevelInterface() {
-  /*ros::NodeHandle pnh("~");
+  ros::NodeHandle pnh("~");
 
-  std::string hil_controls_sub_topic;
-  std::string actuators_pub_topic;
-  pnh.param("hil_controls_sub_topic", hil_controls_sub_topic, kDefaultHilControlsSubTopic);
-  pnh.param("actuators_pub_topic", actuators_pub_topic, kDefaultActuatorsPubTopic);*/
+  // Retrieve the necessary parameters.
+  double gps_freq;
+  double S_B_roll;
+  double S_B_pitch;
+  double S_B_yaw;
+  std::string air_speed_sub_topic;
+  std::string gps_sub_topic;
+  std::string ground_speed_sub_topic;
+  std::string imu_sub_topic;
+  std::string mag_sub_topic;
+  std::string pressure_sub_topic;
 
-  air_speed_sub_ = nh_.subscribe<geometry_msgs::Vector3>("test", 1, boost::bind(&HilListeners::AirSpeedCallback, &hil_listeners_, _1, &hil_data_));
-  gps_sub_ = nh_.subscribe<sensor_msgs::NavSatFix>("test", 1, boost::bind(&HilListeners::GpsCallback, &hil_listeners_, _1, &hil_data_));
-  ground_speed_sub_ = nh_.subscribe<geometry_msgs::TwistStamped>("test", 1, boost::bind(&HilListeners::GroundSpeedCallback, &hil_listeners_, _1, &hil_data_));
-  imu_sub_ = nh_.subscribe<sensor_msgs::Imu>("test", 1, boost::bind(&HilListeners::ImuCallback, &hil_listeners_, _1, &hil_data_));
-  mag_sub_ = nh_.subscribe<sensor_msgs::MagneticField>("test", 1, boost::bind(&HilListeners::MagnetometerCallback, &hil_listeners_, _1, &hil_data_));
-  pressure_sub_ = nh_.subscribe<sensor_msgs::FluidPressure>("test", 1, boost::bind(&HilListeners::PressureCallback, &hil_listeners_, _1, &hil_data_));
+  pnh.param("gps_frequency", gps_freq, kDefaultGpsFrequency);
+  pnh.param("body_to_sensor_roll", S_B_roll, kDefaultBodyToSensorsRoll);
+  pnh.param("body_to_sensor_pitch", S_B_pitch, kDefaultBodyToSensorsPitch);
+  pnh.param("body_to_sensor_yaw", S_B_yaw, kDefaultBodyToSensorsYaw);
+  pnh.param("air_speed_topic", air_speed_sub_topic, kDefaultAirSpeedSubTopic);
+  pnh.param("gps_topic", gps_sub_topic, std::string(mav_msgs::default_topics::GPS));
+  pnh.param("ground_speed_topic", ground_speed_sub_topic, kDefaultGroundSpeedSubTopic);
+  pnh.param("imu_topic", imu_sub_topic, std::string(mav_msgs::default_topics::IMU));
+  pnh.param("mag_topic", mag_sub_topic, std::string(mav_msgs::default_topics::MAGNETIC_FIELD));
+  pnh.param("pressure_topic", pressure_sub_topic, kDefaultPressureSubTopic);
+
+  // Compute the desired interval between published GPS messages.
+  gps_interval_nsec_ = 1e9 / gps_freq;
+
+  // Create the quaternion and rotation matrix to rotate data into NED frame.
+  Eigen::AngleAxisd roll_angle(S_B_roll, Eigen::Vector3d::UnitX());
+  Eigen::AngleAxisd pitch_angle(S_B_pitch, Eigen::Vector3d::UnitY());
+  Eigen::AngleAxisd yaw_angle(S_B_yaw, Eigen::Vector3d::UnitZ());
+
+  q_S_B_ = roll_angle * pitch_angle * yaw_angle;
+  R_S_B_ = q_S_B_.matrix().cast<float>();
+
+  // Initialize the subscribers.
+  air_speed_sub_ =
+      nh_.subscribe<geometry_msgs::TwistStamped>(
+          air_speed_sub_topic, 1, boost::bind(
+              &HilListeners::AirSpeedCallback, &hil_listeners_, _1, &hil_data_));
+
+  gps_sub_ =
+      nh_.subscribe<sensor_msgs::NavSatFix>(
+          gps_sub_topic, 1, boost::bind(
+              &HilListeners::GpsCallback, &hil_listeners_, _1, &hil_data_));
+
+  ground_speed_sub_ =
+      nh_.subscribe<geometry_msgs::TwistStamped>(
+          ground_speed_sub_topic, 1, boost::bind(
+              &HilListeners::GroundSpeedCallback, &hil_listeners_, _1, &hil_data_));
+
+  imu_sub_ =
+      nh_.subscribe<sensor_msgs::Imu>(
+          imu_sub_topic, 1, boost::bind(
+              &HilListeners::ImuCallback, &hil_listeners_, _1, &hil_data_));
+
+  mag_sub_ =
+      nh_.subscribe<sensor_msgs::MagneticField>(
+          mag_sub_topic, 1, boost::bind(
+              &HilListeners::MagCallback, &hil_listeners_, _1, &hil_data_));
+
+  pressure_sub_ =
+      nh_.subscribe<sensor_msgs::FluidPressure>(
+          pressure_sub_topic, 1, boost::bind(
+              &HilListeners::PressureCallback, &hil_listeners_, _1, &hil_data_));
 }
 
 HilSensorLevelInterface::~HilSensorLevelInterface() {
 }
 
 std::vector<mavros_msgs::Mavlink> HilSensorLevelInterface::CollectData() {
+  boost::mutex::scoped_lock lock(mtx_);
+
   ros::Time current_time = ros::Time::now();
+  uint64_t time_usec = RosTimeToMicroseconds(current_time);
 
   mavlink_message_t mmsg;
   std::vector<mavros_msgs::Mavlink> hil_msgs;
 
-  hil_gps_msg_.time_usec = current_time.nsec * 0.001 + current_time.sec * 1000000;
-  hil_gps_msg_.fix_type = hil_data_.fix_type;
-  hil_gps_msg_.lat = hil_data_.lat;
-  hil_gps_msg_.lon = hil_data_.lon;
-  hil_gps_msg_.alt = hil_data_.alt;
-  hil_gps_msg_.eph = hil_data_.eph;
-  hil_gps_msg_.epv = hil_data_.epv;
-  hil_gps_msg_.vel = hil_data_.vel;
-  hil_gps_msg_.vn = hil_data_.vn;
-  hil_gps_msg_.ve = hil_data_.ve;
-  hil_gps_msg_.vd = hil_data_.vd;
-  hil_gps_msg_.cog = hil_data_.cog;
-  hil_gps_msg_.satellites_visible = hil_data_.satellites_visible;
+  // Rotate gyroscope, accelerometer, and magnetometer data into NED frame
+  Eigen::Vector3f gyro = R_S_B_ * hil_data_.gyro;
+  Eigen::Vector3f acc = R_S_B_ * hil_data_.acc;
+  Eigen::Vector3f mag = R_S_B_ * hil_data_.mag;
 
-  mavlink_hil_gps_t* hil_gps_msg_ptr = &hil_gps_msg_;
-  mavlink_msg_hil_gps_encode(1, 0, &mmsg, hil_gps_msg_ptr);
+  // Check if we need to publish a HIL_GPS message.
+  if ((current_time.nsec - last_gps_pub_time_nsec_) >= gps_interval_nsec_) {
+    last_gps_pub_time_nsec_ = current_time.nsec;
 
-  mavros_msgs::MavlinkPtr rmsg_hil_gps = boost::make_shared<mavros_msgs::Mavlink>();
-  rmsg_hil_gps->header.stamp.sec = current_time.sec;
-  rmsg_hil_gps->header.stamp.nsec = current_time.nsec;
-  mavros_msgs::mavlink::convert(mmsg, *rmsg_hil_gps);
+    // Rotate ground speed data into NED frame
+    Eigen::Vector3i gps_vel = (R_S_B_ * hil_data_.gps_vel.cast<float>()).cast<int>();
 
-  hil_msgs.push_back(*rmsg_hil_gps);
+    // Fill in a MAVLINK HIL_GPS message and convert it to MAVROS format.
+    hil_gps_msg_.time_usec = time_usec;
+    hil_gps_msg_.fix_type = hil_data_.fix_type;
+    hil_gps_msg_.lat = hil_data_.lat;
+    hil_gps_msg_.lon = hil_data_.lon;
+    hil_gps_msg_.alt = hil_data_.alt;
+    hil_gps_msg_.eph = hil_data_.eph;
+    hil_gps_msg_.epv = hil_data_.epv;
+    hil_gps_msg_.vel = hil_data_.vel;
+    hil_gps_msg_.vn = gps_vel.x();
+    hil_gps_msg_.ve = gps_vel.y();
+    hil_gps_msg_.vd = gps_vel.z();
+    hil_gps_msg_.cog = hil_data_.cog;
+    hil_gps_msg_.satellites_visible = hil_data_.satellites_visible;
 
-  hil_sensor_msg_.time_usec = current_time.nsec * 0.001 + current_time.sec * 1000000;
-  hil_sensor_msg_.xacc = hil_data_.acc_x;
-  hil_sensor_msg_.yacc = hil_data_.acc_y;
-  hil_sensor_msg_.zacc = hil_data_.acc_z;
-  hil_sensor_msg_.xgyro = hil_data_.gyro_x;
-  hil_sensor_msg_.ygyro = hil_data_.gyro_y;
-  hil_sensor_msg_.zgyro = hil_data_.gyro_z;
-  hil_sensor_msg_.xmag = hil_data_.mag_x;
-  hil_sensor_msg_.ymag = hil_data_.mag_y;
-  hil_sensor_msg_.zmag = hil_data_.mag_z;
+    mavlink_hil_gps_t* hil_gps_msg_ptr = &hil_gps_msg_;
+    mavlink_msg_hil_gps_encode(1, 0, &mmsg, hil_gps_msg_ptr);
+
+    mavros_msgs::MavlinkPtr rmsg_hil_gps = boost::make_shared<mavros_msgs::Mavlink>();
+    rmsg_hil_gps->header.stamp.sec = current_time.sec;
+    rmsg_hil_gps->header.stamp.nsec = current_time.nsec;
+    mavros_msgs::mavlink::convert(mmsg, *rmsg_hil_gps);
+
+    hil_msgs.push_back(*rmsg_hil_gps);
+  }
+
+  // Fill in a MAVLINK HIL_SENSOR message and convert it to MAVROS format.
+  hil_sensor_msg_.time_usec = time_usec;
+  hil_sensor_msg_.xacc = acc.x();
+  hil_sensor_msg_.yacc = acc.y();
+  hil_sensor_msg_.zacc = acc.z();
+  hil_sensor_msg_.xgyro = gyro.x();
+  hil_sensor_msg_.ygyro = gyro.y();
+  hil_sensor_msg_.zgyro = gyro.z();
+  hil_sensor_msg_.xmag = mag.x();
+  hil_sensor_msg_.ymag = mag.y();
+  hil_sensor_msg_.zmag = mag.z();
   hil_sensor_msg_.abs_pressure = hil_data_.pressure_abs;
   hil_sensor_msg_.diff_pressure = hil_data_.pressure_diff;
   hil_sensor_msg_.pressure_alt = hil_data_.pressure_alt;
@@ -96,20 +167,4 @@ std::vector<mavros_msgs::Mavlink> HilSensorLevelInterface::CollectData() {
   return hil_msgs;
 }
 
-/*void HilSensorLevelInterface::HilControlsCallback(const mavros_msgs::HilControlsConstPtr& hil_controls_msg) {
-  mav_msgs::Actuators act_msg;
-
-  ros::Time current_time = ros::Time::now();
-
-  act_msg.normalized.push_back(hil_controls_msg->roll_ailerons);
-  act_msg.normalized.push_back(hil_controls_msg->pitch_elevator);
-  act_msg.normalized.push_back(hil_controls_msg->yaw_rudder);
-
-  act_msg.normalized.push_back(hil_controls_msg->throttle);
-
-  act_msg.header.stamp.sec = current_time.sec;
-  act_msg.header.stamp.nsec = current_time.nsec;
-
-  actuators_pub_.publish(act_msg);
-}*/
 }

@@ -16,6 +16,8 @@ find_package(catkin REQUIRED COMPONENTS
   tf
 )
 
+find_package(Eigen REQUIRED)
+
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES rotors_hil_interface
@@ -26,6 +28,7 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
+  ${Eigen_INCLUDE_DIRS}
   ${mavros_msgs_INCLUDE_DIRS}
 )
 

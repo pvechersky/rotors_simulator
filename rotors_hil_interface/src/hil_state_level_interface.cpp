@@ -19,40 +19,107 @@
 namespace rotors_hil {
 
 HilStateLevelInterface::HilStateLevelInterface() {
-  /*ros::NodeHandle pnh("~");
+  ros::NodeHandle pnh("~");
 
-  std::string hil_controls_sub_topic;
-  std::string actuators_pub_topic;
-  pnh.param("hil_controls_sub_topic", hil_controls_sub_topic, kDefaultHilControlsSubTopic);
-  pnh.param("actuators_pub_topic", actuators_pub_topic, kDefaultActuatorsPubTopic);
+  // Retrieve the necessary parameters.
+  double S_B_roll;
+  double S_B_pitch;
+  double S_B_yaw;
+  std::string air_speed_sub_topic;
+  std::string gps_sub_topic;
+  std::string ground_speed_sub_topic;
+  std::string imu_sub_topic;
 
-  hil_controls_sub_ = nh_.subscribe(hil_controls_sub_topic, 1,
-                                      &HilInterface::HilControlsCallback);
+  pnh.param("body_to_sensor_roll", S_B_roll, kDefaultBodyToSensorsRoll);
+  pnh.param("body_to_sensor_pitch", S_B_pitch, kDefaultBodyToSensorsPitch);
+  pnh.param("body_to_sensor_yaw", S_B_yaw, kDefaultBodyToSensorsYaw);
+  pnh.param("air_speed_topic", air_speed_sub_topic, kDefaultAirSpeedSubTopic);
+  pnh.param("gps_topic", gps_sub_topic, std::string(mav_msgs::default_topics::GPS));
+  pnh.param("ground_speed_topic", ground_speed_sub_topic, kDefaultGroundSpeedSubTopic);
+  pnh.param("imu_topic", imu_sub_topic, std::string(mav_msgs::default_topics::IMU));
 
-  actuators_pub_ = nh_.advertise<mav_msgs::Actuators>(actuators_pub_topic, 1);*/
+  // Create the quaternion and rotation matrix to rotate data into NED frame.
+  Eigen::AngleAxisd roll_angle(S_B_roll, Eigen::Vector3d::UnitX());
+  Eigen::AngleAxisd pitch_angle(S_B_pitch, Eigen::Vector3d::UnitY());
+  Eigen::AngleAxisd yaw_angle(S_B_yaw, Eigen::Vector3d::UnitZ());
+
+  q_S_B_ = roll_angle * pitch_angle * yaw_angle;
+  R_S_B_ = q_S_B_.matrix().cast<float>();
+
+  // Initialize the subscribers.
+  air_speed_sub_ =
+      nh_.subscribe<geometry_msgs::TwistStamped>(
+          air_speed_sub_topic, 1, boost::bind(
+              &HilListeners::AirSpeedCallback, &hil_listeners_, _1, &hil_data_));
+
+  gps_sub_ =
+      nh_.subscribe<sensor_msgs::NavSatFix>(
+          gps_sub_topic, 1, boost::bind(
+              &HilListeners::GpsCallback, &hil_listeners_, _1, &hil_data_));
+
+  ground_speed_sub_ =
+      nh_.subscribe<geometry_msgs::TwistStamped>(
+          ground_speed_sub_topic, 1, boost::bind(
+              &HilListeners::GroundSpeedCallback, &hil_listeners_, _1, &hil_data_));
+
+  imu_sub_ =
+      nh_.subscribe<sensor_msgs::Imu>(
+          imu_sub_topic, 1, boost::bind(
+              &HilListeners::ImuCallback, &hil_listeners_, _1, &hil_data_));
 }
 
 HilStateLevelInterface::~HilStateLevelInterface() {
 }
 
 std::vector<mavros_msgs::Mavlink> HilStateLevelInterface::CollectData() {
-
-}
-
-/*void HilSensorLevelInterface::HilControlsCallback(const mavros_msgs::HilControlsConstPtr& hil_controls_msg) {
-  mav_msgs::Actuators act_msg;
+  boost::mutex::scoped_lock lock(mtx_);
 
   ros::Time current_time = ros::Time::now();
+  uint64_t time_usec = RosTimeToMicroseconds(current_time);
 
-  act_msg.normalized.push_back(hil_controls_msg->roll_ailerons);
-  act_msg.normalized.push_back(hil_controls_msg->pitch_elevator);
-  act_msg.normalized.push_back(hil_controls_msg->yaw_rudder);
+  mavlink_message_t mmsg;
+  std::vector<mavros_msgs::Mavlink> hil_msgs;
 
-  act_msg.normalized.push_back(hil_controls_msg->throttle);
+  // Rotate the attitude into NED frame
+  Eigen::Quaterniond att = hil_data_.att * q_S_B_;
 
-  act_msg.header.stamp.sec = current_time.sec;
-  act_msg.header.stamp.nsec = current_time.nsec;
+  // Rotate gyroscope, accelerometer, and ground speed data into NED frame
+  Eigen::Vector3f gyro = R_S_B_ * hil_data_.gyro;
+  Eigen::Vector3f acc = R_S_B_ * hil_data_.acc;
+  Eigen::Vector3i gps_vel = (R_S_B_ * hil_data_.gps_vel.cast<float>()).cast<int>();
 
-  actuators_pub_.publish(act_msg);
-}*/
+  // Fill in a MAVLINK HIL_STATE_QUATERNION message and convert it to MAVROS format.
+  hil_state_qtrn_msg_.time_usec = time_usec;
+  hil_state_qtrn_msg_.attitude_quaternion[0] = att.w();
+  hil_state_qtrn_msg_.attitude_quaternion[1] = att.x();
+  hil_state_qtrn_msg_.attitude_quaternion[2] = att.y();
+  hil_state_qtrn_msg_.attitude_quaternion[3] = att.z();
+  hil_state_qtrn_msg_.rollspeed = gyro.x();
+  hil_state_qtrn_msg_.pitchspeed = gyro.y();
+  hil_state_qtrn_msg_.yawspeed = gyro.z();
+  hil_state_qtrn_msg_.lat = hil_data_.lat;
+  hil_state_qtrn_msg_.lon = hil_data_.lon;
+  hil_state_qtrn_msg_.alt = hil_data_.alt;
+  hil_state_qtrn_msg_.vx = gps_vel.x();
+  hil_state_qtrn_msg_.vy = gps_vel.y();
+  hil_state_qtrn_msg_.vz = gps_vel.z();
+  hil_state_qtrn_msg_.ind_airspeed = hil_data_.ind_airspeed;
+  hil_state_qtrn_msg_.true_airspeed = hil_data_.true_airspeed;
+  hil_state_qtrn_msg_.xacc = acc.x() * 1000.0 / kGravityMagnitude;
+  hil_state_qtrn_msg_.yacc = acc.y() * 1000.0 / kGravityMagnitude;
+  hil_state_qtrn_msg_.zacc = acc.z() * 1000.0 / kGravityMagnitude;
+
+  mavlink_hil_state_quaternion_t* hil_state_qtrn_msg_ptr = &hil_state_qtrn_msg_;
+  mavlink_msg_hil_state_quaternion_encode(1, 0, &mmsg, hil_state_qtrn_msg_ptr);
+
+  mavros_msgs::MavlinkPtr rmsg_hil_state_qtrn = boost::make_shared<mavros_msgs::Mavlink>();
+  rmsg_hil_state_qtrn->header.stamp.sec = current_time.sec;
+  rmsg_hil_state_qtrn->header.stamp.nsec = current_time.nsec;
+  mavros_msgs::mavlink::convert(mmsg, *rmsg_hil_state_qtrn);
+
+  hil_msgs.push_back(*rmsg_hil_state_qtrn);
+
+  return hil_msgs;
+}
+
 }

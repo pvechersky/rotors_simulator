@@ -25,21 +25,39 @@ namespace rotors_hil {
 // Default values
 static constexpr bool kDefaultSensorLevelHil = true;
 static constexpr double kDefaultHilFrequency = 100.0;
+static const std::string kDefaultActuatorsPubTopic = "actuators";
 static const std::string kDefaultMavlinkPubTopic = "/mavlink/to";
+static const std::string kDefaultHilControlsSubTopic = "/mavros/hil_controls/hil_controls";
 
 class HilInterfaceNode {
  public:
   HilInterfaceNode();
   virtual ~HilInterfaceNode();
 
+  /// \brief Main execution loop.
   void MainTask();
 
+  /// \brief Callback for handling HilControls messages.
+  /// \param[in] hil_controls_msg A HilControls message.
+  void HilControlsCallback(const mavros_msgs::HilControlsConstPtr& hil_controls_msg);
+
  private:
-  // ROS interface
+  /// ROS node handle.
   ros::NodeHandle nh_;
+
+  /// ROS publisher for sending actuator commands.
+  ros::Publisher actuators_pub_;
+
+  /// ROS publisher for sending MAVLINK messages.
   ros::Publisher mavlink_pub_;
+
+  /// ROS subscriber for handling HilControls messages.
+  ros::Subscriber hil_controls_sub_;
+
+  /// Object for spinning.
   ros::Rate rate_;
 
+  /// Pointer to the HIL interface object.
   std::unique_ptr<HilInterface> hil_interface_;
 };
 }
