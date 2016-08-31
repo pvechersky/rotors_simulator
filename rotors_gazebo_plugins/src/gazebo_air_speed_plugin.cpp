@@ -71,18 +71,26 @@ void GazeboAirSpeedPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) 
       event::Events::ConnectWorldUpdateBegin(
           boost::bind(&GazeboAirSpeedPlugin::OnUpdate, this, _1));
 
-  air_speed_pub_ = node_handle_->advertise<geometry_msgs::Vector3>(air_speed_topic_, 1);
+  air_speed_pub_ = node_handle_->advertise<geometry_msgs::TwistStamped>(air_speed_topic_, 1);
 
   ground_speed_sub_ = node_handle_->subscribe(ground_speed_topic, 1, &GazeboAirSpeedPlugin::GroundSpeedCallback, this);
   wind_speed_sub_ = node_handle_->subscribe(wind_speed_topic, 1, &GazeboAirSpeedPlugin::WindSpeedCallback, this);
+
+  // TODO
+  // frame_id
 }
 
 void GazeboAirSpeedPlugin::OnUpdate(const common::UpdateInfo& _info) {
+  common::Time current_time  = world_->GetSimTime();
+
   math::Vector3 air_speed = ground_speed_ - wind_speed_;
 
-  air_speed_msg_.x = air_speed.x;
-  air_speed_msg_.y = air_speed.y;
-  air_speed_msg_.z = air_speed.z;
+  // Fill the air speed message
+  air_speed_msg_.header.stamp.sec = current_time.sec;
+  air_speed_msg_.header.stamp.nsec = current_time.nsec;
+  air_speed_msg_.twist.linear.x = air_speed.x;
+  air_speed_msg_.twist.linear.y = air_speed.y;
+  air_speed_msg_.twist.linear.z = air_speed.z;
 
   air_speed_pub_.publish(air_speed_msg_);
 }

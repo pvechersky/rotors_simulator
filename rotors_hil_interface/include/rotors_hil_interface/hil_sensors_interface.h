@@ -22,7 +22,6 @@
 #define ROTORS_HIL_SENSORS_INTERFACE_H_
 
 #include <geometry_msgs/TwistStamped.h>
-#include <geometry_msgs/Vector3.h>
 #include <mav_msgs/default_topics.h>
 #include <mavros_msgs/mavlink_convert.h>
 #include <ros/ros.h>
@@ -57,7 +56,7 @@ class HilSensorsInterface {
   void MainTaskStateLevelHil();
 
   // Callbacks
-  void AirSpeedCallback(const geometry_msgs::Vector3ConstPtr& air_speed_msg);
+  void AirSpeedCallback(const geometry_msgs::TwistStampedConstPtr &air_speed_msg);
   void GpsCallback(const sensor_msgs::NavSatFixConstPtr& gps_msg);
   void GroundSpeedCallback(const geometry_msgs::TwistStampedConstPtr& ground_speed_msg);
   void ImuCallback(const sensor_msgs::ImuConstPtr& imu_msg);

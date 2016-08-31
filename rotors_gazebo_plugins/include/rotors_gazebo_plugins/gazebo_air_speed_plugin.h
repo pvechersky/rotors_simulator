@@ -25,7 +25,7 @@
 #include <gazebo/common/Plugin.hh>
 #include <gazebo/gazebo.hh>
 #include <gazebo/physics/physics.hh>
-#include <geometry_msgs/Vector3.h>
+#include <geometry_msgs/TwistStamped.h>
 #include <ros/ros.h>
 
 #include <geometry_msgs/TwistStamped.h>
@@ -77,7 +77,7 @@ class GazeboAirSpeedPlugin : public ModelPlugin {
   math::Vector3 ground_speed_;
   math::Vector3 wind_speed_;
 
-  geometry_msgs::Vector3 air_speed_msg_;
+  geometry_msgs::TwistStamped air_speed_msg_;
 };
 }
 

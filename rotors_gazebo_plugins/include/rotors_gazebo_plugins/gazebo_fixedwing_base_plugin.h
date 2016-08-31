@@ -198,7 +198,7 @@ class GazeboFixedWingBasePlugin : public ModelPlugin {
   tf::TransformBroadcaster transform_broadcaster_;
 
   //void WindSpeedCallback(const rotors_comm::WindSpeedConstPtr& wind_speed_msg);
-  void AirSpeedCallback(const geometry_msgs::Vector3ConstPtr& air_speed_msg);
+  void AirSpeedCallback(const geometry_msgs::TwistStampedConstPtr air_speed_msg);
   void CommandCallback(const mav_msgs::ActuatorsConstPtr& command_msg);
 
   bool RegisterControlSurfaceCallback(rotors_comm::RegisterControlSurface::Request& req,

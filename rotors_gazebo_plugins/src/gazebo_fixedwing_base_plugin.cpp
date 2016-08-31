@@ -291,10 +291,10 @@ void GazeboFixedWingBasePlugin::ComputeAerodynamicForcesMoments(math::Vector3& f
                               wind_speed_msg->velocity.z);
 }*/
 
-void GazeboFixedWingBasePlugin::AirSpeedCallback(const geometry_msgs::Vector3ConstPtr& air_speed_msg) {
-  air_speed_.x = air_speed_msg->x;
-  air_speed_.y = air_speed_msg->y;
-  air_speed_.z = air_speed_msg->z;
+void GazeboFixedWingBasePlugin::AirSpeedCallback(const geometry_msgs::TwistStampedConstPtr air_speed_msg) {
+  air_speed_.x = air_speed_msg->twist.linear.x;
+  air_speed_.y = air_speed_msg->twist.linear.y;
+  air_speed_.z = air_speed_msg->twist.linear.z;
 }
 
 void GazeboFixedWingBasePlugin::CommandCallback(const mav_msgs::ActuatorsConstPtr& command_msg) {

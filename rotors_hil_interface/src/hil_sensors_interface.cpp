@@ -109,10 +109,10 @@ void HilSensorsInterface::MainTaskStateLevelHil() {
   }
 }
 
-void HilSensorsInterface::AirSpeedCallback(const geometry_msgs::Vector3ConstPtr& air_speed_msg) {
-  double air_speed = sqrt(air_speed_msg->x * air_speed_msg->x +
-                          air_speed_msg->y * air_speed_msg->y +
-                          air_speed_msg->z * air_speed_msg->z);
+void HilSensorsInterface::AirSpeedCallback(const geometry_msgs::TwistStampedConstPtr &air_speed_msg) {
+  double air_speed = sqrt(air_speed_msg->twist.linear.x * air_speed_msg->twist.linear.x +
+                          air_speed_msg->twist.linear.y * air_speed_msg->twist.linear.y +
+                          air_speed_msg->twist.linear.z * air_speed_msg->twist.linear.z);
 
   // The same FOR NOW
   ind_airspeed_ = air_speed * 100.0;
