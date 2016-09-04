@@ -25,6 +25,9 @@ namespace rotors_hil {
 // Default values
 static constexpr bool kDefaultSensorLevelHil = true;
 static constexpr double kDefaultHilFrequency = 100.0;
+static constexpr double kDefaultBodyToSensorsRoll = M_PI;
+static constexpr double kDefaultBodyToSensorsPitch = 0.0;
+static constexpr double kDefaultBodyToSensorsYaw = 0.0;
 static const std::string kDefaultActuatorsPubTopic = "actuators";
 static const std::string kDefaultMavlinkPubTopic = "/mavlink/to";
 static const std::string kDefaultHilControlsSubTopic = "/mavros/hil_controls/hil_controls";

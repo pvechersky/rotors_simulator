@@ -30,9 +30,6 @@ static constexpr int kAllFieldsUpdated = 4095;
 
 // Default values
 static constexpr double kDefaultGpsFrequency = 5.0;
-static constexpr double kDefaultBodyToSensorsRoll = M_PI;
-static constexpr double kDefaultBodyToSensorsPitch = 0.0;
-static constexpr double kDefaultBodyToSensorsYaw = 0.0;
 static const std::string kDefaultAirSpeedSubTopic = "air_speed";
 static const std::string kDefaultGroundSpeedSubTopic = "ground_speed";
 static const std::string kDefaultPressureSubTopic = "air_pressure";
@@ -57,30 +54,6 @@ class HilInterface {
   /// ROS node handle.
   ros::NodeHandle nh_;
 
-  /// Rotation, in quaternion form, from body into sensor (NED) frame.
-  Eigen::Quaterniond q_S_B_;
-
-  /// Rotation, in matrix form, from body into sensor (NED) frame.
-  Eigen::Matrix3f R_S_B_;
-
-  /// Object for storing the latest data.
-  HilData hil_data_;
-
-  /// Object with callbacks for receiving data.
-  HilListeners hil_listeners_;
-
-  /// Mutex lock for thread safety of reading hil data.
-  boost::mutex mtx_;
-};
-
-class HilSensorLevelInterface : public HilInterface {
- public:
-  HilSensorLevelInterface();
-  virtual ~HilSensorLevelInterface();
-
-  std::vector<mavros_msgs::Mavlink> CollectData();
-
- private:
   /// ROS air speed subscriber.
   ros::Subscriber air_speed_sub_;
 
@@ -99,6 +72,32 @@ class HilSensorLevelInterface : public HilInterface {
   /// ROS air pressure subscriber.
   ros::Subscriber pressure_sub_;
 
+  /// Rotation, in quaternion form, from body into sensor (NED) frame.
+  Eigen::Quaterniond q_S_B_;
+
+  /// Rotation, in matrix form, from body into sensor (NED) frame.
+  Eigen::Matrix3f R_S_B_;
+
+  /// Object for storing the latest data.
+  HilData hil_data_;
+
+  /// Object with callbacks for receiving data.
+  HilListeners hil_listeners_;
+
+  /// Mutex lock for thread safety of reading hil data.
+  boost::mutex mtx_;
+};
+
+class HilSensorLevelInterface : public HilInterface {
+ public:
+  /// \brief Constructor
+  /// \param[in] q_S_B Quaternion rotation from body frame to NED frame.
+  HilSensorLevelInterface(const Eigen::Quaterniond q_S_B);
+  virtual ~HilSensorLevelInterface();
+
+  std::vector<mavros_msgs::Mavlink> CollectData();
+
+ private:
   /// MAVLINK HIL_GPS message.
   mavlink_hil_gps_t hil_gps_msg_;
 
@@ -114,24 +113,14 @@ class HilSensorLevelInterface : public HilInterface {
 
 class HilStateLevelInterface : public HilInterface {
  public:
-  HilStateLevelInterface();
+  /// \brief Constructor
+  /// \param[in] q_S_B Quaternion rotation from body frame to NED frame.
+  HilStateLevelInterface(const Eigen::Quaterniond q_S_B);
   virtual ~HilStateLevelInterface();
 
   std::vector<mavros_msgs::Mavlink> CollectData();
 
  private:
-  /// ROS air speed subscriber.
-  ros::Subscriber air_speed_sub_;
-
-  /// ROS GPS subscriber.
-  ros::Subscriber gps_sub_;
-
-  /// ROS ground speed subscriber.
-  ros::Subscriber ground_speed_sub_;
-
-  /// ROS IMU subscriber.
-  ros::Subscriber imu_sub_;
-
   /// MAVLINK HIL_STATE_QUATERNION message.
   mavlink_hil_state_quaternion_t hil_state_qtrn_msg_;
 };

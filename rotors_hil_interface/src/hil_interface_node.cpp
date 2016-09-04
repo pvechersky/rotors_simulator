@@ -24,20 +24,33 @@ HilInterfaceNode::HilInterfaceNode() :
 
   bool sensor_level_hil;
   double hil_frequency;
+  double S_B_roll;
+  double S_B_pitch;
+  double S_B_yaw;
   std::string actuators_pub_topic;
   std::string mavlink_pub_topic;
   std::string hil_controls_sub_topic;
 
   pnh.param("sensor_level_hil", sensor_level_hil, kDefaultSensorLevelHil);
   pnh.param("hil_frequency", hil_frequency, kDefaultHilFrequency);
+  pnh.param("body_to_sensor_roll", S_B_roll, kDefaultBodyToSensorsRoll);
+  pnh.param("body_to_sensor_pitch", S_B_pitch, kDefaultBodyToSensorsPitch);
+  pnh.param("body_to_sensor_yaw", S_B_yaw, kDefaultBodyToSensorsYaw);
   pnh.param("actuators_pub_topic", actuators_pub_topic, kDefaultActuatorsPubTopic);
   pnh.param("mavlink_pub_topic", mavlink_pub_topic, kDefaultMavlinkPubTopic);
   pnh.param("hil_controls_sub_topic", hil_controls_sub_topic, kDefaultHilControlsSubTopic);
 
+  // Create the quaternion and rotation matrix to rotate data into NED frame.
+  Eigen::AngleAxisd roll_angle(S_B_roll, Eigen::Vector3d::UnitX());
+  Eigen::AngleAxisd pitch_angle(S_B_pitch, Eigen::Vector3d::UnitY());
+  Eigen::AngleAxisd yaw_angle(S_B_yaw, Eigen::Vector3d::UnitZ());
+
+  const Eigen::Quaterniond q_S_B = roll_angle * pitch_angle * yaw_angle;
+
   if (sensor_level_hil)
-    hil_interface_ = std::auto_ptr<HilSensorLevelInterface>(new HilSensorLevelInterface);
+    hil_interface_ = std::auto_ptr<HilSensorLevelInterface>(new HilSensorLevelInterface(q_S_B));
   else
-    hil_interface_ = std::auto_ptr<HilStateLevelInterface>(new HilStateLevelInterface);
+    hil_interface_ = std::auto_ptr<HilStateLevelInterface>(new HilStateLevelInterface(q_S_B));
 
   rate_ = ros::Rate(hil_frequency);
 

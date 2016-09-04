@@ -18,32 +18,22 @@
 
 namespace rotors_hil {
 
-HilStateLevelInterface::HilStateLevelInterface() {
+HilStateLevelInterface::HilStateLevelInterface(const Eigen::Quaterniond q_S_B) {
   ros::NodeHandle pnh("~");
 
   // Retrieve the necessary parameters.
-  double S_B_roll;
-  double S_B_pitch;
-  double S_B_yaw;
   std::string air_speed_sub_topic;
   std::string gps_sub_topic;
   std::string ground_speed_sub_topic;
   std::string imu_sub_topic;
 
-  pnh.param("body_to_sensor_roll", S_B_roll, kDefaultBodyToSensorsRoll);
-  pnh.param("body_to_sensor_pitch", S_B_pitch, kDefaultBodyToSensorsPitch);
-  pnh.param("body_to_sensor_yaw", S_B_yaw, kDefaultBodyToSensorsYaw);
   pnh.param("air_speed_topic", air_speed_sub_topic, kDefaultAirSpeedSubTopic);
   pnh.param("gps_topic", gps_sub_topic, std::string(mav_msgs::default_topics::GPS));
   pnh.param("ground_speed_topic", ground_speed_sub_topic, kDefaultGroundSpeedSubTopic);
   pnh.param("imu_topic", imu_sub_topic, std::string(mav_msgs::default_topics::IMU));
 
-  // Create the quaternion and rotation matrix to rotate data into NED frame.
-  Eigen::AngleAxisd roll_angle(S_B_roll, Eigen::Vector3d::UnitX());
-  Eigen::AngleAxisd pitch_angle(S_B_pitch, Eigen::Vector3d::UnitY());
-  Eigen::AngleAxisd yaw_angle(S_B_yaw, Eigen::Vector3d::UnitZ());
-
-  q_S_B_ = roll_angle * pitch_angle * yaw_angle;
+  // Compute the rotation matrix to rotate data into NED frame
+  q_S_B_ = q_S_B;
   R_S_B_ = q_S_B_.matrix().cast<float>();
 
   // Initialize the subscribers.
@@ -105,9 +95,9 @@ std::vector<mavros_msgs::Mavlink> HilStateLevelInterface::CollectData() {
   hil_state_qtrn_msg_.vz = gps_vel.z();
   hil_state_qtrn_msg_.ind_airspeed = hil_data_.ind_airspeed;
   hil_state_qtrn_msg_.true_airspeed = hil_data_.true_airspeed;
-  hil_state_qtrn_msg_.xacc = acc.x() * 1000.0 / kGravityMagnitude;
-  hil_state_qtrn_msg_.yacc = acc.y() * 1000.0 / kGravityMagnitude;
-  hil_state_qtrn_msg_.zacc = acc.z() * 1000.0 / kGravityMagnitude;
+  hil_state_qtrn_msg_.xacc = acc.x() * kMetersToMm / kGravityMagnitude;
+  hil_state_qtrn_msg_.yacc = acc.y() * kMetersToMm / kGravityMagnitude;
+  hil_state_qtrn_msg_.zacc = acc.z() * kMetersToMm / kGravityMagnitude;
 
   mavlink_hil_state_quaternion_t* hil_state_qtrn_msg_ptr = &hil_state_qtrn_msg_;
   mavlink_msg_hil_state_quaternion_encode(1, 0, &mmsg, hil_state_qtrn_msg_ptr);
