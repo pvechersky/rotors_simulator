@@ -96,7 +96,7 @@ class HilListeners {
 
     double air_speed = air_velocity.norm();
 
-    // TODO: The same FOR NOW
+    // TODO(pvechersky): Simulate indicated air speed.
 
     // MAVLINK HIL_STATE_QUATERNION message measured airspeed in cm/s.
     hil_data->ind_airspeed = air_speed * kMetersToCm;
