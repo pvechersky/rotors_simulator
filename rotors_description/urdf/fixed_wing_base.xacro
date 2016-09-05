@@ -68,7 +68,8 @@
     </link>
 
     <gazebo>
-      <plugin name="${robot_namespace}_base" filename="librotors_gazebo_fixedwing_base_plugin.so">
+      <!--<plugin name="${robot_namespace}_base" filename="librotors_gazebo_fixedwing_base_plugin.so">-->
+      <plugin name="${robot_namespace}_base" filename="librotors_gazebo_aerodynamics_plugin.so">
         <robotNamespace>${robot_namespace}</robotNamespace>
         <linkName>${robot_namespace}/base_link</linkName>
       </plugin>
@@ -80,7 +81,7 @@
 
   <!-- Control surface joint and link -->
   <xacro:macro name="control_surface"
-    params="robot_namespace surface_name parent mass_surface surface_type
+    params="robot_namespace surface_name parent mass_surface surface_type surface_side
       min_angle max_angle color use_mesh_file mesh_file surface_length surface_width
       surface_height *axis *joint_origin *link_origin *inertia">
     <joint name="${robot_namespace}/${surface_name}_joint" type="revolute">
@@ -126,6 +127,8 @@
         <robotNamespace>${robot_namespace}</robotNamespace>
         <jointName>${robot_namespace}/${surface_name}_joint</jointName>
         <surfaceType>${surface_type}</surfaceType>
+        <surfaceSide>${surface_side}</surfaceSide>
+        <surfaceName>${surface_name}</surfaceName>
         <angleMin>${min_angle}</angleMin>
         <angleMax>${max_angle}</angleMax>
       </plugin>

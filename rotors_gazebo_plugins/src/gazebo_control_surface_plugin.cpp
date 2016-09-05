@@ -57,9 +57,20 @@ void GazeboControlSurfacePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr 
     gzerr << "[gazebo_control_surface_plugin] " <<
              "Please specify the surface type ('aileron', 'elevator', 'rudder', or 'flap').\n";
 
-  // For now don't register flaps
-  if (surface_type_ == "flap")
-    return;
+  // Get the side of the airplane which the control surface is on.
+  if (surface_type_ == "aileron" || surface_type_ == "flap") {
+    if (_sdf->HasElement("surfaceSide")) {
+        surface_side_ = _sdf->GetElement("surfaceSide")->Get<std::string>();
+        if (!(surface_side_ == "left" || surface_side_ == "right"))
+          gzerr << "[gazebo_control_surface_plugin] " <<
+                   "Please only use 'left' or 'right' as surfaceSide.\n";
+    }
+    else
+      gzerr << "[gazebo_control_surface_plugin] " <<
+               "Please specify the surface side ('left' or 'right') for ailerons and flaps.\n";
+  }
+  else
+    surface_side_ = "";
 
   // Get the minimum and maximum deflection angles.
   getSdfParam<double>(_sdf, "angleMin", angle_min_, kDefaultAngleMin);
@@ -74,6 +85,7 @@ void GazeboControlSurfacePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr 
   rotors_comm::RegisterControlSurface control_surface_info;
   control_surface_info.request.joint_name = joint_name_;
   control_surface_info.request.surface_type = surface_type_;
+  control_surface_info.request.surface_side = surface_side_;
   control_surface_info.request.angle_min = angle_min_;
   control_surface_info.request.angle_max = angle_max_;
 

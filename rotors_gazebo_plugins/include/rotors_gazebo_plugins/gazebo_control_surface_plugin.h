@@ -50,6 +50,7 @@ class GazeboControlSurfacePlugin : public ModelPlugin {
   double angle_max_;
   std::string joint_name_;
   std::string surface_type_;
+  std::string surface_side_;
 };
 }
 

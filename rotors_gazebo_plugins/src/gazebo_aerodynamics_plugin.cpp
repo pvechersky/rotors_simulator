@@ -175,12 +175,17 @@ void GazeboAerodynamicsPlugin::OnUpdate(const common::UpdateInfo& _info) {
 
   for (int i = 0; i < ailerons_.size(); i++) {
     double aileron_angle = ailerons_.at(i)->GetAngle(0).Radian();
-    ailerons_.at(i)->SetVelocity(0, 2.0 * (aileron_info_.deflection - aileron_angle));
+    ailerons_.at(i)->SetVelocity(0, 2.0 * (aileron_left_info_.deflection - aileron_angle));
   }
 
   for (int i = 0; i < elevators_.size(); i++) {
     double elevator_angle = elevators_.at(i)->GetAngle(0).Radian();
     elevators_.at(i)->SetVelocity(0, 2.0 * (elevator_info_.deflection - elevator_angle));
+  }
+
+  for (int i = 0; i < flaps_.size(); i++) {
+    double flap_angle = flaps_.at(i)->GetAngle(0).Radian();
+    flaps_.at(i)->SetVelocity(0, 2.0 * (flap_info_.deflection - flap_angle));
   }
 
   double rudder_angle = rudder_->GetAngle(0).Radian();
@@ -190,12 +195,9 @@ void GazeboAerodynamicsPlugin::OnUpdate(const common::UpdateInfo& _info) {
 void GazeboAerodynamicsPlugin::ComputeAerodynamicForcesMoments(math::Vector3& forces, math::Vector3& moments) {
   math::Quaternion orientation = link_->GetWorldPose().rot;
   //math::Vector3 air_speed_body = orientation.RotateVectorReverse(link_->GetWorldLinearVel() - wind_speed_);
+  air_speed_ = link_->GetWorldLinearVel();
   math::Vector3 lin_vel_body = orientation.RotateVectorReverse(air_speed_);
   math::Vector3 ang_vel_body = link_->GetRelativeAngularVel();
-
-  //double u = air_speed_body.x;
-  //double v = -air_speed_body.y;
-  //double w = -air_speed_body.z;
 
   double u = lin_vel_body.x;
   double v = -lin_vel_body.y;
@@ -205,25 +207,33 @@ void GazeboAerodynamicsPlugin::ComputeAerodynamicForcesMoments(math::Vector3& fo
   double q = -ang_vel_body.y;
   double r = -ang_vel_body.z;
 
-  //double V = air_speed_body.GetLength();
   double V = lin_vel_body.GetLength();
 
-  double beta = (V < 0.1) ? 0.0 : asin(v / V);
-  double alpha = (V < 0.1) ? 0.0 : atan(w / u);
+  double beta = (V < 0.1) ? 0.0 : atan2(-v, fabs(u));
+  double alpha = (V < 0.1) ? 0.0 : atan2(w, fabs(u));
+
+  if (alpha > 0.27)
+    alpha = 0.27;
+  else if (alpha < -0.27)
+    alpha = -0.27;
 
   double q_bar_S = 0.5 * kRhoAir * V * V * wing_surface_;
 
-  double uE = elevator_info_.deflection;
-  double uA = aileron_info_.deflection;
-  double uR = rudder_info_.deflection;
-  double uT = throttle_;
+  double delta_ail_right = aileron_right_info_.deflection;
+  double delta_ail_left = aileron_left_info_.deflection;
+  double delta_elv = elevator_info_.deflection;
+  double delta_flap = flap_info_.deflection;
+  double delta_rdr = rudder_info_.deflection;
+  double throttle = throttle_;
 
-  double delta_ail_sum = 2.0 * fabs(uA);
-  double delta_ail_diff = 0.0;
-  double delta_flp_sum = 0.0;
+  double delta_ail_sum = delta_ail_right * delta_ail_left;
+  double delta_ail_diff = delta_ail_left - delta_ail_right;
+  double delta_flp_sum = 2.0 * delta_flap;
   double delta_flp_diff = 0.0;
 
   double epsilon_thrust = 0.0;
+  double cx_thrust = 0.1149;
+  double cz_thrust = 0.1149;
   double x_thrust = 0.235;
   double y_thrust = 0.0;
   double z_thrust = 0.035;
@@ -269,12 +279,12 @@ void GazeboAerodynamicsPlugin::ComputeAerodynamicForcesMoments(math::Vector3& fo
                                      c_Lm_delta_flp.dot(Eigen::Vector2d(delta_flp_diff, 0.0)));
   double Mm = q_bar_S * chord_length_ * (c_Mm_alpha.dot(Eigen::Vector2d(alpha, 1.0)) +
                                          c_Mm_q.dot(Eigen::Vector2d(q, 0.0)) +
-                                         c_Mm_delta_elv.dot(Eigen::Vector2d(uE, 0.0)));
+                                         c_Mm_delta_elv.dot(Eigen::Vector2d(delta_elv, 0.0)));
   double Nm = q_bar_S * wingspan_ * (c_Nm_beta.dot(Eigen::Vector2d(beta, 0.0)) +
                                      c_Nm_r.dot(Eigen::Vector2d(r, 0.0)) +
-                                     c_Nm_delta_rud.dot(Eigen::Vector2d(uR, 0.0)));
+                                     c_Nm_delta_rud.dot(Eigen::Vector2d(delta_rdr, 0.0)));
 
-  double T = aero_params_.cT0 + aero_params_.cT1 * uT + aero_params_.cT2 * uT * uT;
+  double T = aero_params_.cT0 + aero_params_.cT1 * throttle + aero_params_.cT2 * throttle * throttle;
   double Tx = cos(epsilon_thrust) * T;
   double Tz = sin(epsilon_thrust) * T;
 
@@ -282,13 +292,10 @@ void GazeboAerodynamicsPlugin::ComputeAerodynamicForcesMoments(math::Vector3& fo
   double TM_d = -x_thrust * sin(epsilon_thrust) * T + z_thrust * cos(epsilon_thrust) * T;
   double TN_d = y_thrust * cos(epsilon_thrust) * -T;
 
-  double cx_thrust = 0.1149;
-  double cz_thrust = 0.1149;
-
   double TL_ind = Tx * cx_thrust;
   double TN_ind = Tz * cz_thrust;
 
-  Eigen::Vector3d force_w(-D, Y, L);
+  Eigen::Vector3d force_w(-D, Y, -L);
   Eigen::Vector3d momentum_w(Lm, Mm, Nm);
 
   double ca = cos(alpha);
@@ -304,11 +311,16 @@ void GazeboAerodynamicsPlugin::ComputeAerodynamicForcesMoments(math::Vector3& fo
   Eigen::Vector3d force_T_b(Tx, 0.0, Tz);
   Eigen::Vector3d momentum_T_b(TL_d + TL_ind, TM_d, TN_d + TN_ind);
 
-  Eigen::Vector3d force_b = R_WB.transpose() * force_w + force_T_b;
-  Eigen::Vector3d momentum_b = R_WB.transpose() * momentum_w + momentum_T_b;
+  Eigen::Matrix3d R_WB_t = R_WB.transpose();
+
+  Eigen::Vector3d force_b = R_WB_t * force_w + force_T_b;
+  Eigen::Vector3d momentum_b = R_WB_t * momentum_w;// + momentum_T_b;
 
   forces = math::Vector3(force_b[0], -force_b[1], -force_b[2]);
   moments = math::Vector3(momentum_b[0], -momentum_b[1], -momentum_b[2]);
+
+  /*std::cout << force_b << std::endl;
+  std::cout << momentum_b << std::endl << std::endl;*/
 }
 
 /*void GazeboFixedWingBasePlugin::WindSpeedCallback(const rotors_comm::WindSpeedConstPtr& wind_speed_msg) {
@@ -324,23 +336,33 @@ void GazeboAerodynamicsPlugin::AirSpeedCallback(const geometry_msgs::TwistStampe
 }
 
 void GazeboAerodynamicsPlugin::CommandCallback(const mav_msgs::ActuatorsConstPtr& command_msg) {
-  // Process the aileron command
-  aileron_info_.deflection = (aileron_info_.d_max + aileron_info_.d_min) * 0.5 +
-          (aileron_info_.d_max - aileron_info_.d_min) * 0.5 *
-          command_msg->normalized.at(aileron_channel_);
+  // Process the right aileron command
+  aileron_right_info_.deflection = (aileron_right_info_.d_max + aileron_right_info_.d_min) * 0.5 +
+          (aileron_right_info_.d_max - aileron_right_info_.d_min) * 0.5 *
+          command_msg->normalized.at(0);
+
+  // Process the left aileron command
+  aileron_left_info_.deflection = (aileron_left_info_.d_max + aileron_left_info_.d_min) * 0.5 +
+          (aileron_left_info_.d_max - aileron_left_info_.d_min) * 0.5 *
+          command_msg->normalized.at(4);
 
   // Process the elevator command
   elevator_info_.deflection = (elevator_info_.d_max + elevator_info_.d_min) * 0.5 +
           (elevator_info_.d_max - elevator_info_.d_min) * 0.5 *
-          command_msg->normalized.at(elevator_channel_);
+          command_msg->normalized.at(1);
+
+  // Process the flap command
+  flap_info_.deflection = (flap_info_.d_max + flap_info_.d_min) * 0.5 +
+          (flap_info_.d_max - flap_info_.d_min) * 0.5 *
+          command_msg->normalized.at(3);
 
   // Process the rudder command
   rudder_info_.deflection = (rudder_info_.d_max + rudder_info_.d_min) * 0.5 +
           (rudder_info_.d_max - rudder_info_.d_min) * 0.5 *
-          command_msg->normalized.at(rudder_channel_);
+          command_msg->normalized.at(2);
 
   // Process the throttle command
-  throttle_ = command_msg->normalized.at(3);
+  throttle_ = command_msg->normalized.at(5);
 }
 
 bool GazeboAerodynamicsPlugin::RegisterControlSurfaceCallback(
@@ -353,16 +375,26 @@ bool GazeboAerodynamicsPlugin::RegisterControlSurfaceCallback(
   surface.deflection = 0.0;
 
   if (req.surface_type == "aileron") {
-    aileron_info_ = surface;
     ailerons_.push_back(model_->GetJoint(req.joint_name));
+
+    if (req.surface_side == "right")
+      aileron_right_info_ = surface;
+    else if (req.surface_side == "left")
+      aileron_left_info_ = surface;
+    else
+      return false;
   }
   else if (req.surface_type == "elevator") {
-    elevator_info_ = surface;
     elevators_.push_back(model_->GetJoint(req.joint_name));
+    elevator_info_ = surface;
+  }
+  else if (req.surface_type == "flap") {
+    flaps_.push_back(model_->GetJoint(req.joint_name));
+    flap_info_ = surface;
   }
   else if (req.surface_type == "rudder") {
-    rudder_info_ = surface;
     rudder_ = model_->GetJoint(req.joint_name);
+    rudder_info_ = surface;
   }
   else {
     res.success = false;
@@ -388,7 +420,8 @@ bool GazeboAerodynamicsPlugin::ResetModelCallback(std_srvs::Empty::Request &req,
   ang_vel.z = 0.0;
   model_->SetAngularVel(ang_vel);
 
-  aileron_info_.deflection = 0.0;
+  aileron_right_info_.deflection = 0.0;
+  aileron_left_info_.deflection = 0.0;
   for (int i = 0; i < ailerons_.size(); i++) {
     ailerons_.at(i)->SetPosition(0, 0.0);
   }
@@ -396,6 +429,11 @@ bool GazeboAerodynamicsPlugin::ResetModelCallback(std_srvs::Empty::Request &req,
   elevator_info_.deflection = 0.0;
   for (int i = 0; i < elevators_.size(); i++) {
     elevators_.at(i)->SetPosition(0, 0.0);
+  }
+
+  flap_info_.deflection = 0.0;
+  for (int i = 0; i < flaps_.size(); i++) {
+    flaps_.at(i)->SetPosition(0, 0.0);
   }
 
   rudder_info_.deflection = 0.0;

@@ -25,7 +25,7 @@
   <xacro:property name="PI" value="3.1415926535897931" />
 
   <!-- Component masses -->
-  <xacro:property name="mass_fuselage" value="2.05" /> <!-- [kg] -->
+  <xacro:property name="mass_fuselage" value="1.25" /> <!-- [kg] -->
   <xacro:property name="mass_aileron" value="0.1" /> <!-- [kg] -->
   <xacro:property name="mass_flap" value="0.1" /> <!-- [kg] -->
   <xacro:property name="mass_elevator" value="0.1" /> <!-- [kg] -->
@@ -50,8 +50,8 @@
   <xacro:property name="flap_length" value="0.076" /> <!-- [m] -->
   <xacro:property name="flap_width" value="0.459" /> <!-- [m] -->
   <xacro:property name="flap_height" value="0.016" /> <!-- [m] -->
-  <xacro:property name="flap_min_angle" value="0.0" /> <!-- [rad] -->
-  <xacro:property name="flap_max_angle" value="0.0" /> <!-- [rad] -->
+  <xacro:property name="flap_min_angle" value="-0.349066" /> <!-- [rad] -->
+  <xacro:property name="flap_max_angle" value="0.349066" /> <!-- [rad] -->
   <xacro:property name="flap_color" value="Yellow" />
 
   <!-- Elevator properties -->
@@ -78,7 +78,8 @@
 
   <!-- Inertia of the main body -->
   <xacro:property name="body_inertia">
-    <inertia ixx="0.16632" ixy="0.0" ixz="0.0755" iyy="0.3899" iyz="0.0" izz="0.5243" />
+    <!--<inertia ixx="0.16632" ixy="0.0" ixz="0.0755" iyy="0.3899" iyz="0.0" izz="0.5243" />-->
+    <inertia ixx="0.1512" ixy="0.0" ixz="0.0755" iyy="0.2785" iyz="0.0" izz="0.3745" />
   </xacro:property>
 
   <!-- Inertia of the aileron, assuming it is a cuboid -->
@@ -130,6 +131,7 @@
     parent="${namespace}/base_link"
     mass_surface="${mass_aileron}"
     surface_type="aileron"
+    surface_side="left"
     min_angle="${aileron_min_angle}"
     max_angle="${aileron_max_angle}"
     color="${aileron_color}"
@@ -150,6 +152,7 @@
     parent="${namespace}/base_link"
     mass_surface="${mass_aileron}"
     surface_type="aileron"
+    surface_side="right"
     min_angle="${aileron_min_angle}"
     max_angle="${aileron_max_angle}"
     color="${aileron_color}"
@@ -171,6 +174,7 @@
     parent="${namespace}/base_link"
     mass_surface="${mass_flap}"
     surface_type="flap"
+    surface_side="left"
     min_angle="${flap_min_angle}"
     max_angle="${flap_max_angle}"
     color="${flap_color}"
@@ -179,7 +183,7 @@
     surface_length="${flap_length}"
     surface_width="${flap_width}"
     surface_height="${flap_height}">
-    <axis xyz="0 -1 0" />
+    <axis xyz="0 1 0" />
     <origin xyz="0.101 0.382 0.1185" rpy="0 0 0" />
     <origin xyz="0 0 0" rpy="0 0 0" />
     <xacro:insert_block name="flap_inertia" />
@@ -191,6 +195,7 @@
     parent="${namespace}/base_link"
     mass_surface="${mass_flap}"
     surface_type="flap"
+    surface_side="right"
     min_angle="${flap_min_angle}"
     max_angle="${flap_max_angle}"
     color="${flap_color}"
@@ -212,6 +217,7 @@
     parent="${namespace}/base_link"
     mass_surface="${mass_elevator}"
     surface_type="elevator"
+    surface_side=""
     min_angle="${elevator_min_angle}"
     max_angle="${elevator_max_angle}"
     color="${elevator_color}"
@@ -233,6 +239,7 @@
     parent="${namespace}/base_link"
     mass_surface="${mass_rudder}"
     surface_type="rudder"
+    surface_side=""
     min_angle="${rudder_min_angle}"
     max_angle="${rudder_max_angle}"
     color="${rudder_color}"
@@ -242,8 +249,8 @@
     surface_width="${rudder_width}"
     surface_height="${rudder_height}">
     <axis xyz="0 0 1" />
-    <origin xyz="-0.428 0.0 0.0" rpy="0 0.25 0" />
-    <origin xyz="0 0 0" rpy="0 -0.25 0" />
+    <origin xyz="-0.428 0.0 0.0" rpy="0 -0.25 0" />
+    <origin xyz="0 0 0" rpy="0 0.25 0" />
     <xacro:insert_block name="rudder_inertia" />
   </xacro:control_surface>
 

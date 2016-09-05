@@ -314,7 +314,7 @@ void GazeboFixedWingBasePlugin::CommandCallback(const mav_msgs::ActuatorsConstPt
           command_msg->normalized.at(rudder_channel_);
 
   // Process the throttle command
-  throttle_ = command_msg->normalized.at(3);
+  throttle_ = command_msg->normalized.at(5);
 }
 
 bool GazeboFixedWingBasePlugin::RegisterControlSurfaceCallback(

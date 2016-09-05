@@ -175,12 +175,15 @@ class GazeboAerodynamicsPlugin : public ModelPlugin {
   // Pointers to control surfaces joints
   std::vector<physics::JointPtr> ailerons_;
   std::vector<physics::JointPtr> elevators_;
+  std::vector<physics::JointPtr> flaps_;
   physics::JointPtr rudder_;
 
   // Control surfaces info
-  ControlSurface aileron_info_;
+  ControlSurface aileron_left_info_;
+  ControlSurface aileron_right_info_;
   ControlSurface elevator_info_;
   ControlSurface rudder_info_;
+  ControlSurface flap_info_;
 
   // Control surface channels
   int aileron_channel_;

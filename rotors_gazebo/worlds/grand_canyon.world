@@ -3,9 +3,9 @@
   <world name="grand_canyon">
     <gui>
       <camera name="user_camera">
-        <pose>-21.660200 -11.942800 190.053900 0.000000 0.443643 0.352194</pose>
+        <pose>-771.660200 -511.942800 390.053900 0.000000 0.443643 0.552194</pose>
       </camera>
-      <plugin name="view_selection" filename="librotors_gazebo_view_control_plugin.so"/>
+      <!--<plugin name="view_selection" filename="librotors_gazebo_view_control_plugin.so"/>-->
     </gui>
     <scene>
       <ambient>0.2 0.2 0.2 1.0</ambient>
