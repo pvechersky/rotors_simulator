@@ -52,6 +52,9 @@ catkin_package(
 
 include_directories(include ${catkin_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS})
 
+add_library(rotors_gazebo_rendering src/rendering_force.cpp src/rendering_torque.cpp)
+target_link_libraries(rotors_gazebo_rendering ${GAZEBO_LIBRARIES})
+
 add_library(rotors_gazebo_motor_model src/gazebo_motor_model.cpp)
 target_link_libraries(rotors_gazebo_motor_model ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
 add_dependencies(rotors_gazebo_motor_model ${catkin_EXPORTED_TARGETS})
@@ -116,8 +119,21 @@ add_library(rotors_gazebo_aerodynamics_plugin src/gazebo_aerodynamics_plugin.cpp
 target_link_libraries(rotors_gazebo_aerodynamics_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
 add_dependencies(rotors_gazebo_aerodynamics_plugin ${catkin_EXPORTED_TARGETS})
 
+add_library(gps_temp src/gps_temp.cpp)
+target_link_libraries(gps_temp ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+add_dependencies(gps_temp ${catkin_EXPORTED_TARGETS})
+
+add_library(gps_test src/gps_test.cpp)
+target_link_libraries(gps_temp ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+add_dependencies(gps_temp ${catkin_EXPORTED_TARGETS})
+
+add_library(aero_visual_plugin src/aero_visual_plugin.cpp)
+target_link_libraries(aero_visual_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+add_dependencies(aero_visual_plugin ${catkin_EXPORTED_TARGETS})
+
 add_library(rotors_gazebo_view_control_plugin SHARED ${headers_view_control} src/gazebo_view_control_plugin.cpp)
-target_link_libraries(rotors_gazebo_view_control_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES} ${QT_LIBRARIES} ${PROTOBUF_LIBRARIES})
+target_link_libraries(rotors_gazebo_view_control_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES} ${QT_LIBRARIES}
+  ${PROTOBUF_LIBRARIES} rotors_gazebo_rendering)
 add_dependencies(rotors_gazebo_view_control_plugin ${catkin_EXPORTED_TARGETS})
 
 add_library(rotors_gazebo_map_tracker_plugin SHARED ${headers_map_tracker} src/gazebo_map_tracker_plugin.cpp)
@@ -144,6 +160,9 @@ install(
     rotors_gazebo_aerodynamics_plugin
     rotors_gazebo_view_control_plugin
     rotors_gazebo_map_tracker_plugin
+    gps_temp
+    gps_test
+    aero_visual_plugin
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 )
