@@ -32,6 +32,7 @@ namespace gazebo {
 GazeboImuPlugin::GazeboImuPlugin()
     : ModelPlugin(),
       node_handle_(0),
+      random_generator_(std::chrono::system_clock::now().time_since_epoch().count()),
       velocity_prev_W_(0, 0, 0),
       roll_(0.0),
       pitch_(0.0),

@@ -73,6 +73,9 @@
         <robotNamespace>${robot_namespace}</robotNamespace>
         <linkName>${robot_namespace}/base_link</linkName>
       </plugin>
+      <!--<plugin name="${robot_namespace}_base" filename="libgps_test.so">
+        <linkName>${robot_namespace}/base_link</linkName>
+      </plugin>-->
     </gazebo>
     <gazebo reference="${robot_namespace}/base_link">
       <material>Gazebo/${color}</material>

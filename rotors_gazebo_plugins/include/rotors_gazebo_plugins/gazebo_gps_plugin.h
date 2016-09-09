@@ -27,7 +27,10 @@
 #include <ros/ros.h>
 #include <sensor_msgs/NavSatFix.h>
 
+#include <geometry_msgs/PoseStamped.h>
+
 #include "rotors_gazebo_plugins/common.h"
+#include "rotors_gazebo_plugins/gps-conversions.h"
 
 namespace gazebo {
 // WGS84 constants
@@ -62,6 +65,8 @@ class GazeboGpsPlugin : public ModelPlugin {
   ros::Publisher gps_pub_;
   ros::Publisher ground_speed_pub_;
 
+  ros::Publisher xyz_pub_;
+
   // Pointer to the world
   physics::WorldPtr world_;
   // Pointer to the model
@@ -81,6 +86,11 @@ class GazeboGpsPlugin : public ModelPlugin {
 
   sensor_msgs::NavSatFix gps_message_;
   geometry_msgs::TwistStamped ground_speed_msg_;
+
+  geometry_msgs::PoseStamped xyz_msg_;
+
+  double start_easting_;
+  double start_northing_;
 };
 }
 

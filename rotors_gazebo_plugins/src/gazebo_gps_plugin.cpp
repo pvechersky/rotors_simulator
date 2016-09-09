@@ -63,7 +63,6 @@ void GazeboGpsPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
 
   frame_id_ = link_name;
 
-
   std::string gps_topic;
   std::string ground_speed_topic;
 
@@ -75,6 +74,8 @@ void GazeboGpsPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
   getSdfParam<double>(_sdf, "referenceAltitude", ref_alt_, kDefaultRefAlt);
   getSdfParam<double>(_sdf, "referenceHeading", ref_heading_, kDefaultRefHeading);
 
+  UTM::UTM(ref_lat_, ref_lon_, &start_easting_, &start_northing_);
+
   // Listen to the update event. This event is broadcast every simulation iteration
   this->updateConnection_ =
       event::Events::ConnectWorldUpdateBegin(
@@ -82,6 +83,10 @@ void GazeboGpsPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
 
   gps_pub_ = node_handle_->advertise<sensor_msgs::NavSatFix>(gps_topic, 1);
   ground_speed_pub_ = node_handle_->advertise<geometry_msgs::TwistStamped>(ground_speed_topic, 1);
+
+  xyz_pub_ = node_handle_->advertise<geometry_msgs::PoseStamped>("xyz_gps", 1);
+
+  xyz_msg_.header.frame_id = frame_id_;
 
   // Fill the GPS message
   gps_message_.header.frame_id = frame_id_;
@@ -130,6 +135,18 @@ void GazeboGpsPlugin::OnUpdate(const common::UpdateInfo& _info) {
 
   // Publish the ground speed message
   ground_speed_pub_.publish(ground_speed_msg_);
+
+  xyz_msg_.header.stamp.sec = current_time.sec;
+  xyz_msg_.header.stamp.nsec = current_time.nsec;
+
+  double x;
+  double y;
+  UTM::UTM(gps_message_.latitude, gps_message_.longitude, &x, &y);
+
+  xyz_msg_.pose.position.x = (y - start_northing_);
+  xyz_msg_.pose.position.y = -(x - start_easting_);
+
+  xyz_pub_.publish(xyz_msg_);
 }
 
 GZ_REGISTER_MODEL_PLUGIN(GazeboGpsPlugin);
