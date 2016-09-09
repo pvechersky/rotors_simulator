@@ -25,15 +25,19 @@
 #include <gazebo/gui/gui.hh>
 #include <gazebo/gui/GuiPlugin.hh>
 #include <gazebo/gui/MouseEventHandler.hh>
+#include <gazebo/msgs/msgs.hh>
 #include <gazebo/rendering/rendering.hh>
+#include <gazebo/transport/transport.hh>
 
 #include "rotors_gazebo_plugins/common.h"
+#include "rotors_gazebo_plugins/rendering_force.h"
 
 namespace gazebo
 {
 // Constants
 static const math::Vector3 kChaseCamOffset(-3.0, 0.0, 0.5);
 static const math::Vector3 kForwardCamOffset(0.5, 0.0, -0.2);
+static const math::Vector3 kOrthogonalCamOffset(-3.0, -2.0, 1.0);
 
 class GAZEBO_VISIBLE GazeboViewControlPlugin : public GUIPlugin {
  Q_OBJECT
@@ -42,12 +46,15 @@ class GAZEBO_VISIBLE GazeboViewControlPlugin : public GUIPlugin {
   GazeboViewControlPlugin();
   virtual ~GazeboViewControlPlugin();
 
+  void ForceCallback(ConstVector3dPtr &force_msg);
+
  protected:
   void Load(sdf::ElementPtr _sdf);
 
  protected slots:
   void OnForwardButton();
   void OnChaseButton();
+  void OnOrthogonalButton();
   void OnStopButton();
 
  private:
@@ -65,6 +72,15 @@ class GAZEBO_VISIBLE GazeboViewControlPlugin : public GUIPlugin {
 
   // Pointer to the visual of the object we want to track
   rendering::VisualPtr visual_;
+
+  RenderingForcePtr rendering_force_;
+
+  math::Vector3 force_vector_;
+
+  transport::NodePtr node_;
+  transport::SubscriberPtr force_sub_;
+
+  std::string mode_;
 };
 }
 
