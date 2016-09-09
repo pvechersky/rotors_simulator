@@ -158,6 +158,10 @@ void GazeboAerodynamicsPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _s
           node_handle_->advertiseService(reset_model_service_name,
                                          &GazeboAerodynamicsPlugin::ResetModelCallback,
                                          this);
+
+  node_ = transport::NodePtr(new transport::Node());
+  node_->Init(world_->GetName());
+  force_pub_ = node_->Advertise<msgs::Vector3d>("~/fw_forces", 1);
 }
 
 void GazeboAerodynamicsPlugin::OnUpdate(const common::UpdateInfo& _info) {
@@ -190,6 +194,16 @@ void GazeboAerodynamicsPlugin::OnUpdate(const common::UpdateInfo& _info) {
 
   double rudder_angle = rudder_->GetAngle(0).Radian();
   rudder_->SetVelocity(0, 2.0 * (rudder_info_.deflection - rudder_angle));
+
+  msgs::Vector3d forces_msg;
+
+  double force_z = ((forces.z - mass_ * kG) > 0) ? forces.z - mass_ * kG : 0.0;
+
+  forces_msg.set_x(forces.x);
+  forces_msg.set_y(forces.y);
+  forces_msg.set_z(force_z);
+
+  force_pub_->Publish(forces_msg);
 }
 
 void GazeboAerodynamicsPlugin::ComputeAerodynamicForcesMoments(math::Vector3& forces, math::Vector3& moments) {
@@ -209,8 +223,10 @@ void GazeboAerodynamicsPlugin::ComputeAerodynamicForcesMoments(math::Vector3& fo
 
   double V = lin_vel_body.GetLength();
 
-  double beta = (V < 0.1) ? 0.0 : atan2(-v, fabs(u));
-  double alpha = (V < 0.1) ? 0.0 : atan2(w, fabs(u));
+  //double beta = (V < 0.1) ? 0.0 : atan2(-v, fabs(u));
+  double beta = (V < 0.1) ? 0.0 : asin(v / V);
+  //double alpha = (V < 0.1) ? 0.0 : atan2(w, fabs(u));
+  double alpha = (V < 0.1) ? 0.0 : atan(w / u);
 
   if (alpha > 0.27)
     alpha = 0.27;
@@ -226,10 +242,12 @@ void GazeboAerodynamicsPlugin::ComputeAerodynamicForcesMoments(math::Vector3& fo
   double delta_rdr = rudder_info_.deflection;
   double throttle = throttle_;
 
-  double delta_ail_sum = delta_ail_right * delta_ail_left;
-  double delta_ail_diff = delta_ail_left - delta_ail_right;
-  double delta_flp_sum = 2.0 * delta_flap;
+  double delta_ail_sum = delta_ail_right + delta_ail_left;
+  double delta_ail_diff = delta_ail_left;// - delta_ail_right;
+  double delta_flp_sum = 0.0; //2.0 * delta_flap;
   double delta_flp_diff = 0.0;
+
+  //std::cout << delta_ail_diff << std::endl;
 
   double epsilon_thrust = 0.0;
   double cx_thrust = 0.1149;
@@ -238,14 +256,17 @@ void GazeboAerodynamicsPlugin::ComputeAerodynamicForcesMoments(math::Vector3& fo
   double y_thrust = 0.0;
   double z_thrust = 0.035;
 
-  Eigen::Vector3d c_D_alpha(1.6276, 0.0903, 0.0195);
+  //Eigen::Vector3d c_D_alpha(1.6276, 0.0903, 0.0195);
+  Eigen::Vector3d c_D_alpha(5.4546, -0.6737, 0.1360);
   Eigen::Vector3d c_D_beta(-0.3842, 0.0, 0.0195);
   Eigen::Vector3d c_D_delta_ail(7.5037e-6, 1.4205e-4, 0.0195);
   Eigen::Vector3d c_D_delta_flp(1.23e-5, 2.7395e-4, 0.0195);
 
-  Eigen::Vector2d c_Y_beta(0.3846, 0.0);
+  //Eigen::Vector2d c_Y_beta(0.3846, 0.0);
+  Eigen::Vector2d c_Y_beta(-0.3073, 0.0);
 
-  Eigen::Vector4d c_L_alpha(-50.8494, -3.4594, 5.8661, 0.3304);
+  //Eigen::Vector4d c_L_alpha(-50.8494, -3.4594, 5.8661, 0.3304);
+  Eigen::Vector4d c_L_alpha(60.6017, -46.8324, 10.8060, 0.2127);
   Eigen::Vector2d c_L_delta_ail(0.0048, 0.3304);
   Eigen::Vector2d c_L_delta_flp(0.0073, 0.3304);
 
@@ -258,42 +279,56 @@ void GazeboAerodynamicsPlugin::ComputeAerodynamicForcesMoments(math::Vector3& fo
                         c_L_delta_ail.dot(Eigen::Vector2d(delta_ail_sum, 0.0)) +
                         c_L_delta_flp.dot(Eigen::Vector2d(delta_flp_sum, 0.0)));
 
-  Eigen::Vector2d c_Lm_beta(-0.0069, 0.0);
-  Eigen::Vector2d c_Lm_p(-0.1024, 0.0);
-  Eigen::Vector2d c_Lm_r(0.0175, 0.0);
-  Eigen::Vector2d c_Lm_delta_ail(0.0016, 0.0);
+  //Eigen::Vector2d c_Lm_beta(-0.0069, 0.0); -0.0154
+  Eigen::Vector2d c_Lm_beta(-0.0154, 0.0);
+  //Eigen::Vector2d c_Lm_p(-0.1024, 0.0);
+  Eigen::Vector2d c_Lm_p(-0.1647, 0.0);
+  //Eigen::Vector2d c_Lm_r(0.0175, 0.0);
+  Eigen::Vector2d c_Lm_r(0.0117, 0.0);
+  //Eigen::Vector2d c_Lm_delta_ail(0.0016, 0.0);
+  Eigen::Vector2d c_Lm_delta_ail(0.0570, 0.0);
   Eigen::Vector2d c_Lm_delta_flp(0.001, 0.0);
 
-  Eigen::Vector2d c_Mm_alpha(-2.9393, -0.1173);
-  Eigen::Vector2d c_Mm_q(-0.317, -0.1173);
-  Eigen::Vector2d c_Mm_delta_elv(-0.0167, -0.1173);
+  //Eigen::Vector2d c_Mm_alpha(-2.9393, -0.1173);
+  Eigen::Vector2d c_Mm_alpha(-2.9690, 0.0435);
+  //Eigen::Vector2d c_Mm_q(-0.317, -0.1173);
+  Eigen::Vector2d c_Mm_q(-106.1541, -0.1173);
+  //Eigen::Vector2d c_Mm_delta_elv(-0.0167, -0.1173);
+  Eigen::Vector2d c_Mm_delta_elv(-6.1308, -0.1173);
 
-  Eigen::Vector2d c_Nm_beta(-0.0719, 0.0);
-  Eigen::Vector2d c_Nm_r(-0.0058, 0.0);
-  Eigen::Vector2d c_Nm_delta_rud(8.4016e-4, 0.0);
+  //Eigen::Vector2d c_Nm_beta(-0.0719, 0.0);
+  Eigen::Vector2d c_Nm_beta(0.0430, 0.0);
+  //Eigen::Vector2d c_Nm_r(-0.0058, 0.0);
+  Eigen::Vector2d c_Nm_r(-0.0827, 0.0);
+  //Eigen::Vector2d c_Nm_delta_rud(8.4016e-4, 0.0);
+  Eigen::Vector2d c_Nm_delta_rud(0.06, 0.0);
+
+  double p_hat = (V < 0.1) ? 0.0 : p * wingspan_ / (2.0 * V);
+  double q_hat = (V < 0.1) ? 0.0 : q * chord_length_ / (2.0 * V);
+  double r_hat = (V < 0.1) ? 0.0 : r * wingspan_ / (2.0 * V);
 
   double Lm = q_bar_S * wingspan_ * (c_Lm_beta.dot(Eigen::Vector2d(beta, 0.0)) +
-                                     c_Lm_p.dot(Eigen::Vector2d(p, 0.0)) +
-                                     c_Lm_r.dot(Eigen::Vector2d(r, 0.0)) +
+                                     c_Lm_p.dot(Eigen::Vector2d(p_hat, 0.0)) +
+                                     c_Lm_r.dot(Eigen::Vector2d(r_hat, 0.0)) +
                                      c_Lm_delta_ail.dot(Eigen::Vector2d(delta_ail_diff, 0.0)) +
                                      c_Lm_delta_flp.dot(Eigen::Vector2d(delta_flp_diff, 0.0)));
   double Mm = q_bar_S * chord_length_ * (c_Mm_alpha.dot(Eigen::Vector2d(alpha, 1.0)) +
-                                         c_Mm_q.dot(Eigen::Vector2d(q, 0.0)) +
+                                         c_Mm_q.dot(Eigen::Vector2d(q_hat, 0.0)) +
                                          c_Mm_delta_elv.dot(Eigen::Vector2d(delta_elv, 0.0)));
   double Nm = q_bar_S * wingspan_ * (c_Nm_beta.dot(Eigen::Vector2d(beta, 0.0)) +
-                                     c_Nm_r.dot(Eigen::Vector2d(r, 0.0)) +
+                                     c_Nm_r.dot(Eigen::Vector2d(r_hat, 0.0)) +
                                      c_Nm_delta_rud.dot(Eigen::Vector2d(delta_rdr, 0.0)));
 
   double T = aero_params_.cT0 + aero_params_.cT1 * throttle + aero_params_.cT2 * throttle * throttle;
   double Tx = cos(epsilon_thrust) * T;
   double Tz = sin(epsilon_thrust) * T;
 
-  double TL_d = -y_thrust * sin(epsilon_thrust) * -T;
+  /*double TL_d = -y_thrust * sin(epsilon_thrust) * -T;
   double TM_d = -x_thrust * sin(epsilon_thrust) * T + z_thrust * cos(epsilon_thrust) * T;
   double TN_d = y_thrust * cos(epsilon_thrust) * -T;
 
   double TL_ind = Tx * cx_thrust;
-  double TN_ind = Tz * cz_thrust;
+  double TN_ind = Tz * cz_thrust;*/
 
   Eigen::Vector3d force_w(-D, Y, -L);
   Eigen::Vector3d momentum_w(Lm, Mm, Nm);
@@ -309,18 +344,15 @@ void GazeboAerodynamicsPlugin::ComputeAerodynamicForcesMoments(math::Vector3& fo
           -sa, 0.0, ca;
 
   Eigen::Vector3d force_T_b(Tx, 0.0, Tz);
-  Eigen::Vector3d momentum_T_b(TL_d + TL_ind, TM_d, TN_d + TN_ind);
+  //Eigen::Vector3d momentum_T_b(TL_d + TL_ind, TM_d, TN_d + TN_ind);
 
   Eigen::Matrix3d R_WB_t = R_WB.transpose();
 
   Eigen::Vector3d force_b = R_WB_t * force_w + force_T_b;
-  Eigen::Vector3d momentum_b = R_WB_t * momentum_w;// + momentum_T_b;
+  Eigen::Vector3d momentum_b = momentum_w; //R_WB_t * momentum_w; // + momentum_T_b;
 
   forces = math::Vector3(force_b[0], -force_b[1], -force_b[2]);
   moments = math::Vector3(momentum_b[0], -momentum_b[1], -momentum_b[2]);
-
-  /*std::cout << force_b << std::endl;
-  std::cout << momentum_b << std::endl << std::endl;*/
 }
 
 /*void GazeboFixedWingBasePlugin::WindSpeedCallback(const rotors_comm::WindSpeedConstPtr& wind_speed_msg) {
@@ -345,6 +377,8 @@ void GazeboAerodynamicsPlugin::CommandCallback(const mav_msgs::ActuatorsConstPtr
   aileron_left_info_.deflection = (aileron_left_info_.d_max + aileron_left_info_.d_min) * 0.5 +
           (aileron_left_info_.d_max - aileron_left_info_.d_min) * 0.5 *
           command_msg->normalized.at(4);
+
+  aileron_right_info_.deflection *= 0.5;
 
   // Process the elevator command
   elevator_info_.deflection = (elevator_info_.d_max + elevator_info_.d_min) * 0.5 +

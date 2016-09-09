@@ -25,7 +25,7 @@
   <xacro:property name="PI" value="3.1415926535897931" />
 
   <!-- Component masses -->
-  <xacro:property name="mass_fuselage" value="1.25" /> <!-- [kg] -->
+  <xacro:property name="mass_fuselage" value="1.85" /> <!-- [kg] -->
   <xacro:property name="mass_aileron" value="0.1" /> <!-- [kg] -->
   <xacro:property name="mass_flap" value="0.1" /> <!-- [kg] -->
   <xacro:property name="mass_elevator" value="0.1" /> <!-- [kg] -->
@@ -78,8 +78,8 @@
 
   <!-- Inertia of the main body -->
   <xacro:property name="body_inertia">
-    <!--<inertia ixx="0.16632" ixy="0.0" ixz="0.0755" iyy="0.3899" iyz="0.0" izz="0.5243" />-->
-    <inertia ixx="0.1512" ixy="0.0" ixz="0.0755" iyy="0.2785" iyz="0.0" izz="0.3745" />
+    <inertia ixx="0.16632" ixy="0.0" ixz="0.0755" iyy="0.3899" iyz="0.0" izz="0.5243" />
+    <!--<inertia ixx="0.1512" ixy="0.0" ixz="0.0755" iyy="0.2785" iyz="0.0" izz="0.3745" />-->
   </xacro:property>
 
   <!-- Inertia of the aileron, assuming it is a cuboid -->

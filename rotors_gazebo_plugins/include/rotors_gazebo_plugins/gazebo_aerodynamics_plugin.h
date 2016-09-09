@@ -24,7 +24,9 @@
 #include <gazebo/common/common.hh>
 #include <gazebo/common/Plugin.hh>
 #include <gazebo/gazebo.hh>
+#include <gazebo/msgs/msgs.hh>
 #include <gazebo/physics/physics.hh>
+#include <gazebo/transport/transport.hh>
 #include <mav_msgs/Actuators.h>
 #include <nav_msgs/Odometry.h>
 #include <ros/ros.h>
@@ -210,6 +212,9 @@ class GazeboAerodynamicsPlugin : public ModelPlugin {
   bool ResetModelCallback(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
 
   FixedWingAerodynamicParameters aero_params_;
+
+  transport::NodePtr node_;
+  transport::PublisherPtr force_pub_;
 };
 }
 
