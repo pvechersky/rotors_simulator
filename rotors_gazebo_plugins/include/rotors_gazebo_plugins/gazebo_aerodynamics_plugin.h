@@ -215,6 +215,7 @@ class GazeboAerodynamicsPlugin : public ModelPlugin {
 
   transport::NodePtr node_;
   transport::PublisherPtr force_pub_;
+  transport::PublisherPtr torque_pub_;
 };
 }
 

@@ -1,6 +1,7 @@
 #ifndef RENDERING_TORQUE_H
 #define RENDERING_TORQUE_H
 
+#include <math.h>
 #include <mutex>
 
 #include "gazebo/common/MeshManager.hh"
@@ -27,6 +28,14 @@ class GAZEBO_VISIBLE RenderingTorque : public rendering::Visual {
 
   void Resize();
 
+  common::Mesh *CreateArc(const std::string &name,
+                 float inner_radius,
+                 float outer_radius,
+                 float height,
+                 int rings_input,
+                 int segments,
+                 double arc);
+
  private:
   math::Quaternion QuaternionFromVector(const math::Vector3 &vec);
 
@@ -45,6 +54,7 @@ class GAZEBO_VISIBLE RenderingTorque : public rendering::Visual {
 
   double scale_x_;
   double scale_y_;
+  double scale_z_;
 
   double position_scale_x_;
   double position_scale_y_;

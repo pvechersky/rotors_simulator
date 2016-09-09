@@ -73,6 +73,10 @@ void GazeboViewControlPlugin::ForceCallback(ConstVector3dPtr& force_msg) {
   force_vector_ = math::Vector3(force_msg->x(), force_msg->y(), force_msg->z());
 }
 
+void GazeboViewControlPlugin::TorqueCallback(ConstVector3dPtr &torque_msg) {
+  torque_vector_ = math::Vector3(torque_msg->x(), torque_msg->y(), torque_msg->z());
+}
+
 void GazeboViewControlPlugin::Load(sdf::ElementPtr _sdf) {
   // Get a pointer to the active user camera and the scene
   user_cam_ = gui::get_active_camera();
@@ -80,6 +84,7 @@ void GazeboViewControlPlugin::Load(sdf::ElementPtr _sdf) {
   this->node_ = transport::NodePtr(new transport::Node());
   this->node_->Init(gui::get_world());
   this->force_sub_ = this->node_->Subscribe("~/fw_forces", &GazeboViewControlPlugin::ForceCallback, this);
+  this->torque_sub_ = this->node_->Subscribe("~/fw_torques",&GazeboViewControlPlugin::TorqueCallback, this);
 
 #if GAZEBO_MAJOR_VERSION > 6
   cam_offset_ = user_cam_->WorldPosition();
@@ -88,6 +93,7 @@ void GazeboViewControlPlugin::Load(sdf::ElementPtr _sdf) {
 #endif
 
   force_vector_ = math::Vector3::Zero;
+  torque_vector_ = math::Vector3::Zero;
 
   mode_ = "None";
 
@@ -128,18 +134,22 @@ void GazeboViewControlPlugin::OnUpdate() {
   if (!visual_) {
     rendering::ScenePtr scene = rendering::get_scene();
     visual_ = scene->GetVisual("techpod::techpod/base_link");
-    return;
   }
 
   if (!rendering_force_) {
-    rendering_force_.reset(new RenderingForce("test", visual_));
+    rendering_force_.reset(new RenderingForce("forces_visual", visual_));
 
     rendering_force_->Load();
+  }
 
-    return;
+  if (!rendering_torque_) {
+    rendering_torque_.reset(new RenderingTorque("torques_visual", visual_));
+
+    rendering_torque_->Load();
   }
 
   rendering_force_->SetForce(force_vector_);
+  rendering_torque_->SetTorque(torque_vector_);
 
   if (is_tracking_) {
     // Get the world pose of the visual we are tracking

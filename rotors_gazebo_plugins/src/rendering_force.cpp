@@ -183,8 +183,6 @@ void RenderingForce::UpdateForcesVisual() {
     visual->SetRotation(quat * math::Quaternion(math::Vector3(0, M_PI/2.0, 0)));
 
     math::Vector3 position = force_norm * position_scale;
-
-    visual->SetMaterial(selected_material_);
     visual->SetPosition(position);
   }
 }

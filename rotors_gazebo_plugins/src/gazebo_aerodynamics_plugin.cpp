@@ -162,6 +162,7 @@ void GazeboAerodynamicsPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _s
   node_ = transport::NodePtr(new transport::Node());
   node_->Init(world_->GetName());
   force_pub_ = node_->Advertise<msgs::Vector3d>("~/fw_forces", 1);
+  torque_pub_ = node_->Advertise<msgs::Vector3d>("~/fw_torques", 1);
 }
 
 void GazeboAerodynamicsPlugin::OnUpdate(const common::UpdateInfo& _info) {
@@ -196,6 +197,7 @@ void GazeboAerodynamicsPlugin::OnUpdate(const common::UpdateInfo& _info) {
   rudder_->SetVelocity(0, 2.0 * (rudder_info_.deflection - rudder_angle));
 
   msgs::Vector3d forces_msg;
+  msgs::Vector3d torques_msg;
 
   double force_z = ((forces.z - mass_ * kG) > 0) ? forces.z - mass_ * kG : 0.0;
 
@@ -203,7 +205,12 @@ void GazeboAerodynamicsPlugin::OnUpdate(const common::UpdateInfo& _info) {
   forces_msg.set_y(forces.y);
   forces_msg.set_z(force_z);
 
+  torques_msg.set_x(moments.x);
+  torques_msg.set_y(moments.y);
+  torques_msg.set_z(moments.z);
+
   force_pub_->Publish(forces_msg);
+  torque_pub_->Publish(torques_msg);
 }
 
 void GazeboAerodynamicsPlugin::ComputeAerodynamicForcesMoments(math::Vector3& forces, math::Vector3& moments) {
