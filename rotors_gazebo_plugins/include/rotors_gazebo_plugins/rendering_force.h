@@ -37,9 +37,6 @@ class GAZEBO_VISIBLE RenderingForce : public rendering::Visual {
 
   std::vector<rendering::VisualPtr> force_visuals_;
 
-  /*rendering::VisualPtr force_visual_x_;
-  rendering::VisualPtr force_visual_y_;
-  rendering::VisualPtr force_visual_z_;*/
   rendering::VisualPtr parent_visual_;
 
   std::mutex mutex_;

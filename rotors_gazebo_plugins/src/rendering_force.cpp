@@ -155,6 +155,15 @@ void RenderingForce::UpdateForcesVisual() {
   }
 
   for (int i = 0; i < force_visuals_.size(); i++) {
+    rendering::VisualPtr visual = force_visuals_[i];
+
+    if (fabs(visual->GetScale().z) < 0.05) {
+      visual->SetVisible(false);
+      continue;
+    }
+    else
+      visual->SetVisible(true);
+
     math::Vector3 force_norm;
     double position_scale;
 
@@ -176,8 +185,6 @@ void RenderingForce::UpdateForcesVisual() {
       if (force_vector_.z < 0)
         force_norm *= -1.0;
     }
-
-    rendering::VisualPtr visual = force_visuals_[i];
 
     math::Quaternion quat = this->QuaternionFromVector(force_norm.GetAbs());
     visual->SetRotation(quat * math::Quaternion(math::Vector3(0, M_PI/2.0, 0)));

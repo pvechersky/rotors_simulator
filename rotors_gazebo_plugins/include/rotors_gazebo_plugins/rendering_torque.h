@@ -22,6 +22,8 @@ class GAZEBO_VISIBLE RenderingTorque : public rendering::Visual {
 
   void Load();
 
+  void CreateMeshes();
+
   void SetTorque(const math::Vector3 &torque_vector);
 
   void UpdateTorqueVisual();
@@ -51,6 +53,7 @@ class GAZEBO_VISIBLE RenderingTorque : public rendering::Visual {
   std::mutex mutex_;
 
   bool initialized_size_;
+  bool initialized_meshes_;
 
   double scale_x_;
   double scale_y_;
@@ -59,6 +62,10 @@ class GAZEBO_VISIBLE RenderingTorque : public rendering::Visual {
   double position_scale_x_;
   double position_scale_y_;
   double position_scale_z_;
+
+  int segments_x_;
+  int segments_y_;
+  int segments_z_;
 };
 
 typedef boost::shared_ptr<RenderingTorque> RenderingTorquePtr;

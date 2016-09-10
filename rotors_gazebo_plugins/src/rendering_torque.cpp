@@ -4,7 +4,8 @@ namespace gazebo {
 
 RenderingTorque::RenderingTorque(const std::string &_name, rendering::VisualPtr _parent_vis)
     : rendering::Visual(_name, _parent_vis),
-      initialized_size_(false) {
+      initialized_size_(false),
+      initialized_meshes_(false) {
   parent_visual_ = _parent_vis;
 }
 
@@ -26,144 +27,190 @@ void RenderingTorque::Load()
   this->InsertMesh("axis_shaft");
   this->InsertMesh("axis_head");
 
-  // X Torque visual
-  rendering::VisualPtr torque_visual_x;
-  torque_visual_x.reset(new rendering::Visual(
-      this->GetName() + "_TORQUE_VISUAL_X_", shared_from_this(), false));
-  torque_visual_x->Load();
-
-  // X Torque arc
-  common::Mesh *arc_mesh_x = CreateArc("x_torque_arc", 0.1, 0.13, 0.03, 1, 24, 1.0 * M_PI);
-  this->InsertMesh(arc_mesh_x);
-
-  rendering::VisualPtr torque_arc_visual_x(new rendering::Visual(
-      this->GetName() + "_TORQUE_ARC_X_", torque_visual_x, false));
-  torque_arc_visual_x->Load();
-
-  torque_arc_visual_x->AttachMesh("x_torque_arc");
-  Ogre::MovableObject *arc_obj_x =
-      torque_arc_visual_x->GetSceneNode()->getAttachedObject(0);
-  arc_obj_x->setRenderQueueGroup(Ogre::RENDER_QUEUE_OVERLAY);
-  arc_obj_x->getUserObjectBindings().setUserAny(
-      Ogre::Any(std::string(torque_visual_x->GetName())));
-
-  // X Torque arrow
-  rendering::VisualPtr torque_arrow_visual_x(new rendering::Visual(
-      this->GetName() + "_TORQUE_HEAD_X_", torque_visual_x, false));
-  torque_arrow_visual_x->Load();
-
-  torque_arrow_visual_x->AttachMesh("axis_head");
-  Ogre::MovableObject *torque_head_obj_x =
-      torque_arrow_visual_x->GetSceneNode()->getAttachedObject(0);
-  torque_head_obj_x->setRenderQueueGroup(Ogre::RENDER_QUEUE_OVERLAY);
-  torque_head_obj_x->getUserObjectBindings().setUserAny(
-      Ogre::Any(std::string(torque_visual_x->GetName())));
-
-  torque_arrow_visual_x->SetScale(math::Vector3(3, 3, 1));
-  torque_arrow_visual_x->SetPosition(math::Vector3(-0.04, 0.125, 0));
-  math::Quaternion quat_x(0, -M_PI/2.0, 0);
-  torque_arrow_visual_x->SetRotation(quat_x);
-
-  torque_visual_x->SetMaterial(selected_material_);
-  torque_visual_x->GetSceneNode()->setInheritScale(false);
-
-  torque_visuals_.push_back(torque_visual_x);
-
-  // Y Torque visual
-  rendering::VisualPtr torque_visual_y;
-  torque_visual_y.reset(new rendering::Visual(
-      this->GetName() + "_TORQUE_VISUAL_Y_", shared_from_this(), false));
-  torque_visual_y->Load();
-
-  // Y Torque arc
-  common::Mesh *arc_mesh_y = CreateArc("y_torque_arc", 0.1, 0.13, 0.03, 1, 24, 1.0 * M_PI);
-  this->InsertMesh(arc_mesh_y);
-
-  rendering::VisualPtr torque_arc_visual_y(new rendering::Visual(
-      this->GetName() + "_TORQUE_ARC_Y_", torque_visual_y, false));
-  torque_arc_visual_y->Load();
-
-  torque_arc_visual_y->AttachMesh("y_torque_arc");
-  Ogre::MovableObject *arc_obj_y =
-      torque_arc_visual_y->GetSceneNode()->getAttachedObject(0);
-  arc_obj_y->setRenderQueueGroup(Ogre::RENDER_QUEUE_OVERLAY);
-  arc_obj_y->getUserObjectBindings().setUserAny(
-      Ogre::Any(std::string(torque_visual_y->GetName())));
-
-  // Y Torque arrow
-  rendering::VisualPtr torque_arrow_visual_y(new rendering::Visual(
-      this->GetName() + "_TORQUE_HEAD_Y_", torque_visual_y, false));
-  torque_arrow_visual_y->Load();
-
-  torque_arrow_visual_y->AttachMesh("axis_head");
-  Ogre::MovableObject *torque_head_obj_y =
-      torque_arrow_visual_x->GetSceneNode()->getAttachedObject(0);
-  torque_head_obj_y->setRenderQueueGroup(Ogre::RENDER_QUEUE_OVERLAY);
-  torque_head_obj_y->getUserObjectBindings().setUserAny(
-      Ogre::Any(std::string(torque_visual_y->GetName())));
-
-  torque_arrow_visual_y->SetScale(math::Vector3(3, 3, 1));
-  torque_arrow_visual_y->SetPosition(math::Vector3(-0.04, 0.125, 0));
-  math::Quaternion quat_y(0, -M_PI/2.0, 0);
-  torque_arrow_visual_y->SetRotation(quat_y);
-
-  torque_visual_y->SetMaterial(selected_material_);
-  torque_visual_y->GetSceneNode()->setInheritScale(false);
-
-  torque_visuals_.push_back(torque_visual_y);
-
-  // Z Torque visual
-  rendering::VisualPtr torque_visual_z;
-  torque_visual_z.reset(new rendering::Visual(
-      this->GetName() + "_TORQUE_VISUAL_Z_", shared_from_this(), false));
-  torque_visual_z->Load();
-
-  // Z Torque arc
-  common::Mesh *arc_mesh_z = CreateArc("z_torque_arc", 0.1, 0.13, 0.03, 1, 24, 1.0 * M_PI);
-  this->InsertMesh(arc_mesh_z);
-
-  rendering::VisualPtr torque_arc_visual_z(new rendering::Visual(
-      this->GetName() + "_TORQUE_ARC_Z_", torque_visual_z, false));
-  torque_arc_visual_z->Load();
-
-  torque_arc_visual_z->AttachMesh("z_torque_arc");
-  Ogre::MovableObject *arc_obj_z =
-      torque_arc_visual_z->GetSceneNode()->getAttachedObject(0);
-  arc_obj_z->setRenderQueueGroup(Ogre::RENDER_QUEUE_OVERLAY);
-  arc_obj_z->getUserObjectBindings().setUserAny(
-      Ogre::Any(std::string(torque_visual_z->GetName())));
-
-  // Z Torque arrow
-  rendering::VisualPtr torque_arrow_visual_z(new rendering::Visual(
-      this->GetName() + "_TORQUE_HEAD_Z_", torque_visual_z, false));
-  torque_arrow_visual_z->Load();
-
-  torque_arrow_visual_z->AttachMesh("axis_head");
-  Ogre::MovableObject *torque_head_obj_z =
-      torque_arrow_visual_z->GetSceneNode()->getAttachedObject(0);
-  torque_head_obj_z->setRenderQueueGroup(Ogre::RENDER_QUEUE_OVERLAY);
-  torque_head_obj_z->getUserObjectBindings().setUserAny(
-      Ogre::Any(std::string(torque_visual_z->GetName())));
-
-  torque_arrow_visual_z->SetScale(math::Vector3(3, 3, 1));
-  torque_arrow_visual_z->SetPosition(math::Vector3(-0.04, 0.125, 0));
-  math::Quaternion quat_z(0, -M_PI/2.0, 0);
-  torque_arrow_visual_z->SetRotation(quat_z);
-
-  torque_visual_z->SetMaterial(selected_material_);
-  torque_visual_z->GetSceneNode()->setInheritScale(false);
-
-  torque_visuals_.push_back(torque_visual_z);
+  segments_x_ = 0;
+  segments_y_ = 0;
+  segments_z_ = 0;
 
   torque_vector_ = math::Vector3::Zero;
+
+  rendering::VisualPtr visual_x;
+  rendering::VisualPtr visual_y;
+  rendering::VisualPtr visual_z;
+  torque_visuals_.push_back(visual_x);
+  torque_visuals_.push_back(visual_y);
+  torque_visuals_.push_back(visual_z);
+
+  CreateMeshes();
 
   this->SetVisibilityFlags(GZ_VISIBILITY_GUI | GZ_VISIBILITY_SELECTABLE);
   this->Resize();
   this->UpdateTorqueVisual();
 }
 
+void RenderingTorque::CreateMeshes() {
+  int segs_x = torque_vector_.x * 24;
+  int segs_y = torque_vector_.y * 24;
+  int segs_z = torque_vector_.z * 24;
+
+  const std::string current_time = common::Time::GetWallTimeAsISOString();
+
+  if ((segs_x != segments_x_) || !initialized_meshes_) {
+    segments_x_ = segs_x;
+
+    if (initialized_meshes_)
+      torque_visuals_[0]->SetVisible(false);
+
+    // X Torque visual
+    torque_visuals_[0].reset(new rendering::Visual(
+        this->GetName() + "_TORQUE_VISUAL_X_", shared_from_this(), false));
+    torque_visuals_[0]->Load();
+
+    double angle = 2.0 * M_PI * segs_x / 24;
+
+    // X Torque arc
+    std::string mesh_name = "x_torque_arc_" + current_time;
+    common::Mesh *arc_mesh_x = CreateArc(mesh_name, 0.1, 0.13, 0.03, 1, segs_x, angle);
+    this->InsertMesh(arc_mesh_x);
+
+    rendering::VisualPtr torque_arc_visual_x(new rendering::Visual(
+        this->GetName() + "_TORQUE_ARC_X_", torque_visuals_[0], false));
+    torque_arc_visual_x->Load();
+
+    torque_arc_visual_x->AttachMesh(mesh_name);
+    Ogre::MovableObject *arc_obj_x =
+        torque_arc_visual_x->GetSceneNode()->getAttachedObject(0);
+    arc_obj_x->setRenderQueueGroup(Ogre::RENDER_QUEUE_OVERLAY);
+    arc_obj_x->getUserObjectBindings().setUserAny(
+        Ogre::Any(std::string(torque_visuals_[0]->GetName())));
+
+    // X Torque arrow
+    rendering::VisualPtr torque_arrow_visual_x(new rendering::Visual(
+        this->GetName() + "_TORQUE_HEAD_X_", torque_visuals_[0], false));
+    torque_arrow_visual_x->Load();
+
+    torque_arrow_visual_x->AttachMesh("axis_head");
+    Ogre::MovableObject *torque_head_obj_x =
+        torque_arrow_visual_x->GetSceneNode()->getAttachedObject(0);
+    torque_head_obj_x->setRenderQueueGroup(Ogre::RENDER_QUEUE_OVERLAY);
+    torque_head_obj_x->getUserObjectBindings().setUserAny(
+        Ogre::Any(std::string(torque_visuals_[0]->GetName())));
+
+    torque_arrow_visual_x->SetScale(math::Vector3(2, 2, 1));
+    torque_arrow_visual_x->SetPosition(math::Vector3(-0.04, 0.125, 0));
+    math::Quaternion quat_x(0, -M_PI/2.0, 0);
+    torque_arrow_visual_x->SetRotation(quat_x);
+
+    torque_visuals_[0]->SetMaterial(selected_material_);
+    torque_visuals_[0]->GetSceneNode()->setInheritScale(false);
+  }
+
+  if ((segs_y != segments_y_) || !initialized_meshes_) {
+    segments_y_ = segs_y;
+
+    if (initialized_meshes_)
+      torque_visuals_[1]->SetVisible(false);
+
+    // Y Torque visual
+    torque_visuals_[1].reset(new rendering::Visual(
+        this->GetName() + "_TORQUE_VISUAL_Y_", shared_from_this(), false));
+    torque_visuals_[1]->Load();
+
+    double angle = 2.0 * M_PI * segs_y / 24;
+
+    // Y Torque arc
+    std::string mesh_name = "y_torque_arc_" + current_time;
+    common::Mesh *arc_mesh_y = CreateArc(mesh_name, 0.1, 0.13, 0.03, 1, segs_y, angle);
+    this->InsertMesh(arc_mesh_y);
+
+    rendering::VisualPtr torque_arc_visual_y(new rendering::Visual(
+        this->GetName() + "_TORQUE_ARC_Y_", torque_visuals_[1], false));
+    torque_arc_visual_y->Load();
+
+    torque_arc_visual_y->AttachMesh(mesh_name);
+    Ogre::MovableObject *arc_obj_y =
+        torque_arc_visual_y->GetSceneNode()->getAttachedObject(0);
+    arc_obj_y->setRenderQueueGroup(Ogre::RENDER_QUEUE_OVERLAY);
+    arc_obj_y->getUserObjectBindings().setUserAny(
+        Ogre::Any(std::string(torque_visuals_[1]->GetName())));
+
+    // Y Torque arrow
+    rendering::VisualPtr torque_arrow_visual_y(new rendering::Visual(
+        this->GetName() + "_TORQUE_HEAD_Y_", torque_visuals_[1], false));
+    torque_arrow_visual_y->Load();
+
+    torque_arrow_visual_y->AttachMesh("axis_head");
+    Ogre::MovableObject *torque_head_obj_y =
+        torque_arrow_visual_y->GetSceneNode()->getAttachedObject(0);
+    torque_head_obj_y->setRenderQueueGroup(Ogre::RENDER_QUEUE_OVERLAY);
+    torque_head_obj_y->getUserObjectBindings().setUserAny(
+        Ogre::Any(std::string(torque_visuals_[1]->GetName())));
+
+    torque_arrow_visual_y->SetScale(math::Vector3(2, 2, 1));
+    torque_arrow_visual_y->SetPosition(math::Vector3(-0.04, 0.125, 0));
+    math::Quaternion quat_y(0, -M_PI/2.0, 0);
+    torque_arrow_visual_y->SetRotation(quat_y);
+
+    torque_visuals_[1]->SetMaterial(selected_material_);
+    torque_visuals_[1]->GetSceneNode()->setInheritScale(false);
+  }
+
+  if ((segs_z != segments_z_) || !initialized_meshes_) {
+    segments_z_ = segs_z;
+
+    if (initialized_meshes_)
+      torque_visuals_[2]->SetVisible(false);
+
+    // Y Torque visual
+    torque_visuals_[2].reset(new rendering::Visual(
+        this->GetName() + "_TORQUE_VISUAL_Z_", shared_from_this(), false));
+    torque_visuals_[2]->Load();
+
+    double angle = 2.0 * M_PI * segs_z / 24;
+
+    // Z Torque arc
+    std::string mesh_name = "z_torque_arc_" + current_time;
+    common::Mesh *arc_mesh_z = CreateArc(mesh_name, 0.1, 0.13, 0.03, 1, segs_z, angle);
+    this->InsertMesh(arc_mesh_z);
+
+    rendering::VisualPtr torque_arc_visual_z(new rendering::Visual(
+        this->GetName() + "_TORQUE_ARC_Z_", torque_visuals_[2], false));
+    torque_arc_visual_z->Load();
+
+    torque_arc_visual_z->AttachMesh(mesh_name);
+    Ogre::MovableObject *arc_obj_z =
+        torque_arc_visual_z->GetSceneNode()->getAttachedObject(0);
+    arc_obj_z->setRenderQueueGroup(Ogre::RENDER_QUEUE_OVERLAY);
+    arc_obj_z->getUserObjectBindings().setUserAny(
+        Ogre::Any(std::string(torque_visuals_[2]->GetName())));
+
+    // Z Torque arrow
+    rendering::VisualPtr torque_arrow_visual_z(new rendering::Visual(
+        this->GetName() + "_TORQUE_HEAD_Z_", torque_visuals_[2], false));
+    torque_arrow_visual_z->Load();
+
+    torque_arrow_visual_z->AttachMesh("axis_head");
+    Ogre::MovableObject *torque_head_obj_z =
+        torque_arrow_visual_z->GetSceneNode()->getAttachedObject(0);
+    torque_head_obj_z->setRenderQueueGroup(Ogre::RENDER_QUEUE_OVERLAY);
+    torque_head_obj_z->getUserObjectBindings().setUserAny(
+        Ogre::Any(std::string(torque_visuals_[2]->GetName())));
+
+    torque_arrow_visual_z->SetScale(math::Vector3(2, 2, 1));
+    torque_arrow_visual_z->SetPosition(math::Vector3(-0.04, 0.125, 0));
+    math::Quaternion quat_z(0, -M_PI/2.0, 0);
+    torque_arrow_visual_z->SetRotation(quat_z);
+
+    torque_visuals_[2]->SetMaterial(selected_material_);
+    torque_visuals_[2]->GetSceneNode()->setInheritScale(false);
+  }
+
+  initialized_meshes_ = true;
+}
+
 void RenderingTorque::SetTorque(const math::Vector3 &torque_vector) {
   torque_vector_ = torque_vector;
+
+  this->CreateMeshes();
 
   this->Resize();
 
@@ -177,24 +224,42 @@ void RenderingTorque::UpdateTorqueVisual() {
   }
 
   for (int i = 0; i < torque_visuals_.size(); i++) {
+    rendering::VisualPtr visual = torque_visuals_[i];
+
     math::Vector3 torque_norm;
+    double position_scale;
+    double torque_component = 0;
 
     if (i == 0) {
       torque_norm = math::Vector3::UnitX;
-      if (torque_vector_.x < 0)
-        torque_norm *= -1.0;
+      position_scale = position_scale_x_;
+      torque_component = torque_vector_.x;
     }
-    else if (i == 1)
+    else if (i == 1) {
       torque_norm = math::Vector3::UnitY;
-    else
+      position_scale = position_scale_y_;
+      torque_component = torque_vector_.y;
+    }
+    else {
       torque_norm = math::Vector3::UnitZ;
+      position_scale = position_scale_z_;
+      torque_component = torque_vector_.z;
+    }
 
-    rendering::VisualPtr visual = torque_visuals_[i];
+    if (torque_component < 0)
+      torque_norm *= -1.0;
+
+    if (fabs(torque_component) < 0.05) {
+      visual->SetVisible(false);
+      continue;
+    }
+    else
+      visual->SetVisible(true);
 
     math::Quaternion quat = this->QuaternionFromVector(torque_norm);
     visual->SetRotation(quat * math::Quaternion(math::Vector3(0, M_PI/2.0, 0)));
 
-    math::Vector3 position = torque_norm.GetAbs();
+    math::Vector3 position = torque_norm.GetAbs() * position_scale;
     visual->SetPosition(position);
   }
 }
@@ -213,6 +278,10 @@ void RenderingTorque::Resize() {
     scale_x_ = link_size;
     scale_y_ = link_size;
     scale_z_ = link_size;
+
+    position_scale_x_ = parent_visual_->GetBoundingBox().GetSize().x;
+    position_scale_y_ = parent_visual_->GetBoundingBox().GetSize().y;
+    position_scale_z_ = parent_visual_->GetBoundingBox().GetSize().z;
 
     initialized_size_ = true;
   }
@@ -368,31 +437,6 @@ common::Mesh* RenderingTorque::CreateArc(const std::string &name, float inner_ra
       vertice_index++;
     }
   }
-
-  // Close ends in case it's not a full circle
-  /*if (!ignition::math::equal(arc, 2.0 * M_PI))
-  {
-    for (ring = 0; ring < rings; ++ring)
-    {
-      // Close beginning
-      subMesh->AddIndex((segments+1)*(ring+1));
-      subMesh->AddIndex((segments+1)*ring);
-      subMesh->AddIndex((segments+1)*((rings+1)*2-2-ring));
-
-      subMesh->AddIndex((segments+1)*((rings+1)*2-2-ring));
-      subMesh->AddIndex((segments+1)*ring);
-      subMesh->AddIndex((segments+1)*((rings+1)*2-1-ring));
-
-      // Close end
-      subMesh->AddIndex((segments+1)*((rings+1)*2-2-ring)+segments);
-      subMesh->AddIndex((segments+1)*((rings+1)*2-1-ring)+segments);
-      subMesh->AddIndex((segments+1)*(ring+1)+segments);
-
-      subMesh->AddIndex((segments+1)*(ring+1)+segments);
-      subMesh->AddIndex((segments+1)*((rings+1)*2-1-ring)+segments);
-      subMesh->AddIndex((segments+1)*ring+segments);
-    }
-  }*/
 
   mesh->RecalculateNormals();
 
