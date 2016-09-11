@@ -37,16 +37,19 @@ GazeboViewControlPlugin::GazeboViewControlPlugin():
   QPushButton *forward_button = new QPushButton(tr("Forward"));
   QPushButton *chase_button = new QPushButton(tr("Chase"));
   QPushButton *orthogonal_button = new QPushButton(tr("Orthogonal"));
+  QPushButton *camera_button = new QPushButton(tr("Camera"));
   QPushButton *stop_button = new QPushButton(tr("Stop Tracking"));
   connect(forward_button, SIGNAL(clicked()), this, SLOT(OnForwardButton()));
   connect(chase_button, SIGNAL(clicked()), this, SLOT(OnChaseButton()));
   connect(orthogonal_button, SIGNAL(clicked()), this, SLOT(OnOrthogonalButton()));
+  connect(camera_button, SIGNAL(clicked()), this, SLOT(OnCameraButton()));
   connect(stop_button, SIGNAL(clicked()), this, SLOT(OnStopButton()));
 
   // Add the buttons to the frame's layout
   frameLayout->addWidget(forward_button);
   frameLayout->addWidget(chase_button);
   frameLayout->addWidget(orthogonal_button);
+  frameLayout->addWidget(camera_button);
   frameLayout->addWidget(stop_button);
 
   // Add frameLayout to the frame
@@ -63,7 +66,7 @@ GazeboViewControlPlugin::GazeboViewControlPlugin():
 
   // Position and resize this widget
   move(10, 10);
-  resize(120, 120);
+  resize(120, 150);
 }
 
 GazeboViewControlPlugin::~GazeboViewControlPlugin() {
@@ -73,9 +76,9 @@ void GazeboViewControlPlugin::ForceCallback(ConstVector3dPtr& force_msg) {
   force_vector_ = math::Vector3(force_msg->x(), force_msg->y(), force_msg->z());
 }
 
-void GazeboViewControlPlugin::TorqueCallback(ConstVector3dPtr &torque_msg) {
+/*void GazeboViewControlPlugin::TorqueCallback(ConstVector3dPtr &torque_msg) {
   torque_vector_ = math::Vector3(torque_msg->x(), torque_msg->y(), torque_msg->z());
-}
+}*/
 
 void GazeboViewControlPlugin::Load(sdf::ElementPtr _sdf) {
   // Get a pointer to the active user camera and the scene
@@ -84,7 +87,7 @@ void GazeboViewControlPlugin::Load(sdf::ElementPtr _sdf) {
   this->node_ = transport::NodePtr(new transport::Node());
   this->node_->Init(gui::get_world());
   this->force_sub_ = this->node_->Subscribe("~/fw_forces", &GazeboViewControlPlugin::ForceCallback, this);
-  this->torque_sub_ = this->node_->Subscribe("~/fw_torques",&GazeboViewControlPlugin::TorqueCallback, this);
+  //this->torque_sub_ = this->node_->Subscribe("~/fw_torques",&GazeboViewControlPlugin::TorqueCallback, this);
 
 #if GAZEBO_MAJOR_VERSION > 6
   cam_offset_ = user_cam_->WorldPosition();
@@ -93,7 +96,7 @@ void GazeboViewControlPlugin::Load(sdf::ElementPtr _sdf) {
 #endif
 
   force_vector_ = math::Vector3::Zero;
-  torque_vector_ = math::Vector3::Zero;
+  //torque_vector_ = math::Vector3::Zero;
 
   mode_ = "None";
 
@@ -120,7 +123,18 @@ void GazeboViewControlPlugin::OnChaseButton() {
 void GazeboViewControlPlugin::OnOrthogonalButton() {
   is_tracking_ = true;
   cam_offset_ = kOrthogonalCamOffset;
+  cam_rotation_ = kOrthogonalRotation;
   mode_ = "Orthogonal";
+}
+
+void GazeboViewControlPlugin::OnCameraButton() {
+  is_tracking_ = true;
+  cam_offset_ = kCameraCamOffsetStart;
+  offset_step_ = (kCameraCamOffsetGoal - kCameraCamOffsetStart) * 0.00005;
+  cam_rotation_ = kOrthogonalRotation;
+  rotation_step_ = (kCameraCamRotationGoal - kOrthogonalRotation) * 0.00004;
+  num_steps_ = (kCameraCamRotationGoal.y - kOrthogonalRotation.y) / 0.00004;
+  mode_ = "Camera";
 }
 
 void GazeboViewControlPlugin::OnStopButton() {
@@ -136,20 +150,20 @@ void GazeboViewControlPlugin::OnUpdate() {
     visual_ = scene->GetVisual("techpod::techpod/base_link");
   }
 
-  if (!rendering_force_) {
+  /*if (!rendering_force_) {
     rendering_force_.reset(new RenderingForce("forces_visual", visual_));
 
     rendering_force_->Load();
-  }
+  }*/
 
-  if (!rendering_torque_) {
+  /*if (!rendering_torque_) {
     rendering_torque_.reset(new RenderingTorque("torques_visual", visual_));
 
     rendering_torque_->Load();
-  }
+  }*/
 
-  rendering_force_->SetForce(force_vector_);
-  rendering_torque_->SetTorque(torque_vector_);
+  //rendering_force_->SetForce(force_vector_);
+  //rendering_torque_->SetTorque(torque_vector_);
 
   if (is_tracking_) {
     // Get the world pose of the visual we are tracking
@@ -161,9 +175,54 @@ void GazeboViewControlPlugin::OnUpdate() {
     // Align the camera with the orientation of the visual, unless it's
     // orthogal mode, then we point the camera at the visual
     if (mode_ == "Orthogonal") {
-      cam_offset_body = cam_offset_;
+      cam_offset_body = visual_pose.rot.RotateVector(cam_offset_);
 
-      math::Quaternion rot(0.0, M_PI * 0.05, M_PI * 0.15);
+      math::Quaternion rot(cam_rotation_.x, cam_rotation_.y, cam_rotation_.z);
+
+      new_cam_pose.rot = visual_pose.rot * rot;
+    }
+    else if (mode_ == "Camera") {
+      double dist = (kCameraCamOffsetGoal - cam_offset_).GetLength();
+
+      if (dist > 0.01)
+        cam_offset_ += offset_step_;
+      else {
+        mode_ = "Wait";
+        timer_start_ = common::Time::GetWallTime();
+      }
+
+      cam_offset_body = visual_pose.rot.RotateVector(cam_offset_);
+
+      math::Quaternion rot(cam_rotation_.x, cam_rotation_.y, cam_rotation_.z);
+
+      new_cam_pose.rot = visual_pose.rot * rot;
+    }
+    else if (mode_ == "Camera_Rotation") {
+      double dist = (kCameraCamRotationGoal - cam_rotation_).GetLength();
+
+      if (dist > 0.01 && num_steps_ > 0) {
+        cam_offset_ += offset_step_;
+        cam_rotation_ += rotation_step_;
+        num_steps_--;
+      }
+
+      cam_offset_body = visual_pose.rot.RotateVector(cam_offset_);
+
+      math::Quaternion rot(cam_rotation_.x, cam_rotation_.y, cam_rotation_.z);
+
+      new_cam_pose.rot = visual_pose.rot * rot;
+    }
+    else if (mode_ == "Wait") {
+      common::Time current_time = common::Time::GetWallTime();
+
+      if ((current_time.Double() - timer_start_.Double()) > kWaitTime) {
+        mode_ = "Camera_Rotation";
+        offset_step_ = (kCameraCamOffsetSecondGoal - cam_offset_) / num_steps_;
+      }
+
+      cam_offset_body = visual_pose.rot.RotateVector(cam_offset_);
+
+      math::Quaternion rot(cam_rotation_.x, cam_rotation_.y, cam_rotation_.z);
 
       new_cam_pose.rot = visual_pose.rot * rot;
     }

@@ -27,9 +27,9 @@ void RenderingTorque::Load()
   this->InsertMesh("axis_shaft");
   this->InsertMesh("axis_head");
 
-  segments_x_ = 0;
-  segments_y_ = 0;
-  segments_z_ = 0;
+  angle_x_ = 0;
+  angle_y_ = 0;
+  angle_z_ = 0;
 
   torque_vector_ = math::Vector3::Zero;
 
@@ -48,14 +48,14 @@ void RenderingTorque::Load()
 }
 
 void RenderingTorque::CreateMeshes() {
-  int segs_x = torque_vector_.x * 24;
-  int segs_y = torque_vector_.y * 24;
-  int segs_z = torque_vector_.z * 24;
+  double angle_x = torque_vector_.x * 2.0 * M_PI;
+  double angle_y = torque_vector_.y * 2.0 * M_PI;
+  double angle_z = torque_vector_.z * 2.0 * M_PI;
 
   const std::string current_time = common::Time::GetWallTimeAsISOString();
 
-  if ((segs_x != segments_x_) || !initialized_meshes_) {
-    segments_x_ = segs_x;
+  if ((fabs(angle_x - angle_x_) > 0.03) || !initialized_meshes_) {
+    angle_x_ = angle_x;
 
     if (initialized_meshes_)
       torque_visuals_[0]->SetVisible(false);
@@ -65,11 +65,9 @@ void RenderingTorque::CreateMeshes() {
         this->GetName() + "_TORQUE_VISUAL_X_", shared_from_this(), false));
     torque_visuals_[0]->Load();
 
-    double angle = 2.0 * M_PI * segs_x / 24;
-
     // X Torque arc
     std::string mesh_name = "x_torque_arc_" + current_time;
-    common::Mesh *arc_mesh_x = CreateArc(mesh_name, 0.1, 0.13, 0.03, 1, segs_x, angle);
+    common::Mesh *arc_mesh_x = CreateArc(mesh_name, 0.1, 0.13, 0.03, 1, 24, angle_x);
     this->InsertMesh(arc_mesh_x);
 
     rendering::VisualPtr torque_arc_visual_x(new rendering::Visual(
@@ -104,8 +102,8 @@ void RenderingTorque::CreateMeshes() {
     torque_visuals_[0]->GetSceneNode()->setInheritScale(false);
   }
 
-  if ((segs_y != segments_y_) || !initialized_meshes_) {
-    segments_y_ = segs_y;
+  if ((fabs(angle_y - angle_y_) > 0.03) || !initialized_meshes_) {
+    angle_y_ = angle_y;
 
     if (initialized_meshes_)
       torque_visuals_[1]->SetVisible(false);
@@ -115,11 +113,9 @@ void RenderingTorque::CreateMeshes() {
         this->GetName() + "_TORQUE_VISUAL_Y_", shared_from_this(), false));
     torque_visuals_[1]->Load();
 
-    double angle = 2.0 * M_PI * segs_y / 24;
-
     // Y Torque arc
     std::string mesh_name = "y_torque_arc_" + current_time;
-    common::Mesh *arc_mesh_y = CreateArc(mesh_name, 0.1, 0.13, 0.03, 1, segs_y, angle);
+    common::Mesh *arc_mesh_y = CreateArc(mesh_name, 0.1, 0.13, 0.03, 1, 24, angle_y);
     this->InsertMesh(arc_mesh_y);
 
     rendering::VisualPtr torque_arc_visual_y(new rendering::Visual(
@@ -154,8 +150,8 @@ void RenderingTorque::CreateMeshes() {
     torque_visuals_[1]->GetSceneNode()->setInheritScale(false);
   }
 
-  if ((segs_z != segments_z_) || !initialized_meshes_) {
-    segments_z_ = segs_z;
+  if ((fabs(angle_z - angle_z_) > 0.03) || !initialized_meshes_) {
+    angle_z_ = angle_z;
 
     if (initialized_meshes_)
       torque_visuals_[2]->SetVisible(false);
@@ -165,11 +161,9 @@ void RenderingTorque::CreateMeshes() {
         this->GetName() + "_TORQUE_VISUAL_Z_", shared_from_this(), false));
     torque_visuals_[2]->Load();
 
-    double angle = 2.0 * M_PI * segs_z / 24;
-
     // Z Torque arc
     std::string mesh_name = "z_torque_arc_" + current_time;
-    common::Mesh *arc_mesh_z = CreateArc(mesh_name, 0.1, 0.13, 0.03, 1, segs_z, angle);
+    common::Mesh *arc_mesh_z = CreateArc(mesh_name, 0.1, 0.13, 0.03, 1, 24, angle_z);
     this->InsertMesh(arc_mesh_z);
 
     rendering::VisualPtr torque_arc_visual_z(new rendering::Visual(
@@ -197,7 +191,7 @@ void RenderingTorque::CreateMeshes() {
 
     torque_arrow_visual_z->SetScale(math::Vector3(2, 2, 1));
     torque_arrow_visual_z->SetPosition(math::Vector3(-0.04, 0.125, 0));
-    math::Quaternion quat_z(0, -M_PI/2.0, 0);
+    math::Quaternion quat_z(0, M_PI/2.0, 0);
     torque_arrow_visual_z->SetRotation(quat_z);
 
     torque_visuals_[2]->SetMaterial(selected_material_);

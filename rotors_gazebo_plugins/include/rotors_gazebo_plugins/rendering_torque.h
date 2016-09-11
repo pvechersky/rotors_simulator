@@ -63,9 +63,9 @@ class GAZEBO_VISIBLE RenderingTorque : public rendering::Visual {
   double position_scale_y_;
   double position_scale_z_;
 
-  int segments_x_;
-  int segments_y_;
-  int segments_z_;
+  double angle_x_;
+  double angle_y_;
+  double angle_z_;
 };
 
 typedef boost::shared_ptr<RenderingTorque> RenderingTorquePtr;

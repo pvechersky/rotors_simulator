@@ -225,7 +225,7 @@ void RenderingForce::Resize() {
     else
       scale_z = force_vector_.z;
 
-    force_visuals_[i]->SetScale(math::Vector3(scale_x_, scale_y_, 2 * scale_z));
+    force_visuals_[i]->SetScale(math::Vector3(scale_x_, scale_y_, 0.5 * scale_z));
   }
 }
 

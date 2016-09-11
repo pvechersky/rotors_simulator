@@ -56,9 +56,9 @@
     max_distance="150.0"
     noise_mean="0.0"
     noise_stddev="0.007"
-    enable_visual="false">
+    enable_visual="true">
     <mesh filename="package://rotors_description/meshes/vi_camera.dae" scale="1 1 1" />
-    <origin xyz="0 0 0" rpy="0 1.5707 1.5707" />
+    <origin xyz="0 0 -0.03" rpy="0 1.5707 1.5707" />
   </xacro:raw_camera_macro>
 
   <xacro:if value="$(arg enable_ground_truth)">
