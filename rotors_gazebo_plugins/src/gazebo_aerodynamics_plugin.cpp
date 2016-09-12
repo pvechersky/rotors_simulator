@@ -387,7 +387,7 @@ void GazeboAerodynamicsPlugin::CommandCallback(const mav_msgs::ActuatorsConstPtr
           (aileron_left_info_.d_max - aileron_left_info_.d_min) * 0.5 *
           command_msg->normalized.at(4);
 
-  aileron_right_info_.deflection *= 0.5;
+  //aileron_right_info_.deflection *= 0.5;
 
   // Process the elevator command
   elevator_info_.deflection = (elevator_info_.d_max + elevator_info_.d_min) * 0.5 +

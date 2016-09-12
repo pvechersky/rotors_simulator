@@ -20,7 +20,8 @@ namespace gazebo {
 
 GazeboViewControlPlugin::GazeboViewControlPlugin():
     GUIPlugin(),
-    is_tracking_(false) {
+    is_tracking_(false),
+    display_forces_(false) {
   // Set the frame background and foreground colors
   setStyleSheet("QFrame { background-color : rgba(100, 100, 100, 0); color : white; }");
 
@@ -39,11 +40,13 @@ GazeboViewControlPlugin::GazeboViewControlPlugin():
   QPushButton *orthogonal_button = new QPushButton(tr("Orthogonal"));
   QPushButton *camera_button = new QPushButton(tr("Camera"));
   QPushButton *stop_button = new QPushButton(tr("Stop Tracking"));
+  QPushButton *display_forces_button = new QPushButton(tr("Show Forces"));
   connect(forward_button, SIGNAL(clicked()), this, SLOT(OnForwardButton()));
   connect(chase_button, SIGNAL(clicked()), this, SLOT(OnChaseButton()));
   connect(orthogonal_button, SIGNAL(clicked()), this, SLOT(OnOrthogonalButton()));
   connect(camera_button, SIGNAL(clicked()), this, SLOT(OnCameraButton()));
   connect(stop_button, SIGNAL(clicked()), this, SLOT(OnStopButton()));
+  connect(display_forces_button, SIGNAL(clicked()), this, SLOT(OnShowForces()));
 
   // Add the buttons to the frame's layout
   frameLayout->addWidget(forward_button);
@@ -51,6 +54,7 @@ GazeboViewControlPlugin::GazeboViewControlPlugin():
   frameLayout->addWidget(orthogonal_button);
   frameLayout->addWidget(camera_button);
   frameLayout->addWidget(stop_button);
+  frameLayout->addWidget(display_forces_button);
 
   // Add frameLayout to the frame
   mainFrame->setLayout(frameLayout);
@@ -66,7 +70,7 @@ GazeboViewControlPlugin::GazeboViewControlPlugin():
 
   // Position and resize this widget
   move(10, 10);
-  resize(120, 150);
+  resize(120, 180);
 }
 
 GazeboViewControlPlugin::~GazeboViewControlPlugin() {
@@ -142,19 +146,30 @@ void GazeboViewControlPlugin::OnStopButton() {
   mode_ = "None";
 }
 
+void GazeboViewControlPlugin::OnShowForces() {
+  if (!display_forces_)
+    display_forces_ = true;
+  else {
+    display_forces_ = false;
+    rendering_force_->SetForce(math::Vector3(0.0, 0.0, 0.0));
+  }
+}
+
 void GazeboViewControlPlugin::OnUpdate() {
   // If it has not been loaded already, attempt to get a handle to the visual
   // we want to track
   if (!visual_) {
     rendering::ScenePtr scene = rendering::get_scene();
     visual_ = scene->GetVisual("techpod::techpod/base_link");
+    return;
   }
 
-  /*if (!rendering_force_) {
+  if (!rendering_force_) {
     rendering_force_.reset(new RenderingForce("forces_visual", visual_));
 
     rendering_force_->Load();
-  }*/
+    return;
+  }
 
   /*if (!rendering_torque_) {
     rendering_torque_.reset(new RenderingTorque("torques_visual", visual_));
@@ -162,7 +177,9 @@ void GazeboViewControlPlugin::OnUpdate() {
     rendering_torque_->Load();
   }*/
 
-  //rendering_force_->SetForce(force_vector_);
+  if (display_forces_)
+    rendering_force_->SetForce(force_vector_);
+
   //rendering_torque_->SetTorque(torque_vector_);
 
   if (is_tracking_) {

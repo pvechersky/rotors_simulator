@@ -56,10 +56,25 @@
     max_distance="150.0"
     noise_mean="0.0"
     noise_stddev="0.007"
-    enable_visual="true">
+    enable_visual="false">
     <mesh filename="package://rotors_description/meshes/vi_camera.dae" scale="1 1 1" />
     <origin xyz="0 0 -0.03" rpy="0 1.5707 1.5707" />
   </xacro:raw_camera_macro>
+
+  <!--<xacro:wind_plugin_macro
+    namespace="${namespace}"
+    xyz_offset="0 0 0"
+    wind_direction="1 0 0"
+    wind_force_mean="0.0"
+    wind_force_variance="0.0"
+    wind_speed_mean="0.0"
+    wind_speed_variance="0.0"
+    wind_gust_direction="0 1 0"
+    wind_gust_duration="5.0" 
+    wind_gust_start="60.0"
+    wind_gust_force_mean="10.0"
+    wind_gust_force_variance="0.0">
+  </xacro:wind_plugin_macro>-->
 
   <xacro:if value="$(arg enable_ground_truth)">
     <xacro:ground_truth_imu_and_odometry namespace="${namespace}" parent_link="${namespace}/base_link_inertia" />

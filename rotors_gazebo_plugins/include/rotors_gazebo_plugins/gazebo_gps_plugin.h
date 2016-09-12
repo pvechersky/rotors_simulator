@@ -17,6 +17,8 @@
 #ifndef ROTORS_GAZEBO_PLUGINS_GPS_PLUGIN_H
 #define ROTORS_GAZEBO_PLUGINS_GPS_PLUGIN_H
 
+#include <random>
+
 #include <Eigen/Core>
 #include <gazebo/common/common.hh>
 #include <gazebo/common/Plugin.hh>
@@ -57,6 +59,8 @@ class GazeboGpsPlugin : public ModelPlugin {
   void Load(physics::ModelPtr _model, sdf::ElementPtr _sdf);
   void OnUpdate(const common::UpdateInfo&);
 
+  void AddNoise(Eigen::Vector3d* position, Eigen::Vector3d* velocity, const double dt);
+
  private:
   std::string namespace_;
   std::string frame_id_;
@@ -75,6 +79,17 @@ class GazeboGpsPlugin : public ModelPlugin {
   physics::LinkPtr link_;
   // Pointer to the update event connection
   event::ConnectionPtr updateConnection_;
+
+  common::Time last_time_;
+
+  Eigen::Vector3d position_bias_;
+  Eigen::Vector3d velocity_bias_;
+
+  Eigen::Vector3d position_turn_on_bias_;
+  Eigen::Vector3d velocity_turn_on_bias_;
+
+  std::default_random_engine random_generator_;
+  std::normal_distribution<double> standard_normal_distribution_;
 
   double ref_lat_;
   double ref_lon_;

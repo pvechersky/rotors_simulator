@@ -1,6 +1,6 @@
 <launch>
   <arg name="uav_name" default="techpod"/>
-  <arg name="world_name" default="rafz"/>
+  <arg name="world_name" default="yosemite"/>
   <arg name="enable_logging" default="true"/>
   <arg name="enable_ground_truth" default="true"/>
   <arg name="log_file" default="$(arg uav_name)"/>
@@ -29,7 +29,7 @@
       <arg name="enable_ground_truth" value="$(arg enable_ground_truth)" />
       <arg name="log_file" value="$(arg log_file)" />
       <arg name="wait_to_record_bag" value="true" />
-      <arg name="x" value="0" />
+      <arg name="x" value="-100" />
       <arg name="y" value="0" />
       <arg name="z" value="0.1" />
     </include>

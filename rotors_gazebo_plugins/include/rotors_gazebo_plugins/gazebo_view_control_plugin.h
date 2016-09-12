@@ -65,6 +65,7 @@ class GAZEBO_VISIBLE GazeboViewControlPlugin : public GUIPlugin {
   void OnOrthogonalButton();
   void OnCameraButton();
   void OnStopButton();
+  void OnShowForces();
 
  private:
   void OnUpdate();
@@ -72,6 +73,7 @@ class GAZEBO_VISIBLE GazeboViewControlPlugin : public GUIPlugin {
   bool OnMousePress(const common::MouseEvent& _event);
 
   bool is_tracking_;
+  bool display_forces_;
 
   event::ConnectionPtr update_connection_;
 
