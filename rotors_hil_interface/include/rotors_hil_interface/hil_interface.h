@@ -93,6 +93,8 @@ class HilSensorLevelInterface : public HilInterface {
   /// \brief Constructor
   /// \param[in] q_S_B Quaternion rotation from body frame to NED frame.
   HilSensorLevelInterface(const Eigen::Quaterniond q_S_B);
+
+  /// \brief Destructor
   virtual ~HilSensorLevelInterface();
 
   std::vector<mavros_msgs::Mavlink> CollectData();
@@ -116,6 +118,8 @@ class HilStateLevelInterface : public HilInterface {
   /// \brief Constructor
   /// \param[in] q_S_B Quaternion rotation from body frame to NED frame.
   HilStateLevelInterface(const Eigen::Quaterniond q_S_B);
+
+  /// \brief Destructor
   virtual ~HilStateLevelInterface();
 
   std::vector<mavros_msgs::Mavlink> CollectData();

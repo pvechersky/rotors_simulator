@@ -85,7 +85,8 @@ void HilInterfaceNode::HilControlsCallback(const mavros_msgs::HilControlsConstPt
   act_msg.normalized.push_back(hil_controls_msg->roll_ailerons);
   act_msg.normalized.push_back(hil_controls_msg->pitch_elevator);
   act_msg.normalized.push_back(hil_controls_msg->yaw_rudder);
-
+  act_msg.normalized.push_back(hil_controls_msg->aux1);
+  act_msg.normalized.push_back(hil_controls_msg->aux2);
   act_msg.normalized.push_back(hil_controls_msg->throttle);
 
   act_msg.header.stamp.sec = current_time.sec;

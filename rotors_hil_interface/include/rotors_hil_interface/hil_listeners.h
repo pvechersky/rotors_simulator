@@ -119,6 +119,8 @@ class HilListeners {
     hil_data->fix_type =
         (gps_msg->status.status > sensor_msgs::NavSatStatus::STATUS_NO_FIX) ?
             kFix3D : kFixNone;
+
+    hil_data->pressure_alt = gps_msg->altitude;
   }
 
   /// \brief Callback for handling Ground Speed messages.
@@ -131,7 +133,7 @@ class HilListeners {
     // MAVLINK HIL_GPS message measures GPS velocity in cm/s
     hil_data->gps_vel = Eigen::Vector3i(ground_speed_msg->twist.linear.x,
                                         -ground_speed_msg->twist.linear.y,
-                                        -ground_speed_msg->twist.linear.z) * 100; //kMetersToCm;
+                                        -ground_speed_msg->twist.linear.z) * 100.0; //kMetersToCm;
 
     hil_data->vel = hil_data->gps_vel.norm();
   }
@@ -192,9 +194,9 @@ class HilListeners {
             hil_data->ind_airspeed * 0.01 * 0.0001; //kPascalToMillibar /
             //(kMetersToCm * kMetersToCm);
 
-    hil_data->pressure_alt =
+    /*hil_data->pressure_alt =
         (1 - pow((pressure_mbar / kStandardPressureMBar), kPressureToAltExp)) *
-            kPressureToAltMult * kFeetToMeters;
+            kPressureToAltMult * kFeetToMeters;*/
   }
 
  private:

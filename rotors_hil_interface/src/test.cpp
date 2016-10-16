@@ -1,9 +1,5 @@
 /*
- * Copyright 2015 Fadri Furrer, ASL, ETH Zurich, Switzerland
- * Copyright 2015 Michael Burri, ASL, ETH Zurich, Switzerland
- * Copyright 2015 Mina Kamel, ASL, ETH Zurich, Switzerland
- * Copyright 2015 Janosch Nikolic, ASL, ETH Zurich, Switzerland
- * Copyright 2015 Markus Achtelik, ASL, ETH Zurich, Switzerland
+ * Copyright 2016 Pavel Vechersky, ASL, ETH Zurich, Switzerland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,13 +14,13 @@
  * limitations under the License.
  */
 
-#include "rotors_hil_interface/hil_sensors_interface.h"
+#include "rotors_hil_interface/test.h"
 
 namespace rotors_hil {
 
-HilSensorsInterface::HilSensorsInterface():
+HilInterface::HilInterface():
     // TODO: add sensors or params or constants for these
-  rate_(kDefaultHilImuFrequency),
+  rate_(kDefaultHilFrequency),
   temperature_(15.0),
   eph_(100),
   epv_(100),
@@ -36,47 +32,50 @@ HilSensorsInterface::HilSensorsInterface():
   ros::NodeHandle pnh("~");
 
   double hil_gps_freq;
-  double hil_imu_freq;
-  double hil_state_freq;
+  double hil_freq;
+  std::string actuators_pub_topic;
   std::string air_speed_sub_topic;
   std::string gps_sub_topic;
   std::string ground_speed_sub_topic;
+  std::string hil_controls_sub_topic;
   std::string imu_sub_topic;
   std::string mag_sub_topic;
   std::string pressure_sub_topic;
   std::string mavlink_pub_topic;
+
+  pnh.param("actuators_pub_topic", actuators_pub_topic, kDefaultActuatorsPubTopic);
   pnh.param("air_speed_topic", air_speed_sub_topic, kDefaultAirSpeedSubTopic);
   pnh.param("gps_topic", gps_sub_topic, std::string(mav_msgs::default_topics::GPS));
   pnh.param("ground_speed_topic", ground_speed_sub_topic, kDefaultGroundSpeedSubTopic);
+  pnh.param("hil_controls_sub_topic", hil_controls_sub_topic, kDefaultHilControlsSubTopic);
   pnh.param("imu_topic", imu_sub_topic, std::string(mav_msgs::default_topics::IMU));
   pnh.param("mag_topic", mag_sub_topic, std::string(mav_msgs::default_topics::MAGNETIC_FIELD));
   pnh.param("pressure_topic", pressure_sub_topic, kDefaultPressureSubTopic);
   pnh.param("mavlink_pub_topic", mavlink_pub_topic, kDefaultMavlinkPubTopic);
   pnh.param("sensor_level_hil", sensor_level_hil_, kDefaultSensorLevelHil);
   pnh.param("hil_gps_frequency", hil_gps_freq, kDefaultHilGpsFrequency);
-  pnh.param("hil_imu_frequency", hil_imu_freq, kDefaultHilImuFrequency);
-  pnh.param("hil_state_frequency", hil_state_freq, kDefaultHilStateFrequency);
+  pnh.param("hil_frequency", hil_freq, kDefaultHilFrequency);
 
-  air_speed_sub_ = nh_.subscribe(air_speed_sub_topic, 1, &HilSensorsInterface::AirSpeedCallback, this);
-  gps_sub_ = nh_.subscribe(gps_sub_topic, 1, &HilSensorsInterface::GpsCallback, this);
-  ground_speed_sub_ = nh_.subscribe(ground_speed_sub_topic, 1, &HilSensorsInterface::GroundSpeedCallback, this);
-  imu_sub_ = nh_.subscribe(imu_sub_topic, 1, &HilSensorsInterface::ImuCallback, this);
-  mag_sub_ = nh_.subscribe(mag_sub_topic, 1, &HilSensorsInterface::MagCallback, this);
-  pressure_sub_ = nh_.subscribe(pressure_sub_topic, 1, &HilSensorsInterface::PressureCallback, this);
+  air_speed_sub_ = nh_.subscribe(air_speed_sub_topic, 1, &HilInterface::AirSpeedCallback, this);
+  gps_sub_ = nh_.subscribe(gps_sub_topic, 1, &HilInterface::GpsCallback, this);
+  ground_speed_sub_ = nh_.subscribe(ground_speed_sub_topic, 1, &HilInterface::GroundSpeedCallback, this);
+  hil_controls_sub_ = nh_.subscribe(hil_controls_sub_topic, 1, &HilInterface::HilControlsCallback, this);
+  imu_sub_ = nh_.subscribe(imu_sub_topic, 1, &HilInterface::ImuCallback, this);
+  mag_sub_ = nh_.subscribe(mag_sub_topic, 1, &HilInterface::MagCallback, this);
+  pressure_sub_ = nh_.subscribe(pressure_sub_topic, 1, &HilInterface::PressureCallback, this);
 
+  actuators_pub_ = nh_.advertise<mav_msgs::Actuators>(actuators_pub_topic, 1);
   mavlink_pub_ = nh_.advertise<mavros_msgs::Mavlink>(mavlink_pub_topic, 5);
 
   hil_gps_interval_nsec_ = 1.0 / hil_gps_freq * 1000000000;
-  hil_imu_interval_nsec_ = 1.0 / hil_imu_freq * 1000000000;
-  hil_state_interval_nsec_ = 1.0 / hil_state_freq * 1000000000;
 
-  rate_ = (sensor_level_hil_) ? ros::Rate(hil_imu_freq) : ros::Rate(hil_state_freq);
+  rate_ = ros::Rate(hil_freq);
 }
 
-HilSensorsInterface::~HilSensorsInterface() {
+HilInterface::~HilInterface() {
 }
 
-void HilSensorsInterface::MainTaskSensorLevelHil() {
+void HilInterface::MainTaskSensorLevelHil() {
   while (ros::ok()) {
     u_int32_t curr_nsec = ros::Time::now().nsec;
 
@@ -85,31 +84,23 @@ void HilSensorsInterface::MainTaskSensorLevelHil() {
       PublishHilGps();
     }
 
-    //if ((curr_nsec - last_imu_pub_time_nsec_) >= hil_imu_interval_nsec_) {
-    //  last_imu_pub_time_nsec_ = curr_nsec;
-      PublishHilSensor();
-    //}
+    PublishHilSensor();
 
     ros::spinOnce();
     rate_.sleep();
   }
 }
 
-void HilSensorsInterface::MainTaskStateLevelHil() {   
+void HilInterface::MainTaskStateLevelHil() {
   while (ros::ok()) {
-    u_int32_t curr_nsec = ros::Time::now().nsec;
-
-    if ((curr_nsec - last_state_pub_time_nsec_) >= hil_state_interval_nsec_) {
-      last_state_pub_time_nsec_ = curr_nsec;
-      PublishHilStateQtrn();
-    }
+    PublishHilStateQtrn();
 
     ros::spinOnce();
     rate_.sleep();
   }
 }
 
-void HilSensorsInterface::AirSpeedCallback(const geometry_msgs::TwistStampedConstPtr &air_speed_msg) {
+void HilInterface::AirSpeedCallback(const geometry_msgs::TwistStampedConstPtr &air_speed_msg) {
   double air_speed = sqrt(air_speed_msg->twist.linear.x * air_speed_msg->twist.linear.x +
                           air_speed_msg->twist.linear.y * air_speed_msg->twist.linear.y +
                           air_speed_msg->twist.linear.z * air_speed_msg->twist.linear.z);
@@ -119,7 +110,7 @@ void HilSensorsInterface::AirSpeedCallback(const geometry_msgs::TwistStampedCons
   true_airspeed_ = air_speed * 100.0;
 }
 
-void HilSensorsInterface::GpsCallback(const sensor_msgs::NavSatFixConstPtr& gps_msg) {
+void HilInterface::GpsCallback(const sensor_msgs::NavSatFixConstPtr& gps_msg) {
   lat_ = gps_msg->latitude * 10000000;
   lon_ = gps_msg->longitude * 10000000;
   alt_ = gps_msg->altitude * 1000;
@@ -130,7 +121,7 @@ void HilSensorsInterface::GpsCallback(const sensor_msgs::NavSatFixConstPtr& gps_
   pressure_alt_ = gps_msg->altitude;
 }
 
-void HilSensorsInterface::GroundSpeedCallback(const geometry_msgs::TwistStampedConstPtr &ground_speed_msg) {
+void HilInterface::GroundSpeedCallback(const geometry_msgs::TwistStampedConstPtr &ground_speed_msg) {
   vn_ = ground_speed_msg->twist.linear.x * 100.0;
   ve_ = -ground_speed_msg->twist.linear.y * 100.0;
   vd_ = -ground_speed_msg->twist.linear.z * 100.0;
@@ -138,20 +129,37 @@ void HilSensorsInterface::GroundSpeedCallback(const geometry_msgs::TwistStampedC
   vel_ = sqrt(vn_^2 + ve_^2 + vd_^2);
 }
 
-void HilSensorsInterface::ImuCallback(const sensor_msgs::ImuConstPtr& imu_msg) {
+void HilInterface::HilControlsCallback(const mavros_msgs::HilControlsConstPtr& hil_controls_msg) {
+  mav_msgs::Actuators act_msg;
+
+  ros::Time current_time = ros::Time::now();
+
+  act_msg.normalized.push_back(hil_controls_msg->roll_ailerons);
+  act_msg.normalized.push_back(hil_controls_msg->pitch_elevator);
+  act_msg.normalized.push_back(hil_controls_msg->yaw_rudder);
+  act_msg.normalized.push_back(hil_controls_msg->aux1);
+  act_msg.normalized.push_back(hil_controls_msg->aux2);
+  act_msg.normalized.push_back(hil_controls_msg->throttle);
+
+  act_msg.header.stamp.sec = current_time.sec;
+  act_msg.header.stamp.nsec = current_time.nsec;
+
+  actuators_pub_.publish(act_msg);
+}
+
+void HilInterface::ImuCallback(const sensor_msgs::ImuConstPtr& imu_msg) {
   acc_x_ = imu_msg->linear_acceleration.x;
   acc_y_ = -imu_msg->linear_acceleration.y;
   acc_z_ = -imu_msg->linear_acceleration.z;
 
   att_ = tf::Quaternion(imu_msg->orientation.x, imu_msg->orientation.y, imu_msg->orientation.z, imu_msg->orientation.w);
-  //att_ *= tf::Quaternion(0.0, 0.0, M_PI);
 
   gyro_x_ = imu_msg->angular_velocity.x;
   gyro_y_ = -imu_msg->angular_velocity.y;
   gyro_z_ = -imu_msg->angular_velocity.z;
 }
 
-void HilSensorsInterface::MagCallback(const sensor_msgs::MagneticFieldConstPtr &mag_msg) {
+void HilInterface::MagCallback(const sensor_msgs::MagneticFieldConstPtr &mag_msg) {
   // ROS magnetic field sensor message is in Tesla, while MAVLINK HIL_SENSOR message
   // measures magnetic field in Gauss. 1 Tesla = 10000 Gauss
   mag_x_ = mag_msg->magnetic_field.x * 10000;
@@ -159,7 +167,7 @@ void HilSensorsInterface::MagCallback(const sensor_msgs::MagneticFieldConstPtr &
   mag_z_ = -mag_msg->magnetic_field.z * 10000;
 }
 
-void HilSensorsInterface::PressureCallback(const sensor_msgs::FluidPressureConstPtr &pressure_msg) {
+void HilInterface::PressureCallback(const sensor_msgs::FluidPressureConstPtr &pressure_msg) {
   // ROS fluid pressure sensor message is in Pascals, while MAVLINK HIL_SENSOR message
   // measures fluid pressure in millibar. 1 Pascal = 0.01 millibar
   pressure_abs_ = pressure_msg->fluid_pressure * 0.01;
@@ -168,7 +176,7 @@ void HilSensorsInterface::PressureCallback(const sensor_msgs::FluidPressureConst
   pressure_diff_ = 0.5 * kAirDensity * ind_airspeed_ * ind_airspeed_ * 0.01 * 0.0001;
 }
 
-void HilSensorsInterface::PublishHilGps() {
+void HilInterface::PublishHilGps() {
   ros::Time current_time = ros::Time::now();
 
   hil_gps_msg_.time_usec = current_time.nsec * 0.001 + current_time.sec * 1000000;
@@ -199,7 +207,7 @@ void HilSensorsInterface::PublishHilGps() {
   mavlink_pub_.publish(rmsg_hil_gps);
 }
 
-void HilSensorsInterface::PublishHilSensor() {
+void HilInterface::PublishHilSensor() {
   ros::Time current_time = ros::Time::now();
 
   hil_sensor_msg_.time_usec = current_time.nsec * 0.001 + current_time.sec * 1000000;
@@ -232,7 +240,7 @@ void HilSensorsInterface::PublishHilSensor() {
   mavlink_pub_.publish(rmsg_hil_sensor);
 }
 
-void HilSensorsInterface::PublishHilStateQtrn() {
+void HilInterface::PublishHilStateQtrn() {
   ros::Time current_time = ros::Time::now();
 
   hil_state_qtrn_msg_.time_usec = current_time.nsec * 0.001 + current_time.sec * 1000000;
@@ -271,13 +279,13 @@ void HilSensorsInterface::PublishHilStateQtrn() {
 }
 
 int main(int argc, char** argv) {
-  ros::init(argc, argv, "rotors_hil_sensors_interface");
-  rotors_hil::HilSensorsInterface hil_sensors_interface;
+  ros::init(argc, argv, "rotors_hil_interface");
+  rotors_hil::HilInterface hil_interface;
 
-  if (hil_sensors_interface.sensor_level_hil_)
-    hil_sensors_interface.MainTaskSensorLevelHil();
+  if (hil_interface.sensor_level_hil_)
+    hil_interface.MainTaskSensorLevelHil();
   else
-    hil_sensors_interface.MainTaskStateLevelHil();
+    hil_interface.MainTaskStateLevelHil();
 
   return 0;
 }
