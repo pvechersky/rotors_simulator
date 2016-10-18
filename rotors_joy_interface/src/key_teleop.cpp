@@ -1,9 +1,5 @@
 /*
- * Copyright 2015 Fadri Furrer, ASL, ETH Zurich, Switzerland
- * Copyright 2015 Michael Burri, ASL, ETH Zurich, Switzerland
- * Copyright 2015 Mina Kamel, ASL, ETH Zurich, Switzerland
- * Copyright 2015 Janosch Nikolic, ASL, ETH Zurich, Switzerland
- * Copyright 2015 Markus Achtelik, ASL, ETH Zurich, Switzerland
+ * Copyright 2016 Pavel Vechersky, ASL, ETH Zurich, Switzerland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "rotors_key_teleop/key_teleop.h"
+#include "rotors_joy_interface/key_teleop.h"
 
 namespace rotors_teleop {
 
@@ -35,6 +31,7 @@ KeyTeleop::KeyTeleop() {
 }
 
 KeyTeleop::~KeyTeleop() {
+  Shutdown();
 }
 
 void KeyTeleop::ConfigureTerminalInput() {
@@ -56,9 +53,7 @@ void KeyTeleop::ConfigureTerminalInput() {
   // Set the new attributes
   tcsetattr(STDIN_FD, TCSANOW, &attributes_new);
 
-  ROS_INFO(" ");
   ROS_INFO("Terminal configured for keyboard teleop");
-  ROS_INFO(" ");
 }
 
 void KeyTeleop::KeyInputLoop() {
@@ -137,6 +132,8 @@ void KeyTeleop::KeyInputLoop() {
     act_msg.normalized.push_back(roll_ailerons_);
     act_msg.normalized.push_back(pitch_elevator_);
     act_msg.normalized.push_back(yaw_rudder_);
+    act_msg.normalized.push_back(0.0);
+    act_msg.normalized.push_back(roll_ailerons_);
     act_msg.normalized.push_back(throttle_);
 
     act_msg.header.stamp.sec = current_time.sec;

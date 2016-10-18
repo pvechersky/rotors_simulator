@@ -111,8 +111,8 @@ void GazeboGpsPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
 
   standard_normal_distribution_ = std::normal_distribution<double>(0.0, 1.0);
 
-  double sigma_bon_p = 5.0; //position_turn_on_bias_sigma;
-  double sigma_bon_v = 0.05; //velocity_turn_on_bias_sigma;
+  double sigma_bon_p = 0.1; //position_turn_on_bias_sigma;
+  double sigma_bon_v = 0.01; //velocity_turn_on_bias_sigma;
   for (int i = 0; i < 3; ++i) {
     position_turn_on_bias_[i] =
         sigma_bon_p * standard_normal_distribution_(random_generator_);
@@ -188,7 +188,7 @@ void GazeboGpsPlugin::OnUpdate(const common::UpdateInfo& _info) {
   Eigen::Vector3d pos(position.x, position.y, position.z);
   Eigen::Vector3d vel(velocity.x, velocity.y, velocity.z);
 
-  AddNoise(&pos, &vel, dt);
+  //AddNoise(&pos, &vel, dt);
 
   // Update the GPS coordinates
   //gps_message_.latitude = ref_lat_ + (cos(ref_heading_) * position.x + sin(ref_heading_) * position.y) / radius_north_ * 180.0 / M_PI;

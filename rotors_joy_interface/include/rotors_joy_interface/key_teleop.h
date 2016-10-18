@@ -1,9 +1,5 @@
 /*
- * Copyright 2015 Fadri Furrer, ASL, ETH Zurich, Switzerland
- * Copyright 2015 Michael Burri, ASL, ETH Zurich, Switzerland
- * Copyright 2015 Mina Kamel, ASL, ETH Zurich, Switzerland
- * Copyright 2015 Janosch Nikolic, ASL, ETH Zurich, Switzerland
- * Copyright 2015 Markus Achtelik, ASL, ETH Zurich, Switzerland
+ * Copyright 2016 Pavel Vechersky, ASL, ETH Zurich, Switzerland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef ROTORS_KEY_TELEOP_H_
-#define ROTORS_KEY_TELEOP_H_
+#ifndef ROTORS_JOY_INTERFACE_KEY_TELEOP_H_
+#define ROTORS_JOY_INTERFACE_KEY_TELEOP_H_
 
 #include <ros/ros.h>
 #include <termios.h>
@@ -81,4 +77,4 @@ class KeyTeleop {
 };
 }
 
-#endif // ROTORS_KEY_TELEOP_H_
+#endif // ROTORS_JOY_INTERFACE_KEY_TELEOP_H_

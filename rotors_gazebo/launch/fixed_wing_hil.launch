@@ -34,7 +34,7 @@
       <arg name="z" value="0.1" />
     </include>
 
-    <node name="hil_interface" pkg="rotors_hil_interface" type="rotors_test" clear_params="true" output="screen">
+    <node name="hil_interface" pkg="rotors_hil_interface" type="rotors_hil_interface_node" clear_params="true" output="screen">
       <param name="gps_topic" value="gps" />
       <param name="imu_topic" value="imu" />
       <param name="odometry_topic" value="ground_truth/odometry" />
@@ -46,14 +46,21 @@
       <param name="hil_frequency" value="100.0" />
     </node>
 
-    <!--<node name="hil_control_interface" pkg="rotors_hil_interface" type="rotors_hil_control_interface" clear_params="true" output="screen">
+    <!--<node name="hil_sensors_interface" pkg="rotors_hil_interface" type="rotors_hil_sensors_interface" clear_params="true" output="screen">
+      <param name="gps_topic" value="gps" />
+      <param name="imu_topic" value="imu" />
+      <param name="odometry_topic" value="ground_truth/odometry" />
+      <param name="mavlink_pub_topic" value="/mavlink/to" />
+      <param name="sensor_level_hil" value="true" />
+      <param name="hil_gps_frequency" value="5.0" />
+      <param name="hil_imu_frequency" value="100.0" />
+      <param name="hil_state_frequency" value="100.0" />
+    </node>
+
+    <node name="hil_control_interface" pkg="rotors_hil_interface" type="rotors_hil_control_interface" clear_params="true" output="screen">
       <param name="hil_controls_sub_topic" value="/mavros/hil_controls/hil_controls" />
       <param name="actuators_pub_topic" value="gazebo/command/motor_speed" />
       <param name="key_teleop" value="false" />
-    </node>
-
-    <node name="hil_interface" pkg="rotors_hil_interface" type="rotors_hil_interface_node" clear_params="true" output="screen">
-      <param name="actuators_pub_topic" value="gazebo/command/motor_speed" />
     </node>-->
 
     <node name="rotors_gui" pkg="rqt_rotors" type="rqt_rotors" clear_params="true" output="screen" />
