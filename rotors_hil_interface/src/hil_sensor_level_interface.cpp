@@ -90,20 +90,19 @@ std::vector<mavros_msgs::Mavlink> HilSensorLevelInterface::CollectData() {
   std::vector<mavros_msgs::Mavlink> hil_msgs;
 
   // Rotate gyroscope, accelerometer, and magnetometer data into NED frame
-  Eigen::Vector3f gyro = hil_data_.gyro; //R_S_B_ * hil_data_.gyro;
-  Eigen::Vector3f acc = hil_data_.acc; //R_S_B_ * hil_data_.acc;
-  Eigen::Vector3f mag = hil_data_.mag; //R_S_B_ * hil_data_.mag;
+  Eigen::Vector3f gyro = R_S_B_ * hil_data_.gyro;
+  Eigen::Vector3f acc = R_S_B_ * hil_data_.acc;
+  Eigen::Vector3f mag = R_S_B_ * hil_data_.mag;
 
   // Check if we need to publish a HIL_GPS message.
   if ((current_time.nsec - last_gps_pub_time_nsec_) >= gps_interval_nsec_) {
     last_gps_pub_time_nsec_ = current_time.nsec;
 
     // Rotate ground speed data into NED frame
-    Eigen::Vector3i gps_vel = hil_data_.gps_vel; //(R_S_B_ * hil_data_.gps_vel.cast<float>()).cast<int>();
+    Eigen::Vector3i gps_vel = (R_S_B_ * hil_data_.gps_vel.cast<float>()).cast<int>();
 
     // Fill in a MAVLINK HIL_GPS message and convert it to MAVROS format.
-    //hil_gps_msg_.time_usec = time_usec;
-    hil_gps_msg_.time_usec = current_time.nsec * 0.001 + current_time.sec * 1000000;
+    hil_gps_msg_.time_usec = time_usec;
     hil_gps_msg_.fix_type = hil_data_.fix_type;
     hil_gps_msg_.lat = hil_data_.lat;
     hil_gps_msg_.lon = hil_data_.lon;
@@ -129,8 +128,7 @@ std::vector<mavros_msgs::Mavlink> HilSensorLevelInterface::CollectData() {
   }
 
   // Fill in a MAVLINK HIL_SENSOR message and convert it to MAVROS format.
-  //hil_sensor_msg_.time_usec = time_usec;
-  hil_sensor_msg_.time_usec = current_time.nsec * 0.001 + current_time.sec * 1000000;
+  hil_sensor_msg_.time_usec = time_usec;
   hil_sensor_msg_.xacc = acc.x();
   hil_sensor_msg_.yacc = acc.y();
   hil_sensor_msg_.zacc = acc.z();
@@ -145,8 +143,6 @@ std::vector<mavros_msgs::Mavlink> HilSensorLevelInterface::CollectData() {
   hil_sensor_msg_.pressure_alt = hil_data_.pressure_alt;
   hil_sensor_msg_.temperature = hil_data_.temperature;
   hil_sensor_msg_.fields_updated = kAllFieldsUpdated;
-
-  std::cout << acc.x() << std::endl;
 
   mavlink_hil_sensor_t* hil_sensor_msg_ptr = &hil_sensor_msg_;
   mavlink_msg_hil_sensor_encode(1, 0, &mmsg, hil_sensor_msg_ptr);

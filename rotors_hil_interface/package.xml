@@ -4,13 +4,8 @@
   <version>0.0.1</version>
   <description>RotorS Hardware-in-the-loop interface package</description>
 
-  <maintainer email="pavelv@student.ethz.ch">Pavel Vechersky</maintainer>
+  <maintainer email="pvechersky@gmail.com">Pavel Vechersky</maintainer>
 
-  <author>Fadri Furrer</author>
-  <author>Michael Burri</author>
-  <author>Mina Kamel</author>
-  <author>Janosch Nikolic</author>
-  <author>Markus Achtelik</author>
   <author>Pavel Vechersky</author>
 
   <license>ASL 2.0</license>
@@ -27,9 +22,6 @@
   <build_depend>mavros_msgs</build_depend>
   <build_depend>roscpp</build_depend>
   <build_depend>sensor_msgs</build_depend>
-  <build_depend>std_msgs</build_depend>
-  <build_depend>std_srvs</build_depend>
-  <build_depend>tf</build_depend>
 
   <run_depend>geometry_msgs</run_depend>
   <run_depend>mav_msgs</run_depend>
@@ -37,7 +29,4 @@
   <run_depend>mavros_msgs</run_depend>
   <run_depend>roscpp</run_depend>
   <run_depend>sensor_msgs</run_depend>
-  <run_depend>std_msgs</run_depend>
-  <run_depend>std_srvs</run_depend>
-  <run_depend>tf</run_depend>
 </package>

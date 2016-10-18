@@ -34,7 +34,9 @@ static constexpr float kStandardPressureMBar = 1013.25;
 static constexpr float kTemperature = 15.0;
 static constexpr int kFixNone = 0;
 static constexpr int kFix3D = 3;
-static constexpr int kSatellitesVisible = 5;
+static constexpr int kHDOP = 100;
+static constexpr int kVDOP = 100;
+static constexpr int kSatellitesVisible = 4;
 static constexpr int kUnknown = 65535;
 
 // Conversions
@@ -51,8 +53,8 @@ static constexpr float kTeslaToGauss = 10000.0;
 struct HilData {
   HilData() :
       temperature(kTemperature),
-      eph(kUnknown),
-      epv(kUnknown),
+      eph(kHDOP),
+      epv(kVDOP),
       cog(kUnknown),
       satellites_visible(kSatellitesVisible) {}
 
@@ -99,8 +101,8 @@ class HilListeners {
     // TODO(pvechersky): Simulate indicated air speed.
 
     // MAVLINK HIL_STATE_QUATERNION message measured airspeed in cm/s.
-    hil_data->ind_airspeed = air_speed * 100.0; //kMetersToCm;
-    hil_data->true_airspeed = air_speed * 100.0; //kMetersToCm;
+    hil_data->ind_airspeed = air_speed * kMetersToCm;
+    hil_data->true_airspeed = air_speed * kMetersToCm;
   }
 
   /// \brief Callback for handling GPS messages.
@@ -112,15 +114,13 @@ class HilListeners {
 
     // MAVLINK HIL_GPS message measures latitude and longitude in degrees * 1e7
     // while altitude is reported in mm.
-    hil_data->lat = gps_msg->latitude * 10000000; //kDegreesToHil;
-    hil_data->lon = gps_msg->longitude * 10000000; //kDegreesToHil;
-    hil_data->alt = gps_msg->altitude * 1000; //kMetersToMm;
+    hil_data->lat = gps_msg->latitude * kDegreesToHil;
+    hil_data->lon = gps_msg->longitude * kDegreesToHil;
+    hil_data->alt = gps_msg->altitude * kMetersToMm;
 
     hil_data->fix_type =
         (gps_msg->status.status > sensor_msgs::NavSatStatus::STATUS_NO_FIX) ?
             kFix3D : kFixNone;
-
-    hil_data->pressure_alt = gps_msg->altitude;
   }
 
   /// \brief Callback for handling Ground Speed messages.
@@ -132,8 +132,8 @@ class HilListeners {
 
     // MAVLINK HIL_GPS message measures GPS velocity in cm/s
     hil_data->gps_vel = Eigen::Vector3i(ground_speed_msg->twist.linear.x,
-                                        -ground_speed_msg->twist.linear.y,
-                                        -ground_speed_msg->twist.linear.z) * 100.0; //kMetersToCm;
+                                        ground_speed_msg->twist.linear.y,
+                                        ground_speed_msg->twist.linear.z) * kMetersToCm;
 
     hil_data->vel = hil_data->gps_vel.norm();
   }
@@ -146,8 +146,8 @@ class HilListeners {
     boost::mutex::scoped_lock lock(mtx_);
 
     hil_data->acc = Eigen::Vector3f(imu_msg->linear_acceleration.x,
-                                    -imu_msg->linear_acceleration.y,
-                                    -imu_msg->linear_acceleration.z);
+                                    imu_msg->linear_acceleration.y,
+                                    imu_msg->linear_acceleration.z);
 
     hil_data->att = Eigen::Quaterniond(imu_msg->orientation.w,
                                        imu_msg->orientation.x,
@@ -155,8 +155,8 @@ class HilListeners {
                                        imu_msg->orientation.z);
 
     hil_data->gyro = Eigen::Vector3f(imu_msg->angular_velocity.x,
-                                     -imu_msg->angular_velocity.y,
-                                     -imu_msg->angular_velocity.z);
+                                     imu_msg->angular_velocity.y,
+                                     imu_msg->angular_velocity.z);
   }
 
   /// \brief Callback for handling Magnetometer messages.
@@ -170,8 +170,8 @@ class HilListeners {
     // MAVLINK HIL_SENSOR message measures magnetic field in Gauss.
     // 1 Tesla = 10000 Gauss
     hil_data->mag = Eigen::Vector3f(mag_msg->magnetic_field.x,
-                                    -mag_msg->magnetic_field.y,
-                                    -mag_msg->magnetic_field.z) * 10000; //kTeslaToGauss;
+                                    mag_msg->magnetic_field.y,
+                                    mag_msg->magnetic_field.z) * kTeslaToGauss;
   }
 
   /// \brief Callback for handling Air Pressure messages.
@@ -184,19 +184,19 @@ class HilListeners {
     // ROS fluid pressure sensor message is in Pascals, while
     // MAVLINK HIL_SENSOR message measures fluid pressure in millibar.
     // 1 Pascal = 0.01 millibar
-    float pressure_mbar = pressure_msg->fluid_pressure * 0.01; //kPascalToMillibar;
+    float pressure_mbar = pressure_msg->fluid_pressure * kPascalToMillibar;
     hil_data->pressure_abs = pressure_mbar;
 
     // From the following formula: p_stag - p_static = 0.5 * rho * v^2
     // HIL air speed is in cm/s and is converted to m/s for the purpose of
     // computing pressure.
     hil_data->pressure_diff = 0.5 * kAirDensity * hil_data->ind_airspeed *
-            hil_data->ind_airspeed * 0.01 * 0.0001; //kPascalToMillibar /
-            //(kMetersToCm * kMetersToCm);
+            hil_data->ind_airspeed * kPascalToMillibar /
+            (kMetersToCm * kMetersToCm);
 
-    /*hil_data->pressure_alt =
+    hil_data->pressure_alt =
         (1 - pow((pressure_mbar / kStandardPressureMBar), kPressureToAltExp)) *
-            kPressureToAltMult * kFeetToMeters;*/
+            kPressureToAltMult * kFeetToMeters;
   }
 
  private:
