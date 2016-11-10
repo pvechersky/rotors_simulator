@@ -3,7 +3,7 @@
   <world name="yosemite">
     <gui>
       <camera name="user_camera">
-        <pose>-154.660200 -1.942800 2.053900 0.000000 0.443643 0.352194</pose>
+        <pose>-104.660200 -1.942800 2.053900 0.000000 0.443643 0.352194</pose>
       </camera>
       <plugin name="view_selection" filename="librotors_gazebo_view_control_plugin.so"/>
       <!--<plugin name="map_tracker" filename="librotors_gazebo_map_tracker_plugin.so"/>-->

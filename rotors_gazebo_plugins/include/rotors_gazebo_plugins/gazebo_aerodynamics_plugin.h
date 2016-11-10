@@ -1,9 +1,5 @@
 /*
- * Copyright 2015 Fadri Furrer, ASL, ETH Zurich, Switzerland
- * Copyright 2015 Michael Burri, ASL, ETH Zurich, Switzerland
- * Copyright 2015 Mina Kamel, ASL, ETH Zurich, Switzerland
- * Copyright 2015 Janosch Nikolic, ASL, ETH Zurich, Switzerland
- * Copyright 2015 Markus Achtelik, ASL, ETH Zurich, Switzerland
+ * Copyright 2016 Pavel Vechersky, ASL, ETH Zurich, Switzerland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,35 +20,28 @@
 #include <gazebo/common/common.hh>
 #include <gazebo/common/Plugin.hh>
 #include <gazebo/gazebo.hh>
-#include <gazebo/msgs/msgs.hh>
 #include <gazebo/physics/physics.hh>
-#include <gazebo/transport/transport.hh>
+#include <geometry_msgs/TwistStamped.h>
 #include <mav_msgs/Actuators.h>
-#include <nav_msgs/Odometry.h>
+#include <mav_msgs/RollPitchYawrateThrust.h>
 #include <ros/ros.h>
-#include <rotors_comm/RegisterControlSurface.h>
-#include <std_msgs/Bool.h>
-#include <std_srvs/Empty.h>
-#include <tf/transform_broadcaster.h>
 
+#include "rotors_comm/RegisterControlSurface.h"
 #include "rotors_comm/WindSpeed.h"
 #include "rotors_gazebo_plugins/common.h"
 
 namespace gazebo {
-// Default topic names
-//static const std::string kDefaultWindSpeedSubTopic = "gazebo/wind_speed";
+// Default interface values
+static const std::string kDefaultWindSpeedSubTopic = "gazebo/wind_speed";
 static const std::string kDefaultAirSpeedSubTopic = "air_speed";
 static const std::string kDefaultCommandSubTopic = "gazebo/command/motor_speed";
-static const std::string kDefaultResetModelServiceName = "reset_model";
+static constexpr bool kDefaultJoyInput = false;
 
-// Default values for Techpod fixed-wing control surfaces
+// Default values for fixed-wing control surfaces (Techpod model)
 static constexpr double kDefaultControlSurfaceDeflectionMin = -20.0 * M_PI / 180.0;
 static constexpr double kDefaultControlSurfaceDeflectionMax = 20.0 * M_PI / 180.0;
-static constexpr int kDefaultAileronChannel = 0;
-static constexpr int kDefaultElevatorChannel = 1;
-static constexpr int kDefaultRudderChannel = 2;
 
-// Default vehicle parameters for Techpod
+// Default vehicle parameters (Techpod model)
 static constexpr double kDefaultMass = 2.65;
 static constexpr double kDefaultWingSurface = 0.47;
 static constexpr double kDefaultWingspan = 2.59;
@@ -65,33 +54,33 @@ static constexpr double kDefaultInertiaYy = 0.3899;
 static constexpr double kDefaultInertiaYz = 0.0;
 static constexpr double kDefaultInertiaZz = 0.5243;
 
-// Default aerodynamic parameter values for Techpod
-static constexpr double kDefaultCD0 = 0.1360;
-static constexpr double kDefaultCDa = -0.6737;
-static constexpr double kDefaultCDa2 = 5.4546;
-static constexpr double kDefaultCL0 = 0.2127;
-static constexpr double kDefaultCLa = 10.8060;
-static constexpr double kDefaultCLa2 = -46.8324;
-static constexpr double kDefaultCLa3 = 60.6017;
-static constexpr double kDefaultCLq = 0.0;
-static constexpr double kDefaultCLde = 2.5463e-4;
-static constexpr double kDefaultCm0 = 0.0435;
-static constexpr double kDefaultCma = -2.9690;
-static constexpr double kDefaultCmq = -106.1541;
-static constexpr double kDefaultCmde = -6.1308;
-static constexpr double kDefaultCT0 = 0.0;
-static constexpr double kDefaultCT1 = 14.7217;
-static constexpr double kDefaultCT2 = 0.0;
-static constexpr double kDefaultTauT = 0.0880;
-static constexpr double kDefaultClb = -0.0154;
-static constexpr double kDefaultClp = -0.1647;
-static constexpr double kDefaultClr = 0.0117;
-static constexpr double kDefaultClda = 0.0570;
-static constexpr double kDefaultCYb = -0.3073;
-static constexpr double kDefaultCnb = 0.0430;
-static constexpr double kDefaultCnp = -0.0839;
-static constexpr double kDefaultCnr = -0.0827;
-static constexpr double kDefaultCndr = 0.06;
+// Default aerodynamic parameter values (Techpod model)
+static const Eigen::Vector3d kDefaultCDAlpha = Eigen::Vector3d(0.1360, -0.6737, 5.4546);
+static const Eigen::Vector3d kDefaultCDBeta = Eigen::Vector3d(0.0195, 0.0, -0.3842);
+static const Eigen::Vector3d kDefaultCDDeltaAil = Eigen::Vector3d(0.0195, 1.4205e-4, 7.5037e-6);
+static const Eigen::Vector3d kDefaultCDDeltaFlp = Eigen::Vector3d(0.0195, 2.7395e-4, 1.23e-5);
+
+static const Eigen::Vector2d kDefaultCYBeta = Eigen::Vector2d(0.0, -0.3073);
+
+static const Eigen::Vector4d kDefaultCLAlpha = Eigen::Vector4d(0.2127, 10.8060, -46.8324, 60.6017);
+static const Eigen::Vector2d kDefaultCLDeltaAil = Eigen::Vector2d(0.3304, 0.0048);
+static const Eigen::Vector2d kDefaultCLDeltaFlp = Eigen::Vector2d(0.3304, 0.0073);
+
+static const Eigen::Vector2d kDefaultCLmBeta = Eigen::Vector2d(0.0, -0.0154);
+static const Eigen::Vector2d kDefaultCLmP = Eigen::Vector2d(0.0, -0.1647);
+static const Eigen::Vector2d kDefaultCLmR = Eigen::Vector2d(0.0, 0.0117);
+static const Eigen::Vector2d kDefaultCLmDeltaAil = Eigen::Vector2d(0.0, 0.0570);
+static const Eigen::Vector2d kDefaultCLmDeltaFlp = Eigen::Vector2d(0.0, 0.001);
+
+static const Eigen::Vector2d kDefaultCMmAlpha = Eigen::Vector2d(0.0435, -2.9690);
+static const Eigen::Vector2d kDefaultCMmQ = Eigen::Vector2d(-0.1173, -106.1541);
+static const Eigen::Vector2d kDefaultCMmDeltaElv = Eigen::Vector2d(-0.1173, -6.1308);
+
+static const Eigen::Vector2d kDefaultCNmBeta = Eigen::Vector2d(0.0, 0.0430);
+static const Eigen::Vector2d kDefaultCNmR = Eigen::Vector2d(0.0, -0.0827);
+static const Eigen::Vector2d kDefaultCNmDeltaRud = Eigen::Vector2d(0.0, 0.06);
+
+static const Eigen::Vector3d kDefaultCT = Eigen::Vector3d(0.0, 14.7217, 0.0);
 
 // Constants
 static constexpr double kG = 9.81;
@@ -104,32 +93,32 @@ struct ControlSurface {
 };
 
 struct FixedWingAerodynamicParameters {
-  double cD0;
-  double cDa;
-  double cDa2;
-  double cL0;
-  double cLa;
-  double cLa2;
-  double cLa3;
-  double cLq;
-  double cLde;
-  double cm0;
-  double cma;
-  double cmq;
-  double cmde;
-  double cT0;
-  double cT1;
-  double cT2;
-  double tauT;
-  double clb;
-  double clp;
-  double clr;
-  double clda;
-  double cYb;
-  double cnb;
-  double cnp;
-  double cnr;
-  double cndr;
+  Eigen::Vector3d c_D_alpha;
+  Eigen::Vector3d c_D_beta;
+  Eigen::Vector3d c_D_delta_ail;
+  Eigen::Vector3d c_D_delta_flp;
+
+  Eigen::Vector2d c_Y_beta;
+
+  Eigen::Vector4d c_L_alpha;
+  Eigen::Vector2d c_L_delta_ail;
+  Eigen::Vector2d c_L_delta_flp;
+
+  Eigen::Vector2d c_Lm_beta;
+  Eigen::Vector2d c_Lm_p;
+  Eigen::Vector2d c_Lm_r;
+  Eigen::Vector2d c_Lm_delta_ail;
+  Eigen::Vector2d c_Lm_delta_flp;
+
+  Eigen::Vector2d c_Mm_alpha;
+  Eigen::Vector2d c_Mm_q;
+  Eigen::Vector2d c_Mm_delta_elv;
+
+  Eigen::Vector2d c_Nm_beta;
+  Eigen::Vector2d c_Nm_r;
+  Eigen::Vector2d c_Nm_delta_rud;
+
+  Eigen::Vector3d c_T;
 };
 
 class GazeboAerodynamicsPlugin : public ModelPlugin {
@@ -150,8 +139,8 @@ class GazeboAerodynamicsPlugin : public ModelPlugin {
   //ros::Subscriber wind_speed_sub_;
   ros::Subscriber air_speed_sub_;
   ros::Subscriber command_sub_;
+  ros::Subscriber roll_pitch_yawrate_thrust_sub_;
   ros::ServiceServer register_control_surface_service_;
-  ros::ServiceServer reset_model_service_;
 
   // Pointer to the world
   physics::WorldPtr world_;
@@ -161,10 +150,6 @@ class GazeboAerodynamicsPlugin : public ModelPlugin {
   physics::LinkPtr link_;
   // Pointer to the update event connection
   event::ConnectionPtr updateConnection_;
-
-  // Frame names
-  std::string cam_parent_frame_;
-  std::string cam_child_frame_;
 
   // Vehicle parameters
   double mass_;
@@ -194,28 +179,21 @@ class GazeboAerodynamicsPlugin : public ModelPlugin {
 
   double throttle_;
 
+  bool joy_input_;
+
   //math::Vector3 wind_speed_;
   math::Vector3 air_speed_;
-
-  math::Pose start_pose_;
-
-  tf::Transform tf_;
-  tf::TransformBroadcaster transform_broadcaster_;
 
   //void WindSpeedCallback(const rotors_comm::WindSpeedConstPtr& wind_speed_msg);
   void AirSpeedCallback(const geometry_msgs::TwistStampedConstPtr air_speed_msg);
   void CommandCallback(const mav_msgs::ActuatorsConstPtr& command_msg);
+  void RollPitchYawrateThrustCallback(
+      const mav_msgs::RollPitchYawrateThrustConstPtr& roll_pitch_yawrate_thrust_reference_msg);
 
   bool RegisterControlSurfaceCallback(rotors_comm::RegisterControlSurface::Request& req,
                                       rotors_comm::RegisterControlSurface::Response& res);
 
-  bool ResetModelCallback(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
-
   FixedWingAerodynamicParameters aero_params_;
-
-  transport::NodePtr node_;
-  transport::PublisherPtr force_pub_;
-  //transport::PublisherPtr torque_pub_;
 };
 }
 

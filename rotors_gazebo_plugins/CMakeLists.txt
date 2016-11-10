@@ -87,10 +87,6 @@ add_library(rotors_gazebo_multirotor_base_plugin src/gazebo_multirotor_base_plug
 target_link_libraries(rotors_gazebo_multirotor_base_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
 add_dependencies(rotors_gazebo_multirotor_base_plugin ${catkin_EXPORTED_TARGETS})
 
-add_library(rotors_gazebo_fixedwing_base_plugin src/gazebo_fixedwing_base_plugin.cpp)
-target_link_libraries(rotors_gazebo_fixedwing_base_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
-add_dependencies(rotors_gazebo_fixedwing_base_plugin ${catkin_EXPORTED_TARGETS})
-
 add_library(rotors_gazebo_gps_plugin src/gazebo_gps_plugin.cpp)
 target_link_libraries(rotors_gazebo_gps_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
 add_dependencies(rotors_gazebo_gps_plugin ${catkin_EXPORTED_TARGETS})
@@ -150,7 +146,6 @@ install(
     rotors_gazebo_wind_plugin
     rotors_gazebo_octomap_plugin
     rotors_gazebo_multirotor_base_plugin
-    rotors_gazebo_fixedwing_base_plugin
     rotors_gazebo_gps_plugin
     rotors_gazebo_magnetometer_plugin
     rotors_gazebo_pressure_plugin

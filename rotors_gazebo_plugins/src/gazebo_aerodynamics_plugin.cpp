@@ -1,9 +1,5 @@
 /*
- * Copyright 2015 Fadri Furrer, ASL, ETH Zurich, Switzerland
- * Copyright 2015 Michael Burri, ASL, ETH Zurich, Switzerland
- * Copyright 2015 Mina Kamel, ASL, ETH Zurich, Switzerland
- * Copyright 2015 Janosch Nikolic, ASL, ETH Zurich, Switzerland
- * Copyright 2015 Markus Achtelik, ASL, ETH Zurich, Switzerland
+ * Copyright 2016 Pavel Vechersky, ASL, ETH Zurich, Switzerland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,14 +65,20 @@ void GazeboAerodynamicsPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _s
   //std::string wind_speed_sub_topic;
   std::string air_speed_sub_topic;
   std::string command_sub_topic;
-  std::string reset_model_service_name;
-  //getSdfParam<std::string>(_sdf, "windSpeedSubTopic", wind_speed_sub_topic, kDefaultWindSpeedSubTopic);
-  getSdfParam<std::string>(_sdf, "airSpeedSubTopic", air_speed_sub_topic, kDefaultAirSpeedSubTopic);
-  getSdfParam<std::string>(_sdf, "commandSubTopic", command_sub_topic, kDefaultCommandSubTopic);
-  getSdfParam<std::string>(_sdf, "resetModelServiceName", reset_model_service_name,
-                           kDefaultResetModelServiceName);
-
-  start_pose_ = model_->GetWorldPose();
+  std::string roll_pitch_yawrate_thrust_sub_topic;
+  getSdfParam<bool>(_sdf, "joyInput", joy_input_, kDefaultJoyInput);
+  /*getSdfParam<std::string>(_sdf, "windSpeedSubTopic",
+                           wind_speed_sub_topic,
+                           kDefaultWindSpeedSubTopic);*/
+  getSdfParam<std::string>(_sdf, "airSpeedSubTopic",
+                           air_speed_sub_topic,
+                           kDefaultAirSpeedSubTopic);
+  getSdfParam<std::string>(_sdf, "commandSubTopic",
+                           command_sub_topic,
+                           kDefaultCommandSubTopic);
+  getSdfParam<std::string>(_sdf, "rollPitchYawrate,ThrustSubTopic",
+                           roll_pitch_yawrate_thrust_sub_topic,
+                           mav_msgs::default_topics::COMMAND_ROLL_PITCH_YAWRATE_THRUST);
 
   ros::NodeHandle pnh("~");
 
@@ -96,49 +98,60 @@ void GazeboAerodynamicsPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _s
   inertia_(2, 1) = inertia_(1, 2);
   pnh.param<double>("inertia/zz", inertia_(2, 2), kDefaultInertiaZz);
 
-  // Read the control surface parameters from rosparam
-  //std::string surface_string = "aileron";
-  //pnh.param<double>(surface_string + "/min", aileron_.d_min, kDefaultControlSurfaceDeflectionMin);
-  //pnh.param<double>(surface_string + "/max", aileron_.d_max, kDefaultControlSurfaceDeflectionMax);
-  pnh.param<int>("aileron/channel", aileron_channel_, kDefaultAileronChannel);
-
-  //surface_string = "elevator";
-  //pnh.param<double>(surface_string + "/min", elevator_.d_min, kDefaultControlSurfaceDeflectionMin);
-  //pnh.param<double>(surface_string + "/max", elevator_.d_max, kDefaultControlSurfaceDeflectionMax);
-  pnh.param<int>("elevator/channel", elevator_channel_, kDefaultElevatorChannel);
-
-  //surface_string = "rudder";
-  //pnh.param<double>(surface_string + "/min", rudder_.d_min, kDefaultControlSurfaceDeflectionMin);
-  //pnh.param<double>(surface_string + "/max", rudder_.d_max, kDefaultControlSurfaceDeflectionMax);
-  pnh.param<int>("rudder/channel", rudder_channel_, kDefaultRudderChannel);
-
   // Read the aerodynamic parameters from rosparam
-  pnh.param<double>("cD0", aero_params_.cD0, kDefaultCD0);
-  pnh.param<double>("cDa", aero_params_.cDa, kDefaultCDa);
-  pnh.param<double>("cDa2", aero_params_.cDa2, kDefaultCDa2);
-  pnh.param<double>("cL0", aero_params_.cL0, kDefaultCL0);
-  pnh.param<double>("cLa", aero_params_.cLa, kDefaultCLa);
-  pnh.param<double>("cLa2", aero_params_.cLa2, kDefaultCLa2);
-  pnh.param<double>("cLa3", aero_params_.cLa3, kDefaultCLa3);
-  pnh.param<double>("cLq", aero_params_.cLq, kDefaultCLq);
-  pnh.param<double>("cLde", aero_params_.cLde, kDefaultCLde);
-  pnh.param<double>("cm0", aero_params_.cm0, kDefaultCm0);
-  pnh.param<double>("cma", aero_params_.cma, kDefaultCma);
-  pnh.param<double>("cmq", aero_params_.cmq, kDefaultCmq);
-  pnh.param<double>("cmde", aero_params_.cmde, kDefaultCmde);
-  pnh.param<double>("cT0", aero_params_.cT0, kDefaultCT0);
-  pnh.param<double>("cT1", aero_params_.cT1, kDefaultCT1);
-  pnh.param<double>("cT2", aero_params_.cT2, kDefaultCT2);
-  pnh.param<double>("tauT", aero_params_.tauT, kDefaultTauT);
-  pnh.param<double>("clb", aero_params_.clb, kDefaultClb);
-  pnh.param<double>("clp", aero_params_.clp, kDefaultClp);
-  pnh.param<double>("clr", aero_params_.clr, kDefaultClr);
-  pnh.param<double>("clda", aero_params_.clda, kDefaultClda);
-  pnh.param<double>("cYb", aero_params_.cYb, kDefaultCYb);
-  pnh.param<double>("cnb", aero_params_.cnb, kDefaultCnb);
-  pnh.param<double>("cnp", aero_params_.cnp, kDefaultCnp);
-  pnh.param<double>("cnr", aero_params_.cnr, kDefaultCnr);
-  pnh.param<double>("cndr", aero_params_.cndr, kDefaultCndr);
+  pnh.param<double>("cD_alpha_0", aero_params_.c_D_alpha(0), kDefaultCDAlpha(0));
+  pnh.param<double>("cD_alpha_1", aero_params_.c_D_alpha(1), kDefaultCDAlpha(1));
+  pnh.param<double>("cD_alpha_2", aero_params_.c_D_alpha(2), kDefaultCDAlpha(2));
+  pnh.param<double>("cD_beta_0", aero_params_.c_D_beta(0), kDefaultCDBeta(0));
+  pnh.param<double>("cD_beta_1", aero_params_.c_D_beta(1), kDefaultCDBeta(1));
+  pnh.param<double>("cD_beta_2", aero_params_.c_D_beta(2), kDefaultCDBeta(2));
+  pnh.param<double>("cD_delta_ail_0", aero_params_.c_D_delta_ail(0), kDefaultCDDeltaAil(0));
+  pnh.param<double>("cD_delta_ail_1", aero_params_.c_D_delta_ail(1), kDefaultCDDeltaAil(1));
+  pnh.param<double>("cD_delta_ail_2", aero_params_.c_D_delta_ail(2), kDefaultCDDeltaAil(2));
+  pnh.param<double>("cD_delta_flp_0", aero_params_.c_D_delta_flp(0), kDefaultCDDeltaFlp(0));
+  pnh.param<double>("cD_delta_flp_1", aero_params_.c_D_delta_flp(1), kDefaultCDDeltaFlp(1));
+  pnh.param<double>("cD_delta_flp_2", aero_params_.c_D_delta_flp(2), kDefaultCDDeltaFlp(2));
+
+  pnh.param<double>("cY_beta_0", aero_params_.c_Y_beta(0), kDefaultCYBeta(0));
+  pnh.param<double>("cY_beta_1", aero_params_.c_Y_beta(1), kDefaultCYBeta(1));
+
+  pnh.param<double>("cL_alpha_0", aero_params_.c_L_alpha(0), kDefaultCLAlpha(0));
+  pnh.param<double>("cL_alpha_1", aero_params_.c_L_alpha(1), kDefaultCLAlpha(1));
+  pnh.param<double>("cL_alpha_2", aero_params_.c_L_alpha(2), kDefaultCLAlpha(2));
+  pnh.param<double>("cL_alpha_3", aero_params_.c_L_alpha(3), kDefaultCLAlpha(3));
+  pnh.param<double>("cL_delta_ail_0", aero_params_.c_L_delta_ail(0), kDefaultCLDeltaAil(0));
+  pnh.param<double>("cL_delta_ail_1", aero_params_.c_L_delta_ail(1), kDefaultCLDeltaAil(1));
+  pnh.param<double>("cL_delta_flp_0", aero_params_.c_L_delta_flp(0), kDefaultCLDeltaFlp(0));
+  pnh.param<double>("cL_delta_flp_1", aero_params_.c_L_delta_flp(1), kDefaultCLDeltaFlp(1));
+
+  pnh.param<double>("cLm_beta_0", aero_params_.c_Lm_beta(0), kDefaultCLmBeta(0));
+  pnh.param<double>("cLm_beta_1", aero_params_.c_Lm_beta(1), kDefaultCLmBeta(1));
+  pnh.param<double>("cLm_p_0", aero_params_.c_Lm_p(0), kDefaultCLmP(0));
+  pnh.param<double>("cLm_p_1", aero_params_.c_Lm_p(1), kDefaultCLmP(1));
+  pnh.param<double>("cLm_r_0", aero_params_.c_Lm_r(0), kDefaultCLmR(0));
+  pnh.param<double>("cLm_r_1", aero_params_.c_Lm_r(1), kDefaultCLmR(1));
+  pnh.param<double>("cLm_delta_ail_0", aero_params_.c_Lm_delta_ail(0), kDefaultCLmDeltaAil(0));
+  pnh.param<double>("cLm_delta_ail_1", aero_params_.c_Lm_delta_ail(1), kDefaultCLmDeltaAil(1));
+  pnh.param<double>("cLm_delta_flp_0", aero_params_.c_Lm_delta_flp(0), kDefaultCLmDeltaFlp(0));
+  pnh.param<double>("cLm_delta_flp_1", aero_params_.c_Lm_delta_flp(1), kDefaultCLmDeltaFlp(1));
+
+  pnh.param<double>("cMm_alpha_0", aero_params_.c_Mm_alpha(0), kDefaultCMmAlpha(0));
+  pnh.param<double>("cMm_alpha_1", aero_params_.c_Mm_alpha(1), kDefaultCMmAlpha(1));
+  pnh.param<double>("cMm_q_0", aero_params_.c_Mm_q(0), kDefaultCMmQ(0));
+  pnh.param<double>("cMm_q_1", aero_params_.c_Mm_q(1), kDefaultCMmQ(1));
+  pnh.param<double>("cMm_delta_elv_0", aero_params_.c_Mm_delta_elv(0), kDefaultCMmDeltaElv(0));
+  pnh.param<double>("cMm_delta_elv_1", aero_params_.c_Mm_delta_elv(1), kDefaultCMmDeltaElv(1));
+
+  pnh.param<double>("cNm_beta_0", aero_params_.c_Nm_beta(0), kDefaultCNmBeta(0));
+  pnh.param<double>("cNm_beta_1", aero_params_.c_Nm_beta(1), kDefaultCNmBeta(1));
+  pnh.param<double>("cNm_r_0", aero_params_.c_Nm_r(0), kDefaultCNmR(0));
+  pnh.param<double>("cNm_r_1", aero_params_.c_Nm_r(1), kDefaultCNmR(1));
+  pnh.param<double>("cNm_delta_rud_0", aero_params_.c_Nm_delta_rud(0), kDefaultCNmDeltaRud(0));
+  pnh.param<double>("cNm_delta_rud_1", aero_params_.c_Nm_delta_rud(1), kDefaultCNmDeltaRud(1));
+
+  pnh.param<double>("cT_0", aero_params_.c_T(0), kDefaultCT(0));
+  pnh.param<double>("cT_1", aero_params_.c_T(1), kDefaultCT(1));
+  pnh.param<double>("cT_2", aero_params_.c_T(2), kDefaultCT(2));
 
   // Listen to the update event. This event is broadcast every simulation iteration
   this->updateConnection_ =
@@ -147,22 +160,20 @@ void GazeboAerodynamicsPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _s
 
   //wind_speed_sub_ = node_handle_->subscribe(wind_speed_sub_topic, 1, &GazeboAerodynamicsPlugin::WindSpeedCallback, this);
   air_speed_sub_ = node_handle_->subscribe(air_speed_sub_topic, 1,&GazeboAerodynamicsPlugin::AirSpeedCallback, this);
-  command_sub_ = node_handle_->subscribe(command_sub_topic, 1, &GazeboAerodynamicsPlugin::CommandCallback, this);
+
+  if (joy_input_) {
+    roll_pitch_yawrate_thrust_sub_ =
+            node_handle_->subscribe(roll_pitch_yawrate_thrust_sub_topic, 1, &GazeboAerodynamicsPlugin::RollPitchYawrateThrustCallback, this);
+  }
+  else {
+    command_sub_ =
+            node_handle_->subscribe(command_sub_topic, 1, &GazeboAerodynamicsPlugin::CommandCallback, this);
+  }
 
   register_control_surface_service_ =
           node_handle_->advertiseService("register_control_surface",
                                          &GazeboAerodynamicsPlugin::RegisterControlSurfaceCallback,
                                          this);
-
-  reset_model_service_ =
-          node_handle_->advertiseService(reset_model_service_name,
-                                         &GazeboAerodynamicsPlugin::ResetModelCallback,
-                                         this);
-
-  node_ = transport::NodePtr(new transport::Node());
-  node_->Init(world_->GetName());
-  force_pub_ = node_->Advertise<msgs::Vector3d>("~/fw_forces", 1);
-  //torque_pub_ = node_->Advertise<msgs::Vector3d>("~/fw_torques", 1);
 }
 
 void GazeboAerodynamicsPlugin::OnUpdate(const common::UpdateInfo& _info) {
@@ -195,24 +206,6 @@ void GazeboAerodynamicsPlugin::OnUpdate(const common::UpdateInfo& _info) {
 
   double rudder_angle = rudder_->GetAngle(0).Radian();
   rudder_->SetVelocity(0, 2.0 * (rudder_info_.deflection - rudder_angle));
-
-  msgs::Vector3d forces_msg;
-  //msgs::Vector3d torques_msg;
-
-  math::Vector3 gravity_B = link_->GetWorldPose().rot.RotateVectorReverse(math::Vector3(0.0, 0.0, -mass_ * kG));
-
-  forces += gravity_B;
-
-  forces_msg.set_x(forces.x);
-  forces_msg.set_y(forces.y);
-  forces_msg.set_z(forces.z);
-
-  //torques_msg.set_x(moments.x);
-  //torques_msg.set_y(moments.y);
-  //torques_msg.set_z(moments.z);
-
-  force_pub_->Publish(forces_msg);
-  //torque_pub_->Publish(torques_msg);
 }
 
 void GazeboAerodynamicsPlugin::ComputeAerodynamicForcesMoments(math::Vector3& forces, math::Vector3& moments) {
@@ -231,10 +224,7 @@ void GazeboAerodynamicsPlugin::ComputeAerodynamicForcesMoments(math::Vector3& fo
   double r = -ang_vel_body.z;
 
   double V = lin_vel_body.GetLength();
-
-  //double beta = (V < 0.1) ? 0.0 : atan2(-v, fabs(u));
   double beta = (V < 0.1) ? 0.0 : asin(v / V);
-  //double alpha = (V < 0.1) ? 0.0 : atan2(w, fabs(u));
   double alpha = (V < 0.1) ? 0.0 : atan(w / u);
 
   if (alpha > 0.27)
@@ -249,14 +239,11 @@ void GazeboAerodynamicsPlugin::ComputeAerodynamicForcesMoments(math::Vector3& fo
   double delta_elv = elevator_info_.deflection;
   double delta_flap = flap_info_.deflection;
   double delta_rdr = rudder_info_.deflection;
-  double throttle = throttle_;
 
   double delta_ail_sum = delta_ail_right + delta_ail_left;
   double delta_ail_diff = delta_ail_left;// - delta_ail_right;
   double delta_flp_sum = 0.0; //2.0 * delta_flap;
   double delta_flp_diff = 0.0;
-
-  //std::cout << delta_ail_diff << std::endl;
 
   double epsilon_thrust = 0.0;
   double cx_thrust = 0.1149;
@@ -265,70 +252,32 @@ void GazeboAerodynamicsPlugin::ComputeAerodynamicForcesMoments(math::Vector3& fo
   double y_thrust = 0.0;
   double z_thrust = 0.035;
 
-  //Eigen::Vector3d c_D_alpha(1.6276, 0.0903, 0.0195);
-  Eigen::Vector3d c_D_alpha(5.4546, -0.6737, 0.1360);
-  Eigen::Vector3d c_D_beta(-0.3842, 0.0, 0.0195);
-  Eigen::Vector3d c_D_delta_ail(7.5037e-6, 1.4205e-4, 0.0195);
-  Eigen::Vector3d c_D_delta_flp(1.23e-5, 2.7395e-4, 0.0195);
-
-  //Eigen::Vector2d c_Y_beta(0.3846, 0.0);
-  Eigen::Vector2d c_Y_beta(-0.3073, 0.0);
-
-  //Eigen::Vector4d c_L_alpha(-50.8494, -3.4594, 5.8661, 0.3304);
-  Eigen::Vector4d c_L_alpha(60.6017, -46.8324, 10.8060, 0.2127);
-  Eigen::Vector2d c_L_delta_ail(0.0048, 0.3304);
-  Eigen::Vector2d c_L_delta_flp(0.0073, 0.3304);
-
-  double D = q_bar_S * (c_D_alpha.dot(Eigen::Vector3d(alpha * alpha, alpha, 1.0)) +
-                        c_D_beta.dot(Eigen::Vector3d(beta * beta, beta, 0.0)) +
-                        c_D_delta_ail.dot(Eigen::Vector3d(delta_ail_sum * delta_ail_sum, delta_ail_sum, 0.0)) +
-                        c_D_delta_flp.dot(Eigen::Vector3d(delta_flp_sum * delta_flp_sum, delta_flp_sum, 0.0)));
-  double Y = q_bar_S * (c_Y_beta.dot(Eigen::Vector2d(beta, 0.0)));
-  double L = q_bar_S * (c_L_alpha.dot(Eigen::Vector4d(alpha * alpha * alpha, alpha * alpha, alpha, 1.0)) +
-                        c_L_delta_ail.dot(Eigen::Vector2d(delta_ail_sum, 0.0)) +
-                        c_L_delta_flp.dot(Eigen::Vector2d(delta_flp_sum, 0.0)));
-
-  //Eigen::Vector2d c_Lm_beta(-0.0069, 0.0); -0.0154
-  Eigen::Vector2d c_Lm_beta(-0.0154, 0.0);
-  //Eigen::Vector2d c_Lm_p(-0.1024, 0.0);
-  Eigen::Vector2d c_Lm_p(-0.1647, 0.0);
-  //Eigen::Vector2d c_Lm_r(0.0175, 0.0);
-  Eigen::Vector2d c_Lm_r(0.0117, 0.0);
-  //Eigen::Vector2d c_Lm_delta_ail(0.0016, 0.0);
-  Eigen::Vector2d c_Lm_delta_ail(0.0570, 0.0);
-  Eigen::Vector2d c_Lm_delta_flp(0.001, 0.0);
-
-  //Eigen::Vector2d c_Mm_alpha(-2.9393, -0.1173);
-  Eigen::Vector2d c_Mm_alpha(-2.9690, 0.0435);
-  //Eigen::Vector2d c_Mm_q(-0.317, -0.1173);
-  Eigen::Vector2d c_Mm_q(-106.1541, -0.1173);
-  //Eigen::Vector2d c_Mm_delta_elv(-0.0167, -0.1173);
-  Eigen::Vector2d c_Mm_delta_elv(-6.1308, -0.1173);
-
-  //Eigen::Vector2d c_Nm_beta(-0.0719, 0.0);
-  Eigen::Vector2d c_Nm_beta(0.0430, 0.0);
-  //Eigen::Vector2d c_Nm_r(-0.0058, 0.0);
-  Eigen::Vector2d c_Nm_r(-0.0827, 0.0);
-  //Eigen::Vector2d c_Nm_delta_rud(8.4016e-4, 0.0);
-  Eigen::Vector2d c_Nm_delta_rud(0.06, 0.0);
+  double D = q_bar_S * (aero_params_.c_D_alpha.dot(Eigen::Vector3d(1.0, alpha, alpha * alpha)) +
+                        aero_params_.c_D_beta.dot(Eigen::Vector3d(0.0, beta, beta * beta)) +
+                        aero_params_.c_D_delta_ail.dot(Eigen::Vector3d(0.0, delta_ail_sum, delta_ail_sum * delta_ail_sum)) +
+                        aero_params_.c_D_delta_flp.dot(Eigen::Vector3d(0.0, delta_flp_sum, delta_flp_sum * delta_flp_sum)));
+  double Y = q_bar_S * (aero_params_.c_Y_beta.dot(Eigen::Vector2d(0.0, beta)));
+  double L = q_bar_S * (aero_params_.c_L_alpha.dot(Eigen::Vector4d(1.0, alpha, alpha * alpha, alpha * alpha * alpha)) +
+                        aero_params_.c_L_delta_ail.dot(Eigen::Vector2d(0.0, delta_ail_sum)) +
+                        aero_params_.c_L_delta_flp.dot(Eigen::Vector2d(0.0, delta_flp_sum)));
 
   double p_hat = (V < 0.1) ? 0.0 : p * wingspan_ / (2.0 * V);
   double q_hat = (V < 0.1) ? 0.0 : q * chord_length_ / (2.0 * V);
   double r_hat = (V < 0.1) ? 0.0 : r * wingspan_ / (2.0 * V);
 
-  double Lm = q_bar_S * wingspan_ * (c_Lm_beta.dot(Eigen::Vector2d(beta, 0.0)) +
-                                     c_Lm_p.dot(Eigen::Vector2d(p_hat, 0.0)) +
-                                     c_Lm_r.dot(Eigen::Vector2d(r_hat, 0.0)) +
-                                     c_Lm_delta_ail.dot(Eigen::Vector2d(delta_ail_diff, 0.0)) +
-                                     c_Lm_delta_flp.dot(Eigen::Vector2d(delta_flp_diff, 0.0)));
-  double Mm = q_bar_S * chord_length_ * (c_Mm_alpha.dot(Eigen::Vector2d(alpha, 1.0)) +
-                                         c_Mm_q.dot(Eigen::Vector2d(q_hat, 0.0)) +
-                                         c_Mm_delta_elv.dot(Eigen::Vector2d(delta_elv, 0.0)));
-  double Nm = q_bar_S * wingspan_ * (c_Nm_beta.dot(Eigen::Vector2d(beta, 0.0)) +
-                                     c_Nm_r.dot(Eigen::Vector2d(r_hat, 0.0)) +
-                                     c_Nm_delta_rud.dot(Eigen::Vector2d(delta_rdr, 0.0)));
+  double Lm = q_bar_S * wingspan_ * (aero_params_.c_Lm_beta.dot(Eigen::Vector2d(0.0, beta)) +
+                                     aero_params_.c_Lm_p.dot(Eigen::Vector2d(0.0, p_hat)) +
+                                     aero_params_.c_Lm_r.dot(Eigen::Vector2d(0.0, r_hat)) +
+                                     aero_params_.c_Lm_delta_ail.dot(Eigen::Vector2d(0.0, delta_ail_diff)) +
+                                     aero_params_.c_Lm_delta_flp.dot(Eigen::Vector2d(0.0, delta_flp_diff)));
+  double Mm = q_bar_S * chord_length_ * (aero_params_.c_Mm_alpha.dot(Eigen::Vector2d(1.0, alpha)) +
+                                         aero_params_.c_Mm_q.dot(Eigen::Vector2d(0.0, q_hat)) +
+                                         aero_params_.c_Mm_delta_elv.dot(Eigen::Vector2d(0.0, delta_elv)));
+  double Nm = q_bar_S * wingspan_ * (aero_params_.c_Nm_beta.dot(Eigen::Vector2d(0.0, beta)) +
+                                     aero_params_.c_Nm_r.dot(Eigen::Vector2d(0.0, r_hat)) +
+                                     aero_params_.c_Nm_delta_rud.dot(Eigen::Vector2d(0.0, delta_rdr)));
 
-  double T = aero_params_.cT0 + aero_params_.cT1 * throttle + aero_params_.cT2 * throttle * throttle;
+  double T = aero_params_.c_T.dot(Eigen::Vector3d(1.0, throttle_, throttle_ * throttle_));
   double Tx = cos(epsilon_thrust) * T;
   double Tz = sin(epsilon_thrust) * T;
 
@@ -408,6 +357,35 @@ void GazeboAerodynamicsPlugin::CommandCallback(const mav_msgs::ActuatorsConstPtr
   throttle_ = command_msg->normalized.at(5);
 }
 
+void GazeboAerodynamicsPlugin::RollPitchYawrateThrustCallback(
+    const mav_msgs::RollPitchYawrateThrustConstPtr& roll_pitch_yawrate_thrust_reference_msg) {
+  double roll = roll_pitch_yawrate_thrust_reference_msg->roll;
+  double pitch = roll_pitch_yawrate_thrust_reference_msg->pitch;
+  double yaw_rate = roll_pitch_yawrate_thrust_reference_msg->yaw_rate;
+
+  // Process the right aileron command
+  aileron_right_info_.deflection = (aileron_right_info_.d_max + aileron_right_info_.d_min) * 0.5 +
+          (aileron_right_info_.d_max - aileron_right_info_.d_min) * 0.5 * roll;
+
+  // Process the left aileron command
+  aileron_left_info_.deflection = (aileron_left_info_.d_max + aileron_left_info_.d_min) * 0.5 +
+          (aileron_left_info_.d_max - aileron_left_info_.d_min) * 0.5 * roll;
+
+  // Process the elevator command
+  elevator_info_.deflection = (elevator_info_.d_max + elevator_info_.d_min) * 0.5 +
+          (elevator_info_.d_max - elevator_info_.d_min) * 0.5 * pitch;
+
+  // Process the flap command
+  flap_info_.deflection = 0.0;
+
+  // Process the rudder command
+  rudder_info_.deflection = (rudder_info_.d_max + rudder_info_.d_min) * 0.5 +
+          (rudder_info_.d_max - rudder_info_.d_min) * 0.5 * yaw_rate;
+
+  // Process the throttle command
+  throttle_ = roll_pitch_yawrate_thrust_reference_msg->thrust.x;
+}
+
 bool GazeboAerodynamicsPlugin::RegisterControlSurfaceCallback(
         rotors_comm::RegisterControlSurface::Request& req,
         rotors_comm::RegisterControlSurface::Response& res) {
@@ -445,45 +423,6 @@ bool GazeboAerodynamicsPlugin::RegisterControlSurfaceCallback(
   }
 
   res.success = true;
-  return true;
-}
-
-bool GazeboAerodynamicsPlugin::ResetModelCallback(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res) {
-  model_->SetWorldPose(start_pose_);
-
-  math::Vector3 lin_vel = model_->GetWorldLinearVel();
-  lin_vel.x = 0.0;
-  lin_vel.y = 0.0;
-  lin_vel.z = 0.0;
-  model_->SetLinearVel(lin_vel);
-
-  math::Vector3 ang_vel = model_->GetWorldAngularVel();
-  ang_vel.x = 0.0;
-  ang_vel.y = 0.0;
-  ang_vel.z = 0.0;
-  model_->SetAngularVel(ang_vel);
-
-  aileron_right_info_.deflection = 0.0;
-  aileron_left_info_.deflection = 0.0;
-  for (int i = 0; i < ailerons_.size(); i++) {
-    ailerons_.at(i)->SetPosition(0, 0.0);
-  }
-
-  elevator_info_.deflection = 0.0;
-  for (int i = 0; i < elevators_.size(); i++) {
-    elevators_.at(i)->SetPosition(0, 0.0);
-  }
-
-  flap_info_.deflection = 0.0;
-  for (int i = 0; i < flaps_.size(); i++) {
-    flaps_.at(i)->SetPosition(0, 0.0);
-  }
-
-  rudder_info_.deflection = 0.0;
-  rudder_->SetPosition(0, 0.0);
-
-  throttle_ = 0.0;
-
   return true;
 }
 

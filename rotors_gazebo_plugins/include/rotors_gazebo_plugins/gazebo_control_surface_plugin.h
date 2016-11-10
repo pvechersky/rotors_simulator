@@ -21,8 +21,8 @@
 #include <gazebo/common/Plugin.hh>
 #include <gazebo/physics/physics.hh>
 #include <ros/ros.h>
-#include <rotors_comm/RegisterControlSurface.h>
 
+#include "rotors_comm/RegisterControlSurface.h"
 #include "rotors_gazebo_plugins/common.h"
 
 namespace gazebo {
