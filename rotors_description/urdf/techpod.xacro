@@ -20,6 +20,7 @@
   <xacro:property name="namespace" value="$(arg namespace)" />
   <xacro:property name="rotor_velocity_slowdown_sim" value="10" />
   <xacro:property name="use_mesh" value="true" />
+  <xacro:property name="joy_input" value="$(arg joy_input)" />
 
   <!-- Constants -->
   <xacro:property name="PI" value="3.1415926535897931" />
@@ -119,7 +120,8 @@
     height="${body_height}"
     color="${body_color}"
     use_mesh_file="${use_mesh}"
-    mesh_file="package://rotors_description/meshes/techpod/techpod_body.dae">
+    mesh_file="package://rotors_description/meshes/techpod/techpod_body.dae"
+    joy_input="${joy_input}">
     <origin xyz="0 0 0" rpy="0 0 0" />
     <xacro:insert_block name="body_inertia" />
   </xacro:fixed_wing_base_macro>

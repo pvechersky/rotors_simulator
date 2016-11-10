@@ -15,6 +15,7 @@
   <arg name="enable_ground_truth" default="true"/>
   <arg name="log_file" default="$(arg uav_name)"/>
   <arg name="wait_to_record_bag" default="false"/>
+  <arg name="joy_input" default="false"/>
 
   <!-- send the robot XML to param server -->
   <param name="robot_description" command="
@@ -24,7 +25,8 @@
     log_file:=$(arg log_file)
     wait_to_record_bag:=$(arg wait_to_record_bag)
     uav_name:=$(arg uav_name)
-    namespace:=$(arg namespace)"
+    namespace:=$(arg namespace)
+    joy_input:=$(arg joy_input)"
   />
   <param name="tf_prefix" type="string" value="$(arg tf_prefix)" />
 
