@@ -153,35 +153,35 @@ Connect a USB joystick to your computer and launch the simulator with a fixed-wi
 $ roslaunch rotors_gazebo fixed_wing_with_joy.launch uav_name:=techpod world_name:=yosemite
 ```
 
-Depending on the type of the joystick and the personal preference for operation, you can assign the axis number using the "axis_<roll/pitch/thrust>_" parameter and the axis direction using the "axis_direction_<roll/pitch/thrust>" parameter.
+Depending on the type of the joystick and the personal preference for operation, you can assign the axis number using the `axis_<roll/pitch/thrust>_` parameter and the axis direction using the `axis_direction_<roll/pitch/thrust>` parameter.
 
 #### Hardware-in-the-loop usage (with PX4)
 
-1. To run the hardware-in-the-loop (HIL) simulation you have to get MAVROS as an additional dependency from link below. Follow the installation instructions provided there and build all of its packages prior to building the rest of your workspace.
+ 1. To run the hardware-in-the-loop (HIL) simulation you have to get MAVROS as an additional dependency from link below. Follow the installation instructions provided there and build all of its packages prior to building the rest of your workspace.
+ 
+ ```
+ https://github.com/mavlink/mavros
+ ```
+ 
+ 2. Launch the simulator with a fixed-wing model and the HIL interface node.
+ 
+ ```
+ $ roslaunch rotors_gazebo fixed_wing_hil.launch
+ ```
+ 
+ 3. Connect the PX4 autopilot to your computer and launch an instance of MAVROS to relay messages to/from the hardware.
+ 
+ ```
+ $ roslaunch mavros px4.launch fcu_url:=<PX4_address>:921600
+ ```
 
-```
-https://github.com/mavlink/mavros
-```
-
-2. Launch the simulator with a fixed-wing model and the HIL interface node.
-
-```
-$ roslaunch rotors_gazebo fixed_wing_hil.launch
-```
-
-3. Connect the PX4 autopilot to your computer and launch an instance of MAVROS to relay messages to/from the hardware.
-
-```
-$ roslaunch mavros px4.launch fcu_url:=<PX4_address>:921600
-```
-
-Where 'PX4_address' is the device port on which the PX4 is connected (for example, '/dev/ttyUSB1') and the baud rate of 921600 is used for HIL communication. If the MAVROS node is operating properly, the RotorS GUI should receive a heartbeat message from the PX4 and some functionality should become enabled.
-
-4. Click the 'Enable HIL' button in the GUI.
-
-5. Once the 'HIL' mode has switched from OFF to ON, restart the PX4 by clicking the 'Reboot Autopilot' button in the GUI. Wait until the PX4 reboots and comes back online.
-
-6. Click the 'Arm' button in the GUI to arm the motors.
-
-7. At this point, the aircraft will move in accordance with the HIL_CONTROLS messages coming from the autopilot. It can be operated in a manual mode via a remote control communicating directly with the PX4.
+ Where 'PX4_address' is the device port on which the PX4 is connected (for example, '/dev/ttyUSB1') and the baud rate of 921600 is used for HIL communication. If the MAVROS node is operating properly, the RotorS GUI should receive a heartbeat message from the PX4 and some functionality should become enabled.
+ 
+ 4. Click the 'Enable HIL' button in the GUI.
+ 
+ 5. Once the 'HIL' mode has switched from OFF to ON, restart the PX4 by clicking the 'Reboot Autopilot' button in the GUI. Wait until the PX4 reboots and comes back online.
+ 
+ 6. Click the 'Arm' button in the GUI to arm the motors.
+ 
+ 7. At this point, the aircraft will move in accordance with the HIL_CONTROLS messages coming from the autopilot. It can be operated in a manual mode via a remote control communicating directly with the PX4.
 
