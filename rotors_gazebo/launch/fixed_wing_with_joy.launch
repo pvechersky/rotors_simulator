@@ -25,7 +25,7 @@
       <arg name="enable_ground_truth" value="$(arg enable_ground_truth)" />
       <arg name="log_file" value="$(arg log_file)" />
       <arg name="wait_to_record_bag" value="true" />
-      <arg name="joy_input" value="false" />
+      <arg name="joy_input" value="true" />
       <arg name="x" value="-100" />
       <arg name="y" value="0" />
       <arg name="z" value="0.1" />
@@ -35,7 +35,7 @@
 
     <node name="rotors_joy_interface" pkg="rotors_joy_interface" type="rotors_joy_interface" output="screen">
       <param name="is_fixed_wing" value="true" />
-      <param name="axis_thrust_" value="3" />
+      <param name="axis_thrust_" value="2" />
       <param name="max_roll" value="1.0" />
       <param name="max_pitch" value="1.0" />
       <param name="max_yaw_rate" value="1.0" />
