@@ -164,7 +164,7 @@ Fixed-wing Aircraft Usage
 Connect a USB joystick to your computer and launch the simulator with a fixed-wing model, in our case, the Techpod model in the Yosemite world, which are the default parameters.
 
 ```
-$ roslaunch rotors_gazebo fixed_wing_with_joy.launch uav_name:=techpod world_name:=yosemite
+roslaunch rotors_gazebo fixed_wing_with_joy.launch uav_name:=techpod world_name:=yosemite
 ```
 
 Depending on the type of the joystick and the personal preference for operation, you can assign the axis number using the `axis_<roll/pitch/thrust>_` parameter and the axis direction using the `axis_direction_<roll/pitch/thrust>` parameter.
@@ -180,13 +180,13 @@ Depending on the type of the joystick and the personal preference for operation,
  2. Launch the simulator with a fixed-wing model and the HIL interface node.
  
  ```
- $ roslaunch rotors_gazebo fixed_wing_hil.launch
+ roslaunch rotors_gazebo fixed_wing_hil.launch
  ```
  
- 3. Connect the PX4 autopilot to your computer and launch an instance of MAVROS to relay messages to/from the hardware.
+ 3. Connect the PX4 autopilot to your computer (first SERIAL, then TELEM 1) and launch an instance of MAVROS to relay messages to/from the hardware.
  
  ```
- $ roslaunch mavros px4.launch fcu_url:=<PX4_address>:921600
+ roslaunch mavros px4.launch fcu_url:=<PX4_address>:921600
  ```
 
  Where 'PX4_address' is the device port on which the PX4 is connected (for example, '/dev/ttyUSB1') and the baud rate of 921600 is used for HIL communication. If the MAVROS node is operating properly, the RotorS GUI should receive a heartbeat message from the PX4 and some functionality should become enabled.
