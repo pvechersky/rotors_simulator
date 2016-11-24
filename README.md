@@ -68,33 +68,32 @@ Installation Instructions
     https://github.com/mavlink/mavros
     ```
  
-4. ROS Indigo hosts the 2.x version of Gazebo. This simulation works using at least the 5.x version of Gazebo (more recent versions are less stable). The OSRF repository provides -gazebo5- versions of ROS/Indigo gazebo wrappers (gazebo5_ros_pkgs) which are built on top of the gazebo5 package. To use Gazebo 5.x with ROS Indigo:
-    ```
-    sudo sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable `lsb_release -cs` main" > /etc/apt/sources.list.d/gazebo-stable.list'
-    wget http://packages.osrfoundation.org/gazebo.key -O - | sudo apt-key add -
-    sudo apt-get update
-    sudo apt-get install ros-indigo-gazebo5-ros-pkgs
-    ```
+ 4. ROS Indigo hosts the 2.x version of Gazebo. This simulation works using at least the 5.x version of Gazebo (more recent versions are less stable). The OSRF repository provides -gazebo5- versions of ROS/Indigo gazebo wrappers (gazebo5_ros_pkgs) which are built on top of the gazebo5 package. To use Gazebo 5.x with ROS Indigo:
+ ```
+ sudo sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable `lsb_release -cs` main" > /etc/apt/sources.list.d/gazebo-stable.list'
+ wget http://packages.osrfoundation.org/gazebo.key -O - | sudo apt-key add -
+ sudo apt-get update
+ sudo apt-get install ros-indigo-gazebo5-ros-pkgs
+ ```
 
  5. Build your workspace with `python_catkin_tools` (therefore you need `python_catkin_tools`)
 
-   ```
-   cd ~/catkin_ws/
-   catkin init  # If you haven't done this before.
-   catkin build
-   ```
-
-   Alternatively, you can use:
-   ```
-   catkin_make
-   ```
+ ```
+ cd ~/catkin_ws/
+ catkin init  # If you haven't done this before.
+ catkin build
+ ```
+ Alternatively, you can use:
+ ```
+ catkin_make
+ ```
 
  6. Add sourcing to your `.bashrc` file
 
-   ```
-   $ echo "source ~/catkin_ws/devel/setup.bash" >> ~/.bashrc
-   $ source ~/.bashrc
-   ```
+ ```
+ $ echo "source ~/catkin_ws/devel/setup.bash" >> ~/.bashrc
+ $ source ~/.bashrc
+ ```
 
 Basic Usage
 -----------
