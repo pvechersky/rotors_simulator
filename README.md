@@ -63,10 +63,10 @@ Installation Instructions
     ```
     wstool set --git local_repo_name git@github.com:organization/repo_name.git
     ```
-  > **Note** if you want to build and use the `gazebo_mavlink_interface` plugin you have to get MAVROS as an additional dependency from link below. Follow the installation instructions provided there and build all of its packages prior to building the rest of your workspace. 
-    ```
-    https://github.com/mavlink/mavros
-    ```
+ **Note**: if you want to build and use the `gazebo_mavlink_interface` plugin (which you will have to do for HIL simulation with a Pixhawk) you have to get MAVROS as an additional dependency from link below. Follow the installation instructions provided there and build all of its packages prior to building the rest of your workspace. 
+ ```
+ https://github.com/mavlink/mavros
+ ```
  
  4. ROS Indigo hosts the 2.x version of Gazebo. This simulation works using at least the 5.x version of Gazebo (more recent versions are less stable). The OSRF repository provides -gazebo5- versions of ROS/Indigo gazebo wrappers (gazebo5_ros_pkgs) which are built on top of the gazebo5 package. To use Gazebo 5.x with ROS Indigo:
  ```
