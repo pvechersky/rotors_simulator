@@ -35,29 +35,29 @@ Installation Instructions
  1. Install and initialize ROS indigo desktop full, additional ROS packages, catkin-tools, and wstool:
 
  ```
- $ sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu `lsb_release -sc` main" > /etc/apt/sources.list.d/ros-latest.list'
- $ wget http://packages.ros.org/ros.key -O - | sudo apt-key add -
- $ sudo apt-get update
- $ sudo apt-get install ros-indigo-desktop-full ros-indigo-joy ros-indigo-octomap-ros python-wstool python-catkin-tools
- $ sudo rosdep init
- $ rosdep update
- $ source /opt/ros/indigo/setup.bash
+ sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu `lsb_release -sc` main" > /etc/apt/sources.list.d/ros-latest.list'
+ wget http://packages.ros.org/ros.key -O - | sudo apt-key add -
+ sudo apt-get update
+ sudo apt-get install ros-indigo-desktop-full ros-indigo-joy ros-indigo-octomap-ros python-wstool python-catkin-tools
+ sudo rosdep init
+ rosdep update
+ source /opt/ros/indigo/setup.bash
  ```
  2. If you don't have ROS workspace yet you can do so by
 
  ```
- $ mkdir -p ~/catkin_ws/src
- $ cd ~/catkin_ws/src
- $ catkin_init_workspace  # initialize your catkin workspace
- $ wstool init
+ mkdir -p ~/catkin_ws/src
+ cd ~/catkin_ws/src
+ catkin_init_workspace  # initialize your catkin workspace
+ wstool init
  ```
  > **Note** for setups with multiple workspaces please refer to the official documentation at http://docs.ros.org/independent/api/rosinstall/html/ by replacing `rosws` by `wstool`.
  3. Get the simulator and additional dependencies
 
  ```
- $ cd ~/catkin_ws/src
- $ git clone git@github.com:ethz-asl/rotors_simulator.git
- $ git clone git@github.com:ethz-asl/mav_comm.git
+ cd ~/catkin_ws/src
+ git clone git@github.com:ethz-asl/rotors_simulator.git
+ git clone git@github.com:ethz-asl/mav_comm.git
  ```
   > **Note** if you want to use `wstool` you can replace the above commands with
     ```
@@ -67,15 +67,29 @@ Installation Instructions
     ```
     https://github.com/mavlink/mavros
     ```
- 4. Build your workspace with `python_catkin_tools` (therefore you need `python_catkin_tools`)
+ 
+4. ROS Indigo hosts the 2.x version of Gazebo. This simulation works using at least the 5.x version of Gazebo (more recent versions are less stable). The OSRF repository provides -gazebo5- versions of ROS/Indigo gazebo wrappers (gazebo5_ros_pkgs) which are built on top of the gazebo5 package. To use Gazebo 5.x with ROS Indigo:
+    ```
+    sudo sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable `lsb_release -cs` main" > /etc/apt/sources.list.d/gazebo-stable.list'
+    wget http://packages.osrfoundation.org/gazebo.key -O - | sudo apt-key add -
+    sudo apt-get update
+    sudo apt-get install ros-indigo-gazebo5-ros-pkgs
+    ```
+
+ 5. Build your workspace with `python_catkin_tools` (therefore you need `python_catkin_tools`)
 
    ```
-   $ cd ~/catkin_ws/
-   $ catkin init  # If you haven't done this before.
-   $ catkin build
+   cd ~/catkin_ws/
+   catkin init  # If you haven't done this before.
+   catkin build
    ```
 
- 5. Add sourcing to your `.bashrc` file
+   Alternatively, you can use:
+   ```
+   catkin_make
+   ```
+
+ 6. Add sourcing to your `.bashrc` file
 
    ```
    $ echo "source ~/catkin_ws/devel/setup.bash" >> ~/.bashrc
