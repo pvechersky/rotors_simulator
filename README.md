@@ -186,10 +186,10 @@ Depending on the type of the joystick and the personal preference for operation,
  3. Connect the PX4 autopilot to your computer (first SERIAL, then TELEM 1) and launch an instance of MAVROS to relay messages to/from the hardware.
  
  ```
- roslaunch mavros px4.launch fcu_url:=<PX4_address>:921600
+ roslaunch mavros px4.launch fcu_url:=<PX4_address>:921600 gcs_url:=udp://127.0.0.1:14555@127.0.0.1:14560
  ```
 
- Where 'PX4_address' is the device port on which the PX4 is connected (for example, '/dev/ttyUSB1') and the baud rate of 921600 is used for HIL communication. If the MAVROS node is operating properly, the RotorS GUI should receive a heartbeat message from the PX4 and some functionality should become enabled.
+ Where 'PX4_address' is the device port on which the PX4 is connected (for example, '/dev/ttyUSB1') and the baud rate of 921600 is used for HIL communication. If the MAVROS node is operating properly, the RotorS GUI should receive a heartbeat message from the PX4 and some functionality should become enabled. The gcs_url sets up a UDP bridge to enable the telemetry data to be used both by mavros and a ground control station - e.g., QGC (14555 is the target host, and 14560 the listening port).
  
  4. Click the 'Enable HIL' button in the GUI.
  
