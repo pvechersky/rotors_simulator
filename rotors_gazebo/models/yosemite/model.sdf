@@ -1,5 +1,6 @@
 <?xml version="1.0" ?>
 <sdf version="1.4">
+
   <model name="yosemite">
     <static>true</static>
     <link name="link">
@@ -14,12 +15,13 @@
         <surface>
           <friction>
             <ode>
-              <mu>0.2</mu>
-              <mu2>0.2</mu2>
+              <mu>2</mu>
+              <mu2>2</mu2>
             </ode>
           </friction>
         </surface>
       </collision>
+
       <visual name="visual">
         <geometry>
           <heightmap>
@@ -28,13 +30,13 @@
               <normal>file://media/materials/textures/flat_normal.png</normal>
               <size>50</size>
             </texture>
-	    <texture>
-	      <diffuse>file://media/materials/textures/terrain_detail.jpg</diffuse>
+	          <texture>
+	            <diffuse>file://media/materials/textures/terrain_detail.jpg</diffuse>
               <normal>file://media/materials/textures/flat_normal.png</normal>
               <size>75</size>
             </texture>
             <texture>
-	      <diffuse>file://vrc_heightmap_1/materials/textures/texture_forest.png</diffuse>
+	            <diffuse>file://vrc_heightmap_1/materials/textures/texture_forest.png</diffuse>
               <normal>file://media/materials/textures/flat_normal.png</normal>
               <size>100</size>
             </texture>
@@ -43,23 +45,20 @@
               <normal>file://media/materials/textures/flat_normal.png</normal>
               <size>50</size>
             </texture>
+          <!-- This blend determines the height for rocky texture. -->
             <blend>
               <min_height>20</min_height>
               <fade_dist>10</fade_dist>
-	      <!--<min_height>20</min_height>
-              <fade_dist>10</fade_dist>-->
             </blend>
-	    <blend>
+          <!-- This blend determines the height for foresty texture. -->
+            <blend>
               <min_height>60</min_height>
               <fade_dist>10</fade_dist>
-	      <!--<min_height>90</min_height>
-              <fade_dist>10</fade_dist>-->
             </blend>
-	    <blend>
+          <!-- This blend determines the height for mountaineous texture. -->
+            <blend>
               <min_height>90</min_height>
               <fade_dist>10</fade_dist>
-              <!--<min_height>150</min_height>
-              <fade_dist>10</fade_dist>-->
             </blend>
             <uri>model://yosemite/materials/textures/yosemite.png</uri>
             <size>1000 1000 125</size>
@@ -67,6 +66,7 @@
           </heightmap>
         </geometry>
       </visual>
+
     </link>
   </model>
 </sdf>

@@ -39,7 +39,7 @@
          -z $(arg z)
          -R $(arg R)
          -P $(arg P)
-         -Y $(arg Y) 
+         -Y $(arg Y)
          -model $(arg namespace)"
    respawn="false" output="screen">
   </node>

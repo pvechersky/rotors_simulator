@@ -1,6 +1,7 @@
 <?xml version="1.0" ?>
 <sdf version="1.4">
   <world name="yosemite">
+
     <gui>
       <camera name="user_camera">
         <pose>-104.660200 -1.942800 2.053900 0.000000 0.443643 0.352194</pose>
@@ -8,6 +9,7 @@
       <plugin name="view_selection" filename="librotors_gazebo_view_control_plugin.so"/>
       <!--<plugin name="map_tracker" filename="librotors_gazebo_map_tracker_plugin.so"/>-->
     </gui>
+
     <scene>
       <ambient>0.2 0.2 0.2 1.0</ambient>
       <grid>false</grid>
@@ -17,6 +19,7 @@
         </clouds>
       </sky>
     </scene>
+
     <physics type='ode'>
       <ode>
         <solver>
@@ -34,9 +37,11 @@
       <max_step_size>0.01</max_step_size>
       <real_time_factor>1</real_time_factor>
       <real_time_update_rate>100</real_time_update_rate>
-      <gravity>0 0 -9.8</gravity>
+      <gravity>0 0 -9.806</gravity>
     </physics>
-    <!-- Light Source -->
+
+
+  <!-- Light Source -->
     <light type="directional" name="sun">
       <cast_shadows>false</cast_shadows>
       <pose>0 0 300 0 0 0</pose>
@@ -50,9 +55,17 @@
       </attenuation>
       <direction>0.2 0.2 -0.9</direction>
     </light>
+
+
+
+  <!-- This is the actual world -->
     <include>
       <uri>model://yosemite</uri>
     </include>
+    <!-- Fetches the sdf model present in models/yosemite -->
+
+
+  <!-- This is just the horizontal grass plane for takeoff -->
     <model name="grass_takeoff_plane">
       <static>true</static>
       <link name='link'>
@@ -176,5 +189,8 @@
       </visual>
       </link>
     </model>
+  <!-- Horizontal grass plane ends here -->
+
+
   </world>
 </sdf>
