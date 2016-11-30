@@ -9,7 +9,7 @@
   <env name="GAZEBO_RESOURCE_PATH" value="${GAZEBO_RESOURCE_PATH}:$(find rotors_gazebo)/models"/>
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
     <arg name="world_name" value="$(find rotors_gazebo)/worlds/$(arg world_name).world"/>
-    <arg name="paused" value="false" />
+    <arg name="paused" value="true" />
     <arg name="gui" value="true" />
     <arg name="use_sim_time" value="false" />
     <arg name="verbose" value="false" />
@@ -25,9 +25,10 @@
       <arg name="enable_logging" value="$(arg enable_logging)" />
       <arg name="enable_ground_truth" value="$(arg enable_ground_truth)" />
       <arg name="log_file" value="$(arg log_file)" />
-      <arg name="x" value="-100" />
-      <arg name="y" value="0" />
-      <arg name="z" value="0" />
+      <arg name="x" value="1.5" />
+      <arg name="y" value="448" />
+      <arg name="z" value="20.1" />
+      <arg name="Y" value="-1.5708" />
     </include>
 
     <!--<node name="rotors_gui" pkg="rqt_rotors" type="rqt_rotors" clear_params="true" output="screen" />-->
