@@ -88,10 +88,10 @@ Installation Instructions
  ```
  catkin_make
  ```
-  > **Note**: don't forget to switch to the branch you wish (for example feature/fixed_wing_sim) before building, using:
-      ```
-      git checkout feature/fixed_wing_sim
-      ```
+ > **Note**: don't forget to switch to the branch you wish (for example feature/fixed_wing_sim) before building, using
+   ```
+   git checkout feature/fixed_wing_sim
+   ```
 
  6. Add sourcing to your `.bashrc` file
 
