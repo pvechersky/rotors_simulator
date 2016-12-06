@@ -10,7 +10,7 @@
             <!--<uri>model://uetliberg/materials/textures/uetliberg_small.png</uri>-->
             <uri>model://uetliberg/materials/textures/uetliberg_big.png</uri>
             <size>1000 1000 125</size>
-            <pos>0 0 0</pos>
+            <pos>0 0 -20</pos>
           </heightmap>
         </geometry>
         <surface>
@@ -69,7 +69,7 @@
             <!--<uri>model://uetliberg/materials/textures/uetliberg_small.png</uri>-->
             <uri>model://uetliberg/materials/textures/uetliberg_big.png</uri>
             <size>1000 1000 125</size>
-            <pos>0 0 0</pos>
+            <pos>0 0 -20</pos>
           </heightmap>
         </geometry>
       </visual>
