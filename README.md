@@ -64,11 +64,11 @@ Installation Instructions
     wstool set --git local_repo_name git@github.com:organization/repo_name.git
     ```
 
- **Note**: if you want to build and use the `gazebo_mavlink_interface` plugin (which you will have to do for HIL simulation with a Pixhawk) you have to get MAVROS as an additional dependency from link below. Follow the installation instructions provided there and build all of its packages prior to building the rest of your workspace. 
+ **Note**: if you want to build and use the `gazebo_mavlink_interface` plugin (which you will have to do for HIL simulation with a Pixhawk) you have to get MAVROS as an additional dependency from link below. Follow the installation instructions provided there and build all of its packages prior to building the rest of your workspace.
  ```
  https://github.com/mavlink/mavros
  ```
- 
+
  4. ROS Indigo hosts the 2.x version of Gazebo. This simulation works using at least the 5.x version of Gazebo (more recent versions are less stable). The OSRF repository provides -gazebo5- versions of ROS/Indigo gazebo wrappers (gazebo5_ros_pkgs) which are built on top of the gazebo5 package. To use Gazebo 5.x with ROS Indigo:
  ```
  sudo sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable `lsb_release -cs` main" > /etc/apt/sources.list.d/gazebo-stable.list'
@@ -88,12 +88,16 @@ Installation Instructions
  ```
  catkin_make
  ```
+ > **Note**: don't forget to switch to the branch you wish (for example feature/fixed_wing_sim) before building, using
+   ```
+   git checkout feature/fixed_wing_sim
+   ```
 
  6. Add sourcing to your `.bashrc` file
 
  ```
- $ echo "source ~/catkin_ws/devel/setup.bash" >> ~/.bashrc
- $ source ~/.bashrc
+ echo "source ~/catkin_ws/devel/setup.bash" >> ~/.bashrc
+ source ~/.bashrc
  ```
 
 Basic Usage
@@ -102,7 +106,7 @@ Basic Usage
 Launch the simulator with a hex-rotor helicopter model, in our case, the AscTec Firefly in a basic world.
 
 ```
-$ roslaunch rotors_gazebo mav_empty_world.launch mav_name:=firefly world_name:=basic
+roslaunch rotors_gazebo mav_empty_world.launch mav_name:=firefly world_name:=basic
 ```
 
 > **Note** The first run of gazebo might take considerably long, as it will download some models from an online database.
@@ -112,7 +116,7 @@ The simulator starts by default in paused mode. To start it you can either
  - or you can send the following service call.
 
    ```
-   $ rosservice call gazebo/unpause_physics
+   rosservice call gazebo/unpause_physics
    ```
 
 There are some basic launch files where you can load the different multicopters with additional sensors. They can all be found in `~/catkin_ws/src/rotors_simulator/rotors_gazebo/launch`.
@@ -131,7 +135,7 @@ We will here also show how to write a stabilizing controller and how you can con
 We will for now just send some constant motor velocities to the multicopter.
 
 ```
-$ rostopic pub /firefly/command/motor_speed mav_msgs/Actuators '{angular_velocities: [100, 100, 100, 100, 100, 100]}'
+rostopic pub /firefly/command/motor_speed mav_msgs/Actuators '{angular_velocities: [100, 100, 100, 100, 100, 100]}'
 ```
 
 > **Note** The size of the `motor_speed` array should be equal to the number of motors you have in your model of choice (e.g. 6 in the Firefly model).
@@ -145,7 +149,7 @@ You should see (if you unpaused the simulator and you have a multicopter in it),
 You can let the helicopter hover with ground truth odometry (perfect state estimation), by launching:
 
 ```
-$ roslaunch rotors_gazebo mav_hovering_example.launch mav_name:=firefly world_name:=basic
+roslaunch rotors_gazebo mav_hovering_example.launch mav_name:=firefly world_name:=basic
 ```
 
 #### Create an attitude controller
@@ -172,30 +176,29 @@ Depending on the type of the joystick and the personal preference for operation,
 #### Hardware-in-the-loop usage (with PX4)
 
  1. To run the hardware-in-the-loop (HIL) simulation you have to get MAVROS as an additional dependency from link below. Follow the installation instructions provided there and build all of its packages prior to building the rest of your workspace.
- 
+
  ```
  https://github.com/mavlink/mavros
  ```
- 
+
  2. Launch the simulator with a fixed-wing model and the HIL interface node.
- 
+
  ```
  roslaunch rotors_gazebo fixed_wing_hil.launch
  ```
- 
+
  3. Connect the PX4 autopilot to your computer (first SERIAL, then TELEM 1) and launch an instance of MAVROS to relay messages to/from the hardware.
- 
+
  ```
  roslaunch mavros px4.launch fcu_url:=<PX4_address>:921600 gcs_url:=udp://127.0.0.1:14555@127.0.0.1:14560
  ```
 
  Where 'PX4_address' is the device port on which the PX4 is connected (for example, '/dev/ttyUSB1') and the baud rate of 921600 is used for HIL communication. If the MAVROS node is operating properly, the RotorS GUI should receive a heartbeat message from the PX4 and some functionality should become enabled. The gcs_url sets up a UDP bridge to enable the telemetry data to be used both by mavros and a ground control station - e.g., QGC (14555 is the target host, and 14560 the listening port).
- 
- 4. Click the 'Enable HIL' button in the GUI.
- 
- 5. Once the 'HIL' mode has switched from OFF to ON, restart the PX4 by clicking the 'Reboot Autopilot' button in the GUI. Wait until the PX4 reboots and comes back online.
- 
- 6. Click the 'Arm' button in the GUI to arm the motors.
- 
- 7. At this point, the aircraft will move in accordance with the HIL_CONTROLS messages coming from the autopilot. It can be operated in a manual mode via a remote control communicating directly with the PX4.
 
+ 4. Click the 'Enable HIL' button in the GUI.
+
+ 5. Once the 'HIL' mode has switched from OFF to ON, restart the PX4 by clicking the 'Reboot Autopilot' button in the GUI. Wait until the PX4 reboots and comes back online.
+
+ 6. Click the 'Arm' button in the GUI to arm the motors.
+
+ 7. At this point, the aircraft will move in accordance with the HIL_CONTROLS messages coming from the autopilot. It can be operated in a manual mode via a remote control communicating directly with the PX4.
