@@ -1,3 +1,10 @@
+Getting the fixed-wing HIL simulation framework to run
+======================================================
+You'll need to install and configure a few things until the framework is running correctly. Here's a description of the steps on Linux Ubuntu 14.04, running on a Lenovo computer.
+Besides ROS and the RotorS simulator, you will need a ground control station (QGroundControl), as well as the proper hardware (Pixhawk with correct firmware). These instructions assume you are familiar with Git (documentation can be found on https://git-scm.com/doc), or at least have followed the basic setup steps(https://git-scm.com/book/en/v2/Getting-Started-First-Time-Git-Setup).
+
+Let's start with the simulator (sources: pvechersky's feature/fixed_wing_sim branch of the simulator).
+
 RotorS
 ===============
 
@@ -64,9 +71,10 @@ Installation Instructions
     wstool set --git local_repo_name git@github.com:organization/repo_name.git
     ```
 
- **Note**: if you want to build and use the `gazebo_mavlink_interface` plugin (which you will have to do for HIL simulation with a Pixhawk) you have to get MAVROS as an additional dependency from link below. Follow the installation instructions provided there and build all of its packages prior to building the rest of your workspace.
+ **Note**: if you want to build and use the `gazebo_mavlink_interface` plugin (which you will have to do for HIL simulation with a Pixhawk) you have to get MAVROS as an additional dependency from their website (https://github.com/mavlink/mavros). Follow the installation instructions provided there and build all of its packages prior to building the rest of your workspace.
+ You can install MAVROS directly without going to the website by typing the following in a terminal:
  ```
- https://github.com/mavlink/mavros
+ sudo apt-get install ros-indigo-mavros ros-indigo-mavros-extras
  ```
 
  4. ROS Indigo hosts the 2.x version of Gazebo. This simulation works using at least the 5.x version of Gazebo (more recent versions are less stable). The OSRF repository provides -gazebo5- versions of ROS/Indigo gazebo wrappers (gazebo5_ros_pkgs) which are built on top of the gazebo5 package. To use Gazebo 5.x with ROS Indigo:
@@ -77,14 +85,8 @@ Installation Instructions
  sudo apt-get install ros-indigo-gazebo5-ros-pkgs
  ```
 
- 5. Build your workspace with `python_catkin_tools` (therefore you need `python_catkin_tools`)
+ 5. Build your workspace
 
- ```
- cd ~/catkin_ws/
- catkin init  # If you haven't done this before.
- catkin build
- ```
- Alternatively, you can use:
  ```
  catkin_make
  ```
@@ -93,6 +95,14 @@ Installation Instructions
    git checkout feature/fixed_wing_sim
    ```
 
+ Alternatively, with `python_catkin_tools` (therefore you need `python_catkin_tools`):
+ ```
+ cd ~/catkin_ws/
+ catkin init  # If you haven't done this before.
+ catkin build
+ ```
+
+
  6. Add sourcing to your `.bashrc` file
 
  ```
@@ -100,68 +110,18 @@ Installation Instructions
  source ~/.bashrc
  ```
 
-Basic Usage
------------
-
-Launch the simulator with a hex-rotor helicopter model, in our case, the AscTec Firefly in a basic world.
-
-```
-roslaunch rotors_gazebo mav_empty_world.launch mav_name:=firefly world_name:=basic
-```
-
-> **Note** The first run of gazebo might take considerably long, as it will download some models from an online database.
-
-The simulator starts by default in paused mode. To start it you can either
- - use the Gazebo GUI and press the play button
- - or you can send the following service call.
-
-   ```
-   rosservice call gazebo/unpause_physics
-   ```
-
-There are some basic launch files where you can load the different multicopters with additional sensors. They can all be found in `~/catkin_ws/src/rotors_simulator/rotors_gazebo/launch`.
-
-The `world_name` argument looks for a .world file with a corresponding name in `~/catkin_ws/src/rotors_simulator/rotors_gazebo/worlds`. By default, all launch files, with the exception of those that have the world name explicitly included in the file name, use the empty world described in `basic.world`.
-
-### Getting the multicopter to fly
-
-To let the multicopter fly you need to generate thrust with the rotors, this is achieved by sending commands to the multicopter, which make the rotors spin.
-There are currently a few ways to send commands to the multicopter, we will show one of them here.
-The rest is documented [here](../../wiki) in our Wiki.
-We will here also show how to write a stabilizing controller and how you can control the multicopter with a joystick.
-
-#### Send direct motor commands
-
-We will for now just send some constant motor velocities to the multicopter.
-
-```
-rostopic pub /firefly/command/motor_speed mav_msgs/Actuators '{angular_velocities: [100, 100, 100, 100, 100, 100]}'
-```
-
-> **Note** The size of the `motor_speed` array should be equal to the number of motors you have in your model of choice (e.g. 6 in the Firefly model).
-
-You should see (if you unpaused the simulator and you have a multicopter in it), that the rotors start spinning. The thrust generated by these motor velocities is not enough though to let the multicopter take off.
-> You can play with the numbers and will realize that the Firefly will take off with motor speeds of about 545 on each rotor. The multicopter is unstable though, since there is no controller running, if you just set the motor speeds.
-
-
-#### Let the helicopter hover with ground truth odometry
-
-You can let the helicopter hover with ground truth odometry (perfect state estimation), by launching:
-
-```
-roslaunch rotors_gazebo mav_hovering_example.launch mav_name:=firefly world_name:=basic
-```
-
-#### Create an attitude controller
-
-**TODO(ff):** `Write something here.`
-
-#### Usage with a joystick
-
-**TODO(ff):** `Write something here.`
+ 7. Keyboard and joystick usage should already be working (good way to check whether everything has been installed properly). Install QGroundControl and set up your Pixhawk properly before using the HIL simulation.
 
 Fixed-wing Aircraft Usage
 -------------------------
+
+#### Usage with a keyboard
+Launch the simulator with a fixed-wing model, in our case, the Techpod model in the Uetliberg world:
+
+```
+roslaunch rotors_gazebo fixed_wing_with_keyboard_teleop.launch uav_name:=techpod world_name:=uetliberg
+```
+Unpause the physics (play button at the bottom of the gazebo window), and click on the terminal again. You can now pilot using w,a,d and the keyboard arrows.
 
 #### Usage with a joystick
 
@@ -175,11 +135,7 @@ Depending on the type of the joystick and the personal preference for operation,
 
 #### Hardware-in-the-loop usage (with PX4)
 
- 1. To run the hardware-in-the-loop (HIL) simulation you have to get MAVROS as an additional dependency from link below. Follow the installation instructions provided there and build all of its packages prior to building the rest of your workspace.
-
- ```
- https://github.com/mavlink/mavros
- ```
+ 1. To run the hardware-in-the-loop (HIL) simulation you have to have gotten MAVROS as an additional dependency (step 3 of the installation instructions).
 
  2. Launch the simulator with a fixed-wing model and the HIL interface node.
 
@@ -202,3 +158,78 @@ Depending on the type of the joystick and the personal preference for operation,
  6. Click the 'Arm' button in the GUI to arm the motors.
 
  7. At this point, the aircraft will move in accordance with the HIL_CONTROLS messages coming from the autopilot. It can be operated in a manual mode via a remote control communicating directly with the PX4.
+
+  > **Note** If for some reason the commands are not passed on to the simulation, try loading, setting and writing the correct parameters for the aircraft using QGC.
+
+QGroundControl
+==============
+
+Install QGroundControl to be able to monitor parameters while running the simulation.
+
+Installation Instructions
+-------------------------
+
+ 1. You will first need the source code of the ASL version of the program:
+
+ ```
+ git clone https://github.com/ethz-asl/fw_qgc.git
+ git submodule init
+ git submodule update
+ ```
+
+ 2. Then, install Qt 5.5.1 to build the source code. Download the unified installer from https://www.qt.io/download-open-source/, make it executable using
+ ```
+ chmod +x qt-unified-linux-x64-2.0.3-1-online.run
+ ```
+
+ Double-click on it and follow the installation instructions. Make sure to select the correct version (5.5). Additionally, you will need the SDL1.2 library, which can be downloaded with:
+
+ ```
+ sudo apt-get install libsdl1.2-dev
+ ```
+
+ 3. With QT Creator, open the project qgroundcontrol.pro located in fw_qgc, and make sure to select QT 5.5.1 GCC 64bit before clicking 'Configure project'. Before building and running, switch to 'Release' mode (and not 'Debug').
+ Once it is finished, a new folder should have appeared, named 'build-qgroundcontrol-Desktop_Qt_5_5_1_GCC_64bit-Release' or something similar. In the 'release' subfolder, double-click qgroundcontrol to open it. You can lock it to the launcher for more convenience in the future (if no icon present, you can set it manually by updating the path to it in ~/.local/share/applications/qgroundcontrol.desktop).
+
+  > **Note** If something does not work, try reinstalling Qt but this time running the installer with root privileges. To do so, after having made the installed executable, execute it with
+    ```
+    sudo ./qt-unified-linux-x64-2.0.3-1-online.run
+    ```
+
+Configuration
+-------------
+  1. When opening QGC for the first time, go to File->Settings->MAVLink and uncheck 'Only accept MAVs with the same protocol version'.
+
+  2. Set up the necessary communication link. Go to File->Manage Communication Links, and click 'Add'. We are going to connect to the telemetry data used by MAVROS using its built-in UDP bridge as explained in the RotorS Fixed-wing Aircraft Usage section, point 3 of the HIL usage subsection. Name the link 'PX4 UDP', and set its type to 'UDP'. Listening Host is 14560, and Target Host is 127.0.0.1:14555.
+
+  3. If you are connected to the Pixhawk (when the simulation and mavros are running), you can set the onboard parameters by going to the 'Analyze' menu and loading the correct .params file, clicking 'Set' and the 'Write'. This will save the parameter values into the Pixhawk.
+
+Pixhawk
+=======
+The Developer's guide for the PX4 can be found at dev.io.px4. It provides a lot of information concerning the possible uses of the autopilot.
+
+Setup process
+-------------
+
+ 1. Write needed booting files onto the SD card: 'etc' folder containing 'rc.txt' as well as a 'telem_config' subfolder with 'telem0.txt' and 'telem1.txt' files; 'dataman' file; and 'params' file. Various log files and folders will appear when using the Pixhawk later on. They can be used for debugging.
+
+ 2. Get the correct version of the firmware from the ASL GitHub:
+ ```
+ git clone https://github.com/ethz-asl/fw_px4.git
+ git submodule init
+ git submodule update
+ ```
+
+ 2. Flash the correct version of the firmware onto the Pixhawk. First, prepare the toolchain installation following the steps given on the DevGuide (Pixhawk is a NuttX based hardware):
+ ```
+ http://dev.px4.io/starting-installing-linux.html
+ ```
+ > **Note** Installing Ninja is not a bad idea.
+
+ The actual flashing process is similar to that described in
+ ```
+ http://dev.px4.io/starting-building.html
+ ```
+ The difference is that we are using our own firmware, not the standard PX4 Firmware. The relevant directory is therefore 'fw_px4' instead of 'Firmware', and the firmware version is 'px4fmu-v2_asl'.
+
+  > **Note** If 'make' does not yield the expected results (i.e., if 'make px4fmu-v2_asl' does not produce a successful run) and errors arise (ENOTSUP in my case), you might need to install GCC 4.9 manually as indicated in the toolchain installation, restart your computer and try flashing again.
