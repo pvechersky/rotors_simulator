@@ -1,12 +1,12 @@
 Getting the fixed-wing HIL simulation framework to run
 ======================================================
 You'll need to install and configure a few things until the framework is running correctly. Here's a description of the steps on Linux Ubuntu 14.04, running on a Lenovo computer.
-Besides ROS and the RotorS simulator, you will need a ground control station (QGroundControl), as well as the proper hardware (Pixhawk with correct firmware). These instructions assume you are familiar with Git (documentation can be found on https://git-scm.com/doc), or at least have followed the basic setup steps(https://git-scm.com/book/en/v2/Getting-Started-First-Time-Git-Setup).
+Besides ROS and the RotorS simulator, you will need a ground control station (QGroundControl), as well as the proper hardware (Pixhawk with correct firmware). These instructions assume you are familiar with Git (documentation can be found on https://git-scm.com/doc).
 
-Let's start with the simulator (sources: pvechersky's feature/fixed_wing_sim branch of the simulator).
+
 
 RotorS
-===============
+=======
 
 RotorS is a MAV gazebo simulator.
 It provides some multirotor models such as the [AscTec Hummingbird](http://www.asctec.de/en/uav-uas-drone-products/asctec-hummingbird/), the [AscTec Pelican](http://www.asctec.de/en/uav-uas-drone-products/asctec-pelican/), or the [AscTec Firefly](http://www.asctec.de/en/uav-uas-drone-products/asctec-firefly/), but the simulator is not limited for the use with these multicopters.
@@ -143,21 +143,23 @@ Depending on the type of the joystick and the personal preference for operation,
  roslaunch rotors_gazebo fixed_wing_hil.launch
  ```
 
- 3. Connect the PX4 autopilot to your computer (first SERIAL, then TELEM 1) and launch an instance of MAVROS to relay messages to/from the hardware.
+ 3. Connect the PX4 autopilot to your computer (first SERIAL, then TELEM 1, as described in point 4 of the Pixhawk setup process) and launch an instance of MAVROS to relay messages to/from the hardware.
 
  ```
- roslaunch mavros px4.launch fcu_url:=<PX4_address>:921600 gcs_url:=udp://127.0.0.1:14555@127.0.0.1:14560
+ roslaunch mavros px4.launch fcu_url:=<PX4_telem_address>:921600 gcs_url:=udp://127.0.0.1:14555@127.0.0.1:14560
  ```
 
- Where 'PX4_address' is the device port on which the PX4 is connected (for example, '/dev/ttyUSB1') and the baud rate of 921600 is used for HIL communication. If the MAVROS node is operating properly, the RotorS GUI should receive a heartbeat message from the PX4 and some functionality should become enabled. The gcs_url sets up a UDP bridge to enable the telemetry data to be used both by mavros and a ground control station - e.g., QGC (14555 is the target host, and 14560 the listening port).
+ Where 'PX4_telem_address' is the device port on which the PX4 is connected (for example, '/dev/ttyUSB1') and the baud rate of 921600 is used for HIL communication. If the MAVROS node is operating properly, the RotorS GUI should receive a heartbeat message from the PX4 and some functionality should become enabled. The gcs_url sets up a UDP bridge to enable the telemetry data to be used both by mavros and a ground control station - e.g., QGC (14555 is the target host, and 14560 the listening port).
 
- 4. Click the 'Enable HIL' button in the GUI.
+ 4. If wished, open QGC and connect to PX4 via UDP link.
 
- 5. Once the 'HIL' mode has switched from OFF to ON, restart the PX4 by clicking the 'Reboot Autopilot' button in the GUI. Wait until the PX4 reboots and comes back online.
+ 5. Click the 'Enable HIL' button in the GUI.
 
- 6. Click the 'Arm' button in the GUI to arm the motors.
+ 6. Once the 'HIL' mode has switched from OFF to ON, restart the PX4 by clicking the 'Reboot Autopilot' button in the GUI to restart the state estimator in HIL mode. Wait until the PX4 reboots and comes back online.
 
- 7. At this point, the aircraft will move in accordance with the HIL_CONTROLS messages coming from the autopilot. It can be operated in a manual mode via a remote control communicating directly with the PX4.
+ 7. Click the 'Arm' button in the GUI to arm the motors.
+
+ 8. At this point, the aircraft will move in accordance with the HIL_CONTROLS messages coming from the autopilot. It can be operated in a manual mode via a remote control communicating directly with the PX4.
 
   > **Note** If for some reason the commands are not passed on to the simulation, try loading, setting and writing the correct parameters for the aircraft using QGC.
 
@@ -208,19 +210,20 @@ Pixhawk
 =======
 The Developer's guide for the PX4 can be found at dev.io.px4. It provides a lot of information concerning the possible uses of the autopilot.
 
+
 Setup process
 -------------
 
- 1. Write needed booting files onto the SD card: 'etc' folder containing 'rc.txt' as well as a 'telem_config' subfolder with 'telem0.txt' and 'telem1.txt' files; 'dataman' file; and 'params' file. Various log files and folders will appear when using the Pixhawk later on. They can be used for debugging.
+  1. Write needed booting files onto the SD card: 'etc' folder containing 'rc.txt' as well as a 'telem_config' subfolder with 'telem0.txt' and 'telem1.txt' files; 'dataman' file; and 'params' file. Various log files and folders will appear when using the Pixhawk later on. They can be used for debugging.
 
- 2. Get the correct version of the firmware from the ASL GitHub:
+  2. Get the correct version of the firmware from the ASL GitHub:
  ```
  git clone https://github.com/ethz-asl/fw_px4.git
  git submodule init
  git submodule update
  ```
 
- 2. Flash the correct version of the firmware onto the Pixhawk. First, prepare the toolchain installation following the steps given on the DevGuide (Pixhawk is a NuttX based hardware):
+  3. Flash the correct version of the firmware onto the Pixhawk. First, prepare the toolchain installation following the steps given on the DevGuide (Pixhawk is a NuttX based hardware):
  ```
  http://dev.px4.io/starting-installing-linux.html
  ```
@@ -233,3 +236,13 @@ Setup process
  The difference is that we are using our own firmware, not the standard PX4 Firmware. The relevant directory is therefore 'fw_px4' instead of 'Firmware', and the firmware version is 'px4fmu-v2_asl'.
 
   > **Note** If 'make' does not yield the expected results (i.e., if 'make px4fmu-v2_asl' does not produce a successful run) and errors arise (ENOTSUP in my case), you might need to install GCC 4.9 manually as indicated in the toolchain installation, restart your computer and try flashing again.
+
+  4. Connect the Pixhawk. The program 'screen' allows one to view the Pixhawk console (NuttShell) in the terminal, and to see the boot process, etc. It is very useful to monitor what happens with the Pixhawk. To install it, type the following in a terminal:
+  ```
+  sudo apt-get install screen
+  ```
+  If you are powering the Pixhawk by USB, first plug the SERIAL cable into your computer, open the link to the console in a terminal by typing
+  ```
+  screen <PX4_serial_address> 57600 8N1
+  ```
+  Where 'PX4_serial_address' is the device port on which the serial cable of the device is connected (for example, /dev/ttyUSB0) and the baud rate of 57600 is used. Then plug in the microUSB. You should see the booting process on the console. Then plug in TELEM1, and your Pixhawk is ready to use.
