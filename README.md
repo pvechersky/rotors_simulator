@@ -204,7 +204,7 @@ Configuration
 
   2. Set up the necessary communication link. Go to File->Manage Communication Links, and click 'Add'. We are going to connect to the telemetry data used by MAVROS using its built-in UDP bridge as explained in the RotorS Fixed-wing Aircraft Usage section, point 3 of the HIL usage subsection. Name the link 'PX4 UDP', and set its type to 'UDP'. Listening Host is 14560, and Target Host is 127.0.0.1:14555.
 
-  3. If you are connected to the Pixhawk (when the simulation and mavros are running), you can set the onboard parameters by going to the 'Analyze' menu and loading the correct .params file, clicking 'Set' and the 'Write'. This will save the parameter values into the Pixhawk.
+  3. If you are connected to the Pixhawk (when the simulation and mavros are running), you can set the onboard parameters by going to the 'Analyze' menu and loading the correct .params file, clicking 'Set' and then 'Write (ROM)'. This will save the parameter values into the Pixhawk.
 
 Pixhawk
 =======
