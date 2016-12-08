@@ -103,6 +103,14 @@ Installation Instructions
 
  7. Keyboard and joystick usage should already be working (good way to check whether everything has been installed properly). Install QGroundControl and set up your Pixhawk properly before using the HIL simulation.
 
+ 8.
+  > **Note** If you shall ever need to reinstall everything again, make sure to uninstall gazebo 5 first (as a new ROS installation will not be compatible with gazebo 5), and to reinstall SDF libraries :
+  ```
+  sudo apt-get remove gazebo*
+  sudo apt-get install libsdformat1
+  ```
+  You can then follow the installation instructions from the beginning again.
+
 Fixed-wing Aircraft Usage
 -------------------------
 
@@ -126,7 +134,7 @@ Depending on the type of the joystick and the personal preference for operation,
 
 #### Hardware-in-the-loop usage (with PX4)
 
- 1. To run the hardware-in-the-loop (HIL) simulation you have to have gotten MAVROS as an additional dependency (step 3 of the installation instructions).
+ 1. To run the hardware-in-the-loop (HIL) simulation you have to have gotten MAVROS as an additional dependency (step 3 of the installation instructions), configured your Pixhawk autopilot and installed QGroundControl.
 
  2. Launch the simulator with a fixed-wing model and the HIL interface node.
 
