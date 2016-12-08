@@ -1,15 +1,16 @@
 <?xml version="1.0" ?>
 <sdf version="1.4">
 
-  <model name="yosemite">
+  <model name="uetliberg">
     <static>true</static>
     <link name="link">
       <collision name="collision">
         <geometry>
           <heightmap>
-            <uri>model://yosemite/materials/textures/yosemite.png</uri>
+            <!--<uri>model://uetliberg/materials/textures/uetliberg_small.png</uri>-->
+            <uri>model://uetliberg/materials/textures/uetliberg_big.png</uri>
             <size>1000 1000 125</size>
-            <pos>0 0 -15</pos>
+            <pos>0 0 -20</pos>
           </heightmap>
         </geometry>
         <surface>
@@ -25,44 +26,50 @@
       <visual name="visual">
         <geometry>
           <heightmap>
-            <texture>
+            <!--<texture>
               <diffuse>file://media/materials/textures/dirt_diffusespecular.png</diffuse>
+              <normal>file://media/materials/textures/flat_normal.png</normal>
+              <size>50</size>
+            </texture>-->
+            <texture>
+	            <diffuse>file://uetliberg/materials/textures/texture_water.png</diffuse>
               <normal>file://media/materials/textures/flat_normal.png</normal>
               <size>50</size>
             </texture>
 	          <texture>
-	            <diffuse>file://media/materials/textures/terrain_detail.jpg</diffuse>
+	            <diffuse>file://uetliberg/materials/textures/texture_rock.png</diffuse>
               <normal>file://media/materials/textures/flat_normal.png</normal>
               <size>75</size>
             </texture>
             <texture>
-	            <diffuse>file://vrc_heightmap_1/materials/textures/texture_forest.png</diffuse>
+	            <diffuse>file://uetliberg/materials/textures/texture_forest.png</diffuse>
               <normal>file://media/materials/textures/flat_normal.png</normal>
               <size>100</size>
             </texture>
             <texture>
-              <diffuse>file://vrc_heightmap_1/materials/textures/texture_mountains.png</diffuse>
+              <diffuse>file://uetliberg/materials/textures/texture_mountains.png</diffuse>
               <normal>file://media/materials/textures/flat_normal.png</normal>
               <size>50</size>
             </texture>
           <!-- This blend determines the height for rocky texture. -->
             <blend>
-              <min_height>20</min_height>
-              <fade_dist>10</fade_dist>
+              <min_height>15</min_height>
+              <fade_dist>5</fade_dist>
             </blend>
           <!-- This blend determines the height for foresty texture. -->
             <blend>
-              <min_height>60</min_height>
+              <min_height>40</min_height>
               <fade_dist>10</fade_dist>
             </blend>
           <!-- This blend determines the height for mountaineous texture. -->
             <blend>
-              <min_height>90</min_height>
+              <min_height>95</min_height>
               <fade_dist>10</fade_dist>
             </blend>
-            <uri>model://yosemite/materials/textures/yosemite.png</uri>
+            <!--<uri>model://uetliberg/materials/textures/uetliberg_small.png</uri>-->
+            <uri>model://uetliberg/materials/textures/uetliberg_big.png</uri>
             <size>1000 1000 125</size>
-            <pos>0 0 -15</pos>
+            <pos>0 0 -20</pos>
           </heightmap>
         </geometry>
       </visual>
