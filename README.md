@@ -103,7 +103,7 @@ Installation Instructions
 
  7. Keyboard and joystick usage should already be working (good way to check whether everything has been installed properly). Install QGroundControl and set up your Pixhawk properly before using the HIL simulation.
 
- 8.
+ 8. 
   > **Note** If you shall ever need to reinstall everything again, make sure to uninstall gazebo 5 first (as a new ROS installation will not be compatible with gazebo 5), and to reinstall SDF libraries :
   ```
   sudo apt-get remove gazebo*
