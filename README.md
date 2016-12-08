@@ -71,11 +71,7 @@ Installation Instructions
     wstool set --git local_repo_name git@github.com:organization/repo_name.git
     ```
 
- **Note**: if you want to build and use the `gazebo_mavlink_interface` plugin (which you will have to do for HIL simulation with a Pixhawk) you have to get MAVROS as an additional dependency from their website (https://github.com/mavlink/mavros). Follow the installation instructions provided there and build all of its packages prior to building the rest of your workspace.
- You can install MAVROS directly without going to the website by typing the following in a terminal:
- ```
- sudo apt-get install ros-indigo-mavros ros-indigo-mavros-extras
- ```
+ **Note**: if you want to build and use the `gazebo_mavlink_interface` plugin (which you will have to do for HIL simulation with a Pixhawk) you have to get MAVROS as an additional dependency from their website (https://github.com/mavlink/mavros). Follow the installation instructions provided there and build all of its packages with 'catkin build' prior to building the rest of your workspace. Make sure to install it from source, and to get the latest source during installation (binary/prior version may have bugs).
 
  4. ROS Indigo hosts the 2.x version of Gazebo. This simulation works using at least the 5.x version of Gazebo (more recent versions are less stable). The OSRF repository provides -gazebo5- versions of ROS/Indigo gazebo wrappers (gazebo5_ros_pkgs) which are built on top of the gazebo5 package. To use Gazebo 5.x with ROS Indigo:
  ```
@@ -85,23 +81,18 @@ Installation Instructions
  sudo apt-get install ros-indigo-gazebo5-ros-pkgs
  ```
 
- 5. Build your workspace
-
- ```
- catkin_make
- ```
- > **Note**: don't forget to switch to the branch you wish (for example feature/fixed_wing_sim) before building, using
-   ```
-   git checkout feature/fixed_wing_sim
-   ```
-
- Alternatively, with `python_catkin_tools` (therefore you need `python_catkin_tools`):
+ 5. Build your workspace with `python_catkin_tools` (therefore you need `python_catkin_tools`):
  ```
  cd ~/catkin_ws/
  catkin init  # If you haven't done this before.
  catkin build
  ```
 
+
+ > **Note**: don't forget to switch to the branch you wish (for example feature/fixed_wing_sim) before building, using
+   ```
+   git checkout feature/fixed_wing_sim
+   ```
 
  6. Add sourcing to your `.bashrc` file
 
