@@ -89,7 +89,7 @@ Installation Instructions
  ```
 
 
- > **Note**: don't forget to switch to the branch you wish (for example feature/fixed_wing_sim) before building, using
+ > **Note**: don't forget to switch the rotors_simulator package to the branch you wish (for example feature/fixed_wing_sim) before building, using
    ```
    git checkout feature/fixed_wing_sim
    ```
@@ -103,7 +103,7 @@ Installation Instructions
 
  7. Keyboard and joystick usage should already be working (good way to check whether everything has been installed properly). Install QGroundControl and set up your Pixhawk properly before using the HIL simulation.
 
- 8. 
+ 8.
   > **Note** If you shall ever need to reinstall everything again, make sure to uninstall gazebo 5 first (as a new ROS installation will not be compatible with gazebo 5), and to reinstall SDF libraries :
   ```
   sudo apt-get remove gazebo*
@@ -118,7 +118,7 @@ Fixed-wing Aircraft Usage
 Launch the simulator with a fixed-wing model, in our case, the Techpod model in the Uetliberg world:
 
 ```
-roslaunch rotors_gazebo fixed_wing_with_keyboard_teleop.launch uav_name:=techpod world_name:=uetliberg
+roslaunch rotors_gazebo fixed_wing_keyboard_teleop.launch uav_name:=techpod world_name:=uetliberg
 ```
 Unpause the physics (play button at the bottom of the gazebo window), and click on the terminal again. You can now pilot using w,a,d and the keyboard arrows.
 
