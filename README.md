@@ -91,6 +91,7 @@ Installation Instructions
 
  > **Note**: don't forget to switch the rotors_simulator package to the branch you wish (for example feature/fixed_wing_sim) before building, using
    ```
+   cd ~/catkin_ws/src/rotors_simulator
    git checkout feature/fixed_wing_sim
    ```
 
