@@ -26,9 +26,17 @@
       <arg name="log_file" value="$(arg log_file)" />
       <arg name="wait_to_record_bag" value="true" />
       <arg name="joy_input" value="true" />
-      <arg name="x" value="-100" />
-      <arg name="y" value="0" />
+      <!-- For uetliberg -->
+      <arg name="x" value="1890" />
+      <arg name="y" value="1933" />
+      <!-- For zueri --> <!--
+      <arg name="x" value="23.085" />
+      <arg name="y" value="6894.7" /> -->
+      <!-- For zuerifalse --> <!--
+      <arg name="x" value="1.5" />
+      <arg name="y" value="448" /> -->
       <arg name="z" value="0.1" />
+      <arg name="Y" value="-1.5707" />
     </include>
 
     <node name="joy_node" pkg="joy" type="joy_node" />
