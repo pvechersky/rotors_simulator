@@ -7,10 +7,9 @@
       <collision name="collision">
         <geometry>
           <heightmap>
-            <!--<uri>model://uetliberg/materials/textures/uetliberg_small.png</uri>-->
-            <uri>model://uetliberg/materials/textures/uetliberg_big.png</uri>
-            <size>1000 1000 125</size>
-            <pos>0 0 -20</pos>
+            <uri>model://uetliberg/materials/textures/uetliberg129.png</uri>
+            <size>3870 3870 420</size>
+            <pos>0 0 -69.5</pos>
           </heightmap>
         </geometry>
         <surface>
@@ -26,50 +25,44 @@
       <visual name="visual">
         <geometry>
           <heightmap>
-            <!--<texture>
-              <diffuse>file://media/materials/textures/dirt_diffusespecular.png</diffuse>
-              <normal>file://media/materials/textures/flat_normal.png</normal>
-              <size>50</size>
-            </texture>-->
             <texture>
 	            <diffuse>file://uetliberg/materials/textures/texture_water.png</diffuse>
               <normal>file://media/materials/textures/flat_normal.png</normal>
-              <size>50</size>
+              <size>200</size>
             </texture>
 	          <texture>
 	            <diffuse>file://uetliberg/materials/textures/texture_rock.png</diffuse>
               <normal>file://media/materials/textures/flat_normal.png</normal>
-              <size>75</size>
+              <size>300</size>
             </texture>
             <texture>
 	            <diffuse>file://uetliberg/materials/textures/texture_forest.png</diffuse>
               <normal>file://media/materials/textures/flat_normal.png</normal>
-              <size>100</size>
+              <size>400</size>
             </texture>
             <texture>
               <diffuse>file://uetliberg/materials/textures/texture_mountains.png</diffuse>
               <normal>file://media/materials/textures/flat_normal.png</normal>
-              <size>50</size>
+              <size>200</size>
             </texture>
           <!-- This blend determines the height for rocky texture. -->
             <blend>
-              <min_height>15</min_height>
-              <fade_dist>5</fade_dist>
+              <min_height>45</min_height>
+              <fade_dist>15</fade_dist>
             </blend>
           <!-- This blend determines the height for foresty texture. -->
             <blend>
-              <min_height>40</min_height>
-              <fade_dist>10</fade_dist>
+              <min_height>120</min_height>
+              <fade_dist>30</fade_dist>
             </blend>
           <!-- This blend determines the height for mountaineous texture. -->
             <blend>
-              <min_height>95</min_height>
-              <fade_dist>10</fade_dist>
+              <min_height>285</min_height>
+              <fade_dist>30</fade_dist>
             </blend>
-            <!--<uri>model://uetliberg/materials/textures/uetliberg_small.png</uri>-->
-            <uri>model://uetliberg/materials/textures/uetliberg_big.png</uri>
-            <size>1000 1000 125</size>
-            <pos>0 0 -20</pos>
+            <uri>model://uetliberg/materials/textures/uetliberg129.png</uri>
+            <size>3870 3870 420</size>
+            <pos>0 0 -69.5</pos>
           </heightmap>
         </geometry>
       </visual>

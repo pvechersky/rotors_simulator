@@ -4,7 +4,7 @@
 
     <gui>
       <camera name="user_camera">
-        <pose>1.500000 452.000000 2.000000 0.000000 0.243643 -1.570800</pose>
+        <pose>1890 1937 2.000000 0.000000 0.243643 -1.570800</pose>
       </camera>
       <plugin name="view_selection" filename="librotors_gazebo_view_control_plugin.so"/>
       <!--<plugin name="map_tracker" filename="librotors_gazebo_map_tracker_plugin.so"/>-->
@@ -64,15 +64,16 @@
     </include>
     <!-- Fetches the sdf model present in models/uetliberg -->
 
-  <!-- This is a grass plane for takeoff. PROBLEM: plane goes right through! -->
+  <!-- This is a grass plane for takeoff. Note: collision plane spans over whole map...-->
     <model name="grass_takeoff_plane">
       <static>true</static>
       <link name='link'>
       <collision name='collision'>
+        <pose>1890 1885 0 0 0 0</pose>
         <geometry>
           <plane>
             <normal>0 0 1</normal>
-            <size>20 80</size>
+            <size>20 100</size>
           </plane>
         </geometry>
         <surface>
@@ -85,12 +86,12 @@
           </surface>
         </collision>
         <visual name='visual_1'>
-          <pose>0 410 0 0 0 0</pose>
+          <pose>1890 1885 0 0 0 0</pose>
           <cast_shadows>false</cast_shadows>
           <geometry>
             <plane>
               <normal>0 0 1</normal>
-              <size>20 80</size>
+              <size>20 100</size>
             </plane>
           </geometry>
           <material>

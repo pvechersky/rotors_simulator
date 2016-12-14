@@ -71,7 +71,8 @@ Installation Instructions
     wstool set --git local_repo_name git@github.com:organization/repo_name.git
     ```
 
- **Note**: if you want to build and use the `gazebo_mavlink_interface` plugin (which you will have to do for HIL simulation with a Pixhawk) you have to get MAVROS as an additional dependency from their website (https://github.com/mavlink/mavros). Follow the installation instructions provided there and build all of its packages with 'catkin build' prior to building the rest of your workspace. Make sure to install it from source, and to get the latest source during installation (binary/prior version may have bugs).
+ **Note**: if you want to build and use the `gazebo_mavlink_interface` plugin (which you will have to do for HIL simulation with a Pixhawk) you have to get MAVROS as an additional dependency from their website (https://github.com/mavlink/mavros). Follow the installation instructions provided there and build all of its packages with 'catkin build' prior to building the rest of your workspace.
+ Make sure to install it from source, and to get the latest source during installation (binary/prior version may have bugs).
 
  4. ROS Indigo hosts the 2.x version of Gazebo. This simulation works using at least the 5.x version of Gazebo (more recent versions are less stable). The OSRF repository provides -gazebo5- versions of ROS/Indigo gazebo wrappers (gazebo5_ros_pkgs) which are built on top of the gazebo5 package. To use Gazebo 5.x with ROS Indigo:
  ```
@@ -116,12 +117,13 @@ Fixed-wing Aircraft Usage
 -------------------------
 
 #### Usage with a keyboard
-Launch the simulator with a fixed-wing model, in our case, the Techpod model in the Uetliberg world:
+Launch the simulator with a fixed-wing model, in our case, the Techpod model in the Uetliberg world for example:
 
 ```
 roslaunch rotors_gazebo fixed_wing_keyboard_teleop.launch uav_name:=techpod world_name:=uetliberg
 ```
 Unpause the physics (play button at the bottom of the gazebo window), and click on the terminal again. You can now pilot using w,a,d and the keyboard arrows.
+ > **Note** You can also load your own worlds if wished. The aircraft spawn position should be adjusted as needed in the launch file.
 
 #### Usage with a joystick
 
@@ -179,7 +181,7 @@ Installation Instructions
  git submodule update
  ```
 
- 2. Then, install Qt 5.5.1 to build the source code. Download the unified installer from https://www.qt.io/download-open-source/, make it executable using
+ 2. Then, install Qt 5.5.1 to build the source code. Download the unified installer from https://www.qt.io/download-open-source/ and make it executable using :
  ```
  chmod +x qt-unified-linux-x64-2.0.3-1-online.run
  ```
@@ -202,13 +204,13 @@ Configuration
 -------------
   1. When opening QGC for the first time, go to File->Settings->MAVLink and uncheck 'Only accept MAVs with the same protocol version'.
 
-  2. Set up the necessary communication link. Go to File->Manage Communication Links, and click 'Add'. We are going to connect to the telemetry data used by MAVROS using its built-in UDP bridge as explained in the RotorS Fixed-wing Aircraft Usage section, point 3 of the HIL usage subsection. Name the link 'PX4 UDP', and set its type to 'UDP'. Listening Host is 14560, and Target Host is 127.0.0.1:14555.
+  2. Set up the necessary communication link. Go to File->Manage Communication Links, and click 'Add'. We are going to connect to the telemetry data used by MAVROS using its built-in UDP bridge as explained in the RotorS Fixed-wing Aircraft Usage section, point 3 of the HIL usage subsection. Name the link (e.g, 'PX4 UDP'), and set its type to 'UDP'. Listening Host is 14560, and Target Host is 127.0.0.1:14555.
 
   3. If you are connected to the Pixhawk (when the simulation and mavros are running), you can set the onboard parameters by going to the 'Analyze' menu and loading the correct .params file, clicking 'Set' and then 'Write (ROM)'. This will save the parameter values into the Pixhawk.
 
 Pixhawk
 =======
-The Developer's guide for the PX4 can be found at dev.io.px4. It provides a lot of information concerning the possible uses of the autopilot.
+The Developer's guide for the PX4 can be found at dev.px4.io. It provides a lot of information concerning the possible uses of the autopilot.
 
 
 Setup process
