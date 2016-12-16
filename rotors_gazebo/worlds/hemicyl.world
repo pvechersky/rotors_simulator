@@ -6,10 +6,9 @@
       <camera name="user_camera">
         <pose>-1992.00000 -1995.000000 1.500000 0.000000 0.143643 0.8854</pose>
       </camera>
-      <plugin name="view_selection" filename="librotors_gazebo_view_control_plugin.so"/>   <!-- Little camera GUI in Gazebo -->
-      <!--<plugin name="map_tracker" filename="librotors_gazebo_map_tracker_plugin.so"/>-->
+      <!-- Little camera GUI in Gazebo -->
+      <plugin name="view_selection" filename="librotors_gazebo_view_control_plugin.so"/>
     </gui>
-
 
     <physics type='ode'>
       <ode>
