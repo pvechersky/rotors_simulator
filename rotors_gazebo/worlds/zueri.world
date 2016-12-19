@@ -1,10 +1,10 @@
 <?xml version="1.0" ?>
 <sdf version="1.4">
-  <world name="uetliberg">
+  <world name="zueri">
 
     <gui>
       <camera name="user_camera">
-        <pose>1890 1937 2.000000 0.000000 0.243643 -1.570800</pose>
+        <pose>-200 7695 2.000000 0.000000 0.243643 -1.570800</pose>
       </camera>
       <plugin name="view_selection" filename="librotors_gazebo_view_control_plugin.so"/>
       <!--<plugin name="map_tracker" filename="librotors_gazebo_map_tracker_plugin.so"/>-->
@@ -60,9 +60,9 @@
 
   <!-- This is the actual world -->
     <include>
-      <uri>model://uetliberg</uri>
+      <uri>model://zueri</uri>
     </include>
-    <!-- Fetches the sdf model present in models/uetliberg -->
+    <!-- Fetches the sdf model present in models/zueri -->
 
 
   <!-- This is a grass plane for takeoff. Note: collision plane spans over whole map...-->
@@ -70,11 +70,11 @@
       <static>true</static>
       <link name='link'>
       <collision name='collision'>
-        <pose>1890 1885 0 0 0 0</pose>
+        <pose>-200 7655 0 0 0 0</pose>
         <geometry>
           <plane>
             <normal>0 0 1</normal>
-            <size>20 100</size>
+            <size>20 80</size>
           </plane>
         </geometry>
         <surface>
@@ -87,12 +87,12 @@
           </surface>
         </collision>
         <visual name='visual_1'>
-          <pose>1890 1885 0 0 0 0</pose>
+          <pose>-200 7655 0 0 0 0</pose>
           <cast_shadows>false</cast_shadows>
           <geometry>
             <plane>
               <normal>0 0 1</normal>
-              <size>20 100</size>
+              <size>20 80</size>
             </plane>
           </geometry>
           <material>

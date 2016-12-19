@@ -1,37 +1,33 @@
 <?xml version="1.0" ?>
 <sdf version="1.4">
-  <world name="uetliberg">
+  <world name="cylinder">
+
+
+
+    <include>
+      <uri>model://cylinder</uri>
+    </include>
 
     <gui>
       <camera name="user_camera">
-        <pose>1890 1937 2.000000 0.000000 0.243643 -1.570800</pose>
+        <pose>-1992.00000 -1995.000000 1.500000 0.000000 0.143643 0.8854</pose>
       </camera>
-      <plugin name="view_selection" filename="librotors_gazebo_view_control_plugin.so"/>
+      <plugin name="view_selection" filename="librotors_gazebo_view_control_plugin.so"/>   <!-- Little camera GUI in Gazebo -->
       <!--<plugin name="map_tracker" filename="librotors_gazebo_map_tracker_plugin.so"/>-->
     </gui>
-
-    <scene>
-      <ambient>0.2 0.2 0.2 1.0</ambient>
-      <grid>false</grid>
-      <sky>
-        <clouds>
-          <speed>4</speed>
-        </clouds>
-      </sky>
-    </scene>
 
     <physics type='ode'>
       <ode>
         <solver>
           <type>quick</type>
-          <iters>250</iters>
+          <iters>1000</iters>
           <sor>1.3</sor>
         </solver>
         <constraints>
           <cfm>0</cfm>
           <erp>0.2</erp>
           <contact_max_correcting_vel>100</contact_max_correcting_vel>
-          <contact_surface_layer>0.01</contact_surface_layer>
+          <contact_surface_layer>0.001</contact_surface_layer>
         </constraints>
       </ode>
       <max_step_size>0.01</max_step_size>
@@ -40,8 +36,18 @@
       <gravity>0 0 -9.8</gravity>
     </physics>
 
+    <scene>
+      <ambient>0.2 0.2 0.2 1.0</ambient>
+      <background>0.2 0.2 0.2 1.0</background>
+      <grid>false</grid>
+      <sky>
+        <clouds>
+          <speed>-4</speed>
+        </clouds>
+      </sky>
+      <shadows>0</shadows>
+    </scene>
 
-  <!-- Light Source -->
     <light type="directional" name="sun">
       <cast_shadows>false</cast_shadows>
       <pose>0 0 300 0 0 0</pose>
@@ -56,43 +62,33 @@
       <direction>0.2 0.2 -0.9</direction>
     </light>
 
-
-
-  <!-- This is the actual world -->
-    <include>
-      <uri>model://uetliberg</uri>
-    </include>
-    <!-- Fetches the sdf model present in models/uetliberg -->
-
-
-  <!-- This is a grass plane for takeoff. Note: collision plane spans over whole map...-->
-    <model name="grass_takeoff_plane">
+    <model name="ground_plane">
       <static>true</static>
-      <link name='link'>
-      <collision name='collision'>
-        <pose>1890 1885 0 0 0 0</pose>
-        <geometry>
-          <plane>
-            <normal>0 0 1</normal>
-            <size>20 100</size>
-          </plane>
-        </geometry>
-        <surface>
+      <link name="link">
+        <collision name="collision">
+          <pose>0 0 0 0 0 0</pose>
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>4000 4000</size>
+            </plane>
+          </geometry>
+          <surface>
             <friction>
               <ode>
                 <mu>0.2</mu>
-                <mu2>.2</mu2>
+                <mu2>0.2</mu2>
               </ode>
             </friction>
           </surface>
         </collision>
         <visual name='visual_1'>
-          <pose>1890 1885 0 0 0 0</pose>
+          <pose>0 0 0 0 0 0</pose>
           <cast_shadows>false</cast_shadows>
           <geometry>
             <plane>
               <normal>0 0 1</normal>
-              <size>20 100</size>
+              <size>4000 4000</size>
             </plane>
           </geometry>
           <material>
@@ -105,5 +101,6 @@
         </visual>
       </link>
     </model>
+
   </world>
 </sdf>
