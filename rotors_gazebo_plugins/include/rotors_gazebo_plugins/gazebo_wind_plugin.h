@@ -48,11 +48,13 @@ static constexpr double kDefaultWindGustForceVariance = 0.0;
 static constexpr double kDefaultWindSpeedMean = 0.0;
 static constexpr double kDefaultWindSpeedVariance = 0.0;
 
-static constexpr double kDefaultWindGustStart = 10.0;
+static constexpr double kDefaultWindGustStart = 0.0;
 static constexpr double kDefaultWindGustDuration = 0.0;
 
 static const math::Vector3 kDefaultWindDirection = math::Vector3(1, 0, 0);
 static const math::Vector3 kDefaultWindGustDirection = math::Vector3(0, 1, 0);
+
+static constexpr bool kDefaultCustomStaticWindField = false;
 
 /// \brief This gazebo plugin simulates wind acting on a model.
 class GazeboWindPlugin : public ModelPlugin {
@@ -73,6 +75,7 @@ class GazeboWindPlugin : public ModelPlugin {
         wind_direction_(kDefaultWindDirection),
         wind_gust_direction_(kDefaultWindGustDirection),
         random_generator_(random_device_()),
+        custom_static_wind_field_(kDefaultCustomStaticWindField),
         frame_id_(kDefaultFrameId),
         link_name_(kDefaultLinkName),
         node_handle_(NULL) {}
@@ -125,6 +128,9 @@ class GazeboWindPlugin : public ModelPlugin {
 
   common::Time wind_gust_end_;
   common::Time wind_gust_start_;
+
+  bool custom_static_wind_field_;
+  std::vector<math::Vector3> wind_field_[2];
 
   ros::Publisher wind_pub_;
   ros::Publisher wind_speed_pub_;
