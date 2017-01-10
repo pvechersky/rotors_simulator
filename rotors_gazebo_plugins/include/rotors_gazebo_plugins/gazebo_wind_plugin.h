@@ -48,7 +48,7 @@ static constexpr double kDefaultWindGustForceVariance = 0.0;
 static constexpr double kDefaultWindSpeedMean = 0.0;
 static constexpr double kDefaultWindSpeedVariance = 0.0;
 
-static constexpr double kDefaultWindGustStart = 10.0;
+static constexpr double kDefaultWindGustStart = 0.0;
 static constexpr double kDefaultWindGustDuration = 0.0;
 
 static const math::Vector3 kDefaultWindDirection = math::Vector3(1, 0, 0);

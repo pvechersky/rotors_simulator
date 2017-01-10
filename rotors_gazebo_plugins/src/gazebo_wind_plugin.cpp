@@ -54,6 +54,7 @@ void GazeboWindPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
   else
     gzerr << "[gazebo_wind_plugin] Please specify a xyzOffset.\n";
 
+  //Elements of function: getSdfParam<type>(sdf element, name of parameter in sdf file, name of parameter in this class, default value)
   getSdfParam<std::string>(_sdf, "windPubTopic", wind_pub_topic_, wind_pub_topic_);
   getSdfParam<std::string>(_sdf, "windSpeedPubTopic", wind_speed_pub_topic_, wind_speed_pub_topic_);
   getSdfParam<std::string>(_sdf, "frameId", frame_id_, frame_id_);
@@ -63,7 +64,11 @@ void GazeboWindPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
   getSdfParam<double>(_sdf, "windForceVariance", wind_force_variance_, wind_force_variance_);
   getSdfParam<math::Vector3>(_sdf, "windDirection", wind_direction_, wind_direction_);
   // Get the wind speed params from SDF
-  getSdfParam<double>(_sdf, "windSpeedMean", wind_speed_mean_, wind_speed_mean_);
+  getSdfParam<double>(_sdf, "windSpeedMean", wind_speed_mean_, wind_speed_mean_); //  bool dummy = getSdfParam<double>(_sdf, "windSpeedMean", wind_speed_mean_, wind_speed_mean_);
+  /*  For debugging:
+  ROS_INFO_STREAM("wind_speed_mean_ is " << wind_speed_mean_);
+  ROS_INFO_STREAM("value of getSdfParam is " << dummy);
+  */
   getSdfParam<double>(_sdf, "windSpeedVariance", wind_speed_variance_, wind_speed_variance_);
   // Get the wind gust params from SDF.
   getSdfParam<double>(_sdf, "windGustStart", wind_gust_start, wind_gust_start);
@@ -128,9 +133,26 @@ void GazeboWindPlugin::OnUpdate(const common::UpdateInfo& _info) {
 
   wind_pub_.publish(wrench_msg);
 
+  ////////-------------------------TO DO NICOLAS--------------------------------
+
+  /* Implement the static wind field here instead of what is below:
+     Step 1: get the current position of the aircraft (link_->getWorldPose().x/y/z ?)
+     Step 2: read the wind velocity from a lookup table. Interpolate.
+     Step 3: set wind_speed_msg.velocity.x/y/z equal to the interpolated values in the table
+
+     Better: subscribe to a topic that publishes the lookup table, save it.
+     This way, wind field can be updated during the simulation (dynamic field).
+     Subscriber implemented outside of this function?
+
+     To do things in a clean way: define the new variables (e.g. meteo_data_sub)
+     in the H-file too, and use local variable names.
+
+  */
+
   // Calculate the wind speed
-  double wind_speed = wind_speed_mean_; // + wind_speed_n_(random_generator_);
+  double wind_speed = wind_speed_mean_ + 0.001; // + wind_speed_n_(random_generator_);
   math::Vector3 wind_velocity = wind_speed * wind_direction_;
+  wind_speed_mean_ = wind_speed;
 
   // Publish the wind speed
   rotors_comm::WindSpeed wind_speed_msg;
