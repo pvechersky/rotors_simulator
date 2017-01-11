@@ -24,6 +24,8 @@
 #include <geometry_msgs/Vector3.h>
 #include <geometry_msgs/WrenchStamped.h>
 
+#include <math.h>
+
 namespace gazebo {
 
 GazeboWindPlugin::~GazeboWindPlugin() {
@@ -90,6 +92,12 @@ void GazeboWindPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
   if (link_ == NULL)
     gzthrow("[gazebo_wind_plugin] Couldn't find specified link \"" << link_name_ << "\".");
 
+  ////////-------------------------TO DO NICOLAS--------------------------------
+
+  // Read the txt file containing the wind field data, save it to an array
+
+
+
 
   // Listen to the update event. This event is broadcast every
   // simulation iteration.
@@ -98,6 +106,11 @@ void GazeboWindPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
   wind_pub_ = node_handle_->advertise<geometry_msgs::WrenchStamped>(wind_pub_topic_, 1);
   wind_speed_pub_ = node_handle_->advertise<rotors_comm::WindSpeed>(wind_speed_pub_topic_, 1);
 }
+
+
+
+
+
 
 // This gets called by the world update start event.
 void GazeboWindPlugin::OnUpdate(const common::UpdateInfo& _info) {
@@ -136,23 +149,94 @@ void GazeboWindPlugin::OnUpdate(const common::UpdateInfo& _info) {
   ////////-------------------------TO DO NICOLAS--------------------------------
 
   /* Implement the static wind field here instead of what is below:
-     Step 1: get the current position of the aircraft (link_->getWorldPose().x/y/z ?)
-     Step 2: read the wind velocity from a lookup table. Interpolate.
-     Step 3: set wind_speed_msg.velocity.x/y/z equal to the interpolated values in the table
+     Step 0: read the text file and save it into a 3D array (done when loading plugin)
+     Step 1: get the current position of the aircraft
+     Step 2: identify the vertices of the cell enclosing the aircraft
+     Step 3: read the wind velocity for these vertices from the array
+     Step 4: Interpolate the wind velocity
+     Step 5: set wind_speed_msg.velocity.x/y/z equal to the interpolated values in the table
 
      Better: subscribe to a topic that publishes the lookup table, save it.
      This way, wind field can be updated during the simulation (dynamic field).
      Subscriber implemented outside of this function?
-
-     To do things in a clean way: define the new variables (e.g. meteo_data_sub)
-     in the H-file too, and use local variable names.
-
+     This exceeds the scope of the thesis.
   */
 
-  // Calculate the wind speed
-  double wind_speed = wind_speed_mean_ + 0.001; // + wind_speed_n_(random_generator_);
-  math::Vector3 wind_velocity = wind_speed * wind_direction_;
-  wind_speed_mean_ = wind_speed;
+  // Set geometrical values (to be tuned according to grayscale image used to generate world)
+  double grayscale_size = 257;
+  double world_size = 4000;
+  double hemicylinder_radius = 13;
+  double world_resolution = world_size/grayscale_size;
+  double world_height = world_resolution*hemicylinder_radius;
+  double hemicylinder_x_position = world_resolution*128;
+
+  // Get the current position of the aircraft in world coordinates
+  math::Vector3 link_position = link_->GetWorldPose().pos;
+
+  //Determine the wind velocity at the aircraft position
+  math::Vector3 wind_velocity = math::Vector3(0, 0, 0);
+
+  if ( fabs(link_position.x)>(world_size/2.0) || fabs(link_position.y)>(world_size/2.0) || link_position.z > (world_height*2.0) || link_position.z < 0 )
+  {
+    wind_velocity = math::Vector3(0,0,0);
+  }
+  else
+  {
+    // Read the 8 points corresponding to the vertices of the volume enclosing the link
+    // and the 5 for interpolation
+    math::Vector3 point_0 = math::Vector3(0,0,0);
+    math::Vector3 point_1 = math::Vector3(0,0,0);
+    math::Vector3 point_2 = math::Vector3(0,0,0);
+    math::Vector3 point_3 = math::Vector3(0,0,0);
+    math::Vector3 point_4 = math::Vector3(0,0,0);
+    math::Vector3 point_5 = math::Vector3(0,0,0);
+    math::Vector3 point_6 = math::Vector3(0,0,0);
+    math::Vector3 point_7 = math::Vector3(0,0,0);
+
+    math::Vector3 point_8 = math::Vector3(0,0,0);
+    math::Vector3 point_9 = math::Vector3(0,0,0);
+    math::Vector3 point_10 = math::Vector3(0,0,0);
+    math::Vector3 point_11 = math::Vector3(0,0,0);
+    math::Vector3 point_12 = math::Vector3(0,0,0);
+    math::Vector3 point_13 = math::Vector3(0,0,0);
+
+    point_0.x = point_3.x = point_4.x = point_7.x = point_8.x = point_11.x = point_12.x = floor(link_position.x/world_resolution)*world_resolution;
+    point_1.x = point_2.x = point_5.x = point_6.x = point_9.x = point_10.x = point_13.x = ceil(link_position.x/world_resolution)*world_resolution;
+    point_0.x = point_1.x = point_2.x = point_3.x = point_8.x = point_9.x = floor(link_position.y/world_resolution)*world_resolution;
+    point_4.x = point_5.x = point_6.x = point_7.x = point_10.x = point_11.x = ceil(link_position.y/world_resolution)*world_resolution;
+    point_12.y = point_13.y = link_position.y;
+    // Determine their z-coordinates! Read through txt file for given x-y pairs,
+    // identify lines with z just below/just above link_position.z
+
+    // Read through txt file to extract velocity components of each of the 8 given vertices
+    math::Vector3 wind_velocity_0 = math::Vector3(0,0,0);
+    math::Vector3 wind_velocity_1 = math::Vector3(0,0,0);
+    math::Vector3 wind_velocity_2 = math::Vector3(0,0,0);
+    math::Vector3 wind_velocity_3 = math::Vector3(0,0,0);
+    math::Vector3 wind_velocity_4 = math::Vector3(0,0,0);
+    math::Vector3 wind_velocity_5 = math::Vector3(0,0,0);
+    math::Vector3 wind_velocity_6 = math::Vector3(0,0,0);
+    math::Vector3 wind_velocity_7 = math::Vector3(0,0,0);
+
+    math::Vector3 wind_velocity_8 = math::Vector3(0,0,0);
+    math::Vector3 wind_velocity_9 = math::Vector3(0,0,0);
+    math::Vector3 wind_velocity_10 = math::Vector3(0,0,0);
+    math::Vector3 wind_velocity_11 = math::Vector3(0,0,0);
+    math::Vector3 wind_velocity_12 = math::Vector3(0,0,0);
+    math::Vector3 wind_velocity_13 = math::Vector3(0,0,0);
+
+    // Interpolate linearly to find the value of the wind velocity at the given position
+
+
+    wind_velocity = wind_speed_mean_*wind_direction_; // = ... (interpolation)
+
+
+
+  }
+
+  /*// Calculate the wind speed
+  double wind_speed = wind_speed_mean_; // + wind_speed_n_(random_generator_);
+  math::Vector3 wind_velocity = wind_speed * wind_direction_;*/
 
   // Publish the wind speed
   rotors_comm::WindSpeed wind_speed_msg;
