@@ -62,14 +62,14 @@ void GazeboAerodynamicsPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _s
   if (link_ == NULL)
     gzthrow("[gazebo_aerodynamics_plugin] Couldn't find specified link \"" << link_name << "\".");
 
-  //std::string wind_speed_sub_topic;
+  std::string wind_speed_sub_topic;
   std::string air_speed_sub_topic;
   std::string command_sub_topic;
   std::string roll_pitch_yawrate_thrust_sub_topic;
   getSdfParam<bool>(_sdf, "joyInput", joy_input_, kDefaultJoyInput);
-  /*getSdfParam<std::string>(_sdf, "windSpeedSubTopic",
+  getSdfParam<std::string>(_sdf, "windSpeedSubTopic",
                            wind_speed_sub_topic,
-                           kDefaultWindSpeedSubTopic);*/
+                           kDefaultWindSpeedSubTopic);
   getSdfParam<std::string>(_sdf, "airSpeedSubTopic",
                            air_speed_sub_topic,
                            kDefaultAirSpeedSubTopic);
@@ -158,7 +158,7 @@ void GazeboAerodynamicsPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _s
       event::Events::ConnectWorldUpdateBegin(
           boost::bind(&GazeboAerodynamicsPlugin::OnUpdate, this, _1));
 
-  //wind_speed_sub_ = node_handle_->subscribe(wind_speed_sub_topic, 1, &GazeboAerodynamicsPlugin::WindSpeedCallback, this);
+  wind_speed_sub_ = node_handle_->subscribe(wind_speed_sub_topic, 1, &GazeboAerodynamicsPlugin::WindSpeedCallback, this);
   air_speed_sub_ = node_handle_->subscribe(air_speed_sub_topic, 1,&GazeboAerodynamicsPlugin::AirSpeedCallback, this);
 
   if (joy_input_) {
@@ -210,20 +210,20 @@ void GazeboAerodynamicsPlugin::OnUpdate(const common::UpdateInfo& _info) {
 
 void GazeboAerodynamicsPlugin::ComputeAerodynamicForcesMoments(math::Vector3& forces, math::Vector3& moments) {
   math::Quaternion orientation = link_->GetWorldPose().rot;
-  //math::Vector3 air_speed_body = orientation.RotateVectorReverse(link_->GetWorldLinearVel() - wind_speed_);
-  air_speed_ = link_->GetWorldLinearVel();
-  math::Vector3 lin_vel_body = orientation.RotateVectorReverse(air_speed_);
+  math::Vector3 air_speed_body = orientation.RotateVectorReverse(link_->GetWorldLinearVel() - wind_speed_);
+  //air_speed_ = link_->GetWorldLinearVel();
+  //math::Vector3 lin_vel_body = orientation.RotateVectorReverse(air_speed_);
   math::Vector3 ang_vel_body = link_->GetRelativeAngularVel();
 
-  double u = lin_vel_body.x;
-  double v = -lin_vel_body.y;
-  double w = -lin_vel_body.z;
+  double u = air_speed_body.x; //No wind: double u = lin_vel_body.x;
+  double v = -air_speed_body.y; //No wind: double v = -lin_vel_body.y;
+  double w = -air_speed_body.z; //No wind: double w = -lin_vel_body.z;
 
   double p = ang_vel_body.x;
   double q = -ang_vel_body.y;
   double r = -ang_vel_body.z;
 
-  double V = lin_vel_body.GetLength();
+  double V = air_speed_body.GetLength(); //No wind: double V = lin_vel_body.GetLength();
   double beta = (V < 0.1) ? 0.0 : asin(v / V);
   double alpha = (V < 0.1) ? 0.0 : atan(w / u);
 
@@ -313,11 +313,11 @@ void GazeboAerodynamicsPlugin::ComputeAerodynamicForcesMoments(math::Vector3& fo
   moments = math::Vector3(momentum_b[0], -momentum_b[1], -momentum_b[2]);
 }
 
-/*void GazeboFixedWingBasePlugin::WindSpeedCallback(const rotors_comm::WindSpeedConstPtr& wind_speed_msg) {
+void GazeboAerodynamicsPlugin::WindSpeedCallback(const rotors_comm::WindSpeedConstPtr& wind_speed_msg) {
   wind_speed_ = math::Vector3(wind_speed_msg->velocity.x,
                               wind_speed_msg->velocity.y,
                               wind_speed_msg->velocity.z);
-}*/
+}
 
 void GazeboAerodynamicsPlugin::AirSpeedCallback(const geometry_msgs::TwistStampedConstPtr air_speed_msg) {
   air_speed_.x = air_speed_msg->twist.linear.x;

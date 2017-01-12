@@ -136,7 +136,7 @@ class GazeboAerodynamicsPlugin : public ModelPlugin {
   std::string namespace_;
 
   ros::NodeHandle* node_handle_;
-  //ros::Subscriber wind_speed_sub_;
+  ros::Subscriber wind_speed_sub_;
   ros::Subscriber air_speed_sub_;
   ros::Subscriber command_sub_;
   ros::Subscriber roll_pitch_yawrate_thrust_sub_;
@@ -181,10 +181,10 @@ class GazeboAerodynamicsPlugin : public ModelPlugin {
 
   bool joy_input_;
 
-  //math::Vector3 wind_speed_;
+  math::Vector3 wind_speed_;
   math::Vector3 air_speed_;
 
-  //void WindSpeedCallback(const rotors_comm::WindSpeedConstPtr& wind_speed_msg);
+  void WindSpeedCallback(const rotors_comm::WindSpeedConstPtr& wind_speed_msg);
   void AirSpeedCallback(const geometry_msgs::TwistStampedConstPtr air_speed_msg);
   void CommandCallback(const mav_msgs::ActuatorsConstPtr& command_msg);
   void RollPitchYawrateThrustCallback(

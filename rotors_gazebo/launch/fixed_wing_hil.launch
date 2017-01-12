@@ -29,9 +29,14 @@
       <arg name="enable_ground_truth" value="$(arg enable_ground_truth)" />
       <arg name="log_file" value="$(arg log_file)" />
       <arg name="wait_to_record_bag" value="true" />
+      <!-- Yosemite
       <arg name="x" value="-100" />
       <arg name="y" value="0" />
-      <arg name="z" value="0.1" />
+      <arg name="z" value="0.15" />-->
+      <!-- Cylinder and Hemicyl-->
+      <arg name="x" value="-1990" />
+      <arg name="y" value="-1990" />
+      <arg name="z" value="0.15" />
     </include>
 
     <node name="hil_interface" pkg="rotors_hil_interface" type="rotors_hil_interface_node" clear_params="true" output="screen">
