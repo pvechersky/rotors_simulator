@@ -25,6 +25,8 @@
 #include <geometry_msgs/WrenchStamped.h>
 
 #include <math.h>
+#include <fstream>
+#include <string>
 
 namespace gazebo {
 
@@ -61,43 +63,80 @@ void GazeboWindPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
   getSdfParam<std::string>(_sdf, "windSpeedPubTopic", wind_speed_pub_topic_, wind_speed_pub_topic_);
   getSdfParam<std::string>(_sdf, "frameId", frame_id_, frame_id_);
   getSdfParam<std::string>(_sdf, "linkName", link_name_, link_name_);
-  // Get the wind params from SDF.
-  getSdfParam<double>(_sdf, "windForceMean", wind_force_mean_, wind_force_mean_);
-  getSdfParam<double>(_sdf, "windForceVariance", wind_force_variance_, wind_force_variance_);
-  getSdfParam<math::Vector3>(_sdf, "windDirection", wind_direction_, wind_direction_);
-  // Get the wind speed params from SDF
-  getSdfParam<double>(_sdf, "windSpeedMean", wind_speed_mean_, wind_speed_mean_); //  bool dummy = getSdfParam<double>(_sdf, "windSpeedMean", wind_speed_mean_, wind_speed_mean_);
-  /*  For debugging:
-  ROS_INFO_STREAM("wind_speed_mean_ is " << wind_speed_mean_);
-  ROS_INFO_STREAM("value of getSdfParam is " << dummy);
-  */
-  getSdfParam<double>(_sdf, "windSpeedVariance", wind_speed_variance_, wind_speed_variance_);
-  // Get the wind gust params from SDF.
-  getSdfParam<double>(_sdf, "windGustStart", wind_gust_start, wind_gust_start);
-  getSdfParam<double>(_sdf, "windGustDuration", wind_gust_duration, wind_gust_duration);
-  getSdfParam<double>(_sdf, "windGustForceMean", wind_gust_force_mean_, wind_gust_force_mean_);
-  getSdfParam<double>(_sdf, "windGustForceVariance", wind_gust_force_variance_, wind_gust_force_variance_);
-  getSdfParam<math::Vector3>(_sdf, "windGustDirection", wind_gust_direction_, wind_gust_direction_);
 
-  wind_direction_.Normalize();
-  wind_gust_direction_.Normalize();
-  wind_gust_start_ = common::Time(wind_gust_start);
-  wind_gust_end_ = common::Time(wind_gust_start + wind_gust_duration);
+  // Should a custom static wind field be used? Parameter to be set in techpod_base.xacro
+  getSdfParam<bool>(_sdf, "customStaticWindField", custom_static_wind_field_, custom_static_wind_field_);
 
-  wind_force_n_ = NormalDistribution(0, sqrt(wind_force_variance_));
-  wind_gust_force_n_ = NormalDistribution(0, sqrt(wind_gust_force_variance_));
-  wind_speed_n_ = NormalDistribution(0, sqrt(wind_speed_variance_));
+  if (!custom_static_wind_field_)
+  {
+    // Get the wind params from SDF.
+    getSdfParam<double>(_sdf, "windForceMean", wind_force_mean_, wind_force_mean_);
+    getSdfParam<double>(_sdf, "windForceVariance", wind_force_variance_, wind_force_variance_);
+    getSdfParam<math::Vector3>(_sdf, "windDirection", wind_direction_, wind_direction_);
+    // Get the wind speed params from SDF
+    getSdfParam<double>(_sdf, "windSpeedMean", wind_speed_mean_, wind_speed_mean_);
+    getSdfParam<double>(_sdf, "windSpeedVariance", wind_speed_variance_, wind_speed_variance_);
+    // Get the wind gust params from SDF.
+    getSdfParam<double>(_sdf, "windGustStart", wind_gust_start, wind_gust_start);
+    getSdfParam<double>(_sdf, "windGustDuration", wind_gust_duration, wind_gust_duration);
+    getSdfParam<double>(_sdf, "windGustForceMean", wind_gust_force_mean_, wind_gust_force_mean_);
+    getSdfParam<double>(_sdf, "windGustForceVariance", wind_gust_force_variance_, wind_gust_force_variance_);
+    getSdfParam<math::Vector3>(_sdf, "windGustDirection", wind_gust_direction_, wind_gust_direction_);
+
+    wind_direction_.Normalize();
+    wind_gust_direction_.Normalize();
+    wind_gust_start_ = common::Time(wind_gust_start);
+    wind_gust_end_ = common::Time(wind_gust_start + wind_gust_duration);
+
+    wind_force_n_ = NormalDistribution(0, sqrt(wind_force_variance_));
+    wind_gust_force_n_ = NormalDistribution(0, sqrt(wind_gust_force_variance_));
+    wind_speed_n_ = NormalDistribution(0, sqrt(wind_speed_variance_));
+  }
+  else
+  {
+    // Read the txt file containing the wind field data, save it to a 2D array of math::Vector3 elements
+    std::ifstream fin;
+    fin.open("../catkin_ws/src/rotors_simulator/rotors_gazebo/models/hemicyl/dummy_wind_field.txt");
+    if (fin.is_open())
+    {
+      int i=0;
+      math::Vector3 position;
+      math::Vector3 wind;
+      double value;
+
+      while (fin >> value)
+      {
+        position.x = value;
+        fin >> position.y;
+        fin >> position.z;
+        fin >> wind.x;
+        fin >> wind.y;
+        fin >> wind.z;
+        wind_field_[0].push_back(position);
+        wind_field_[1].push_back(wind);
+        i++;
+      }
+      ROS_INFO_STREAM("Wind field read successfully from text file.");
+
+      //Print wind field vector
+      /*ROS_INFO_STREAM("Have written " << wind_field_[0].size() << " lines from wind field text file into an " << wind_field_[0].size() << "-dimensional vector.");
+      for (int j=0; j<wind_field_[0].size();j++)
+      {
+        ROS_INFO_STREAM(wind_field_[0][j].x << " " << wind_field_[0][j].y << " " << wind_field_[0][j].z << " " << wind_field_[1][j].x << " " << wind_field_[1][j].y << " " << wind_field_[1][j].z);
+      }*/
+
+      fin.close();
+    }
+    else
+    {
+      gzerr << "[gazebo_wind_plugin] Could not open wind field text file.\n";
+    }
+  }
+
 
   link_ = model_->GetLink(link_name_);
   if (link_ == NULL)
     gzthrow("[gazebo_wind_plugin] Couldn't find specified link \"" << link_name_ << "\".");
-
-  ////////-------------------------TO DO NICOLAS--------------------------------
-
-  // Read the txt file containing the wind field data, save it to an array
-
-
-
 
   // Listen to the update event. This event is broadcast every
   // simulation iteration.
@@ -107,136 +146,133 @@ void GazeboWindPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
   wind_speed_pub_ = node_handle_->advertise<rotors_comm::WindSpeed>(wind_speed_pub_topic_, 1);
 }
 
-
-
-
-
-
 // This gets called by the world update start event.
 void GazeboWindPlugin::OnUpdate(const common::UpdateInfo& _info) {
   // Get the current simulation time.
   common::Time now = world_->GetSimTime();
 
-  // Calculate the wind force.
-  double wind_strength = wind_force_mean_ + wind_force_n_(random_generator_);
-  math::Vector3 wind = wind_strength * wind_direction_;
-  // Apply a force from the constant wind to the link.
-  link_->AddForceAtRelativePosition(wind, xyz_offset_);
+  math::Vector3 wind_velocity = math::Vector3(0,0,0);
 
-  math::Vector3 wind_gust(0, 0, 0);
-  // Calculate the wind gust force.
-  if (now >= wind_gust_start_ && now < wind_gust_end_) {
-    double wind_gust_strength = wind_gust_force_mean_ + wind_gust_force_n_(random_generator_);
-    wind_gust = wind_gust_strength * wind_gust_direction_;
-    // Apply a force from the wind gust to the link.
-    link_->AddForceAtRelativePosition(wind_gust, xyz_offset_);
-  }
-
-  geometry_msgs::WrenchStamped wrench_msg;
-
-  wrench_msg.header.frame_id = frame_id_;
-  wrench_msg.header.stamp.sec = now.sec;
-  wrench_msg.header.stamp.nsec = now.nsec;
-  wrench_msg.wrench.force.x = wind.x + wind_gust.x;
-  wrench_msg.wrench.force.y = wind.y + wind_gust.y;
-  wrench_msg.wrench.force.z = wind.z + wind_gust.z;
-  wrench_msg.wrench.torque.x = 0;
-  wrench_msg.wrench.torque.y = 0;
-  wrench_msg.wrench.torque.z = 0;
-
-  wind_pub_.publish(wrench_msg);
-
-  ////////-------------------------TO DO NICOLAS--------------------------------
-
-  /* Implement the static wind field here instead of what is below:
-     Step 0: read the text file and save it into a 3D array (done when loading plugin)
-     Step 1: get the current position of the aircraft
-     Step 2: identify the vertices of the cell enclosing the aircraft
-     Step 3: read the wind velocity for these vertices from the array
-     Step 4: Interpolate the wind velocity
-     Step 5: set wind_speed_msg.velocity.x/y/z equal to the interpolated values in the table
-
-     Better: subscribe to a topic that publishes the lookup table, save it.
-     This way, wind field can be updated during the simulation (dynamic field).
-     Subscriber implemented outside of this function?
-     This exceeds the scope of the thesis.
-  */
-
-  // Set geometrical values (to be tuned according to grayscale image used to generate world)
-  double grayscale_size = 257;
-  double world_size = 4000;
-  double hemicylinder_radius = 13;
-  double world_resolution = world_size/grayscale_size;
-  double world_height = world_resolution*hemicylinder_radius;
-  double hemicylinder_x_position = world_resolution*128;
-
-  // Get the current position of the aircraft in world coordinates
-  math::Vector3 link_position = link_->GetWorldPose().pos;
-
-  //Determine the wind velocity at the aircraft position
-  math::Vector3 wind_velocity = math::Vector3(0, 0, 0);
-
-  if ( fabs(link_position.x)>(world_size/2.0) || fabs(link_position.y)>(world_size/2.0) || link_position.z > (world_height*2.0) || link_position.z < 0 )
+  if (!custom_static_wind_field_) // Choose method
   {
-    wind_velocity = math::Vector3(0,0,0);
+    // Calculate the wind force.
+    double wind_strength = wind_force_mean_ + wind_force_n_(random_generator_);
+    math::Vector3 wind = wind_strength * wind_direction_;
+    // Apply a force from the constant wind to the link.
+    link_->AddForceAtRelativePosition(wind, xyz_offset_);
+
+    math::Vector3 wind_gust(0, 0, 0);
+    // Calculate the wind gust force.
+    if (now >= wind_gust_start_ && now < wind_gust_end_) {
+      double wind_gust_strength = wind_gust_force_mean_ + wind_gust_force_n_(random_generator_);
+      wind_gust = wind_gust_strength * wind_gust_direction_;
+      // Apply a force from the wind gust to the link.
+      link_->AddForceAtRelativePosition(wind_gust, xyz_offset_);
+    }
+
+    geometry_msgs::WrenchStamped wrench_msg;
+
+    wrench_msg.header.frame_id = frame_id_;
+    wrench_msg.header.stamp.sec = now.sec;
+    wrench_msg.header.stamp.nsec = now.nsec;
+    wrench_msg.wrench.force.x = wind.x + wind_gust.x;
+    wrench_msg.wrench.force.y = wind.y + wind_gust.y;
+    wrench_msg.wrench.force.z = wind.z + wind_gust.z;
+    wrench_msg.wrench.torque.x = 0;
+    wrench_msg.wrench.torque.y = 0;
+    wrench_msg.wrench.torque.z = 0;
+
+    wind_pub_.publish(wrench_msg);
+
+    // Calculate the wind speed
+    double wind_speed = wind_speed_mean_; // + wind_speed_n_(random_generator_);
+    wind_velocity = wind_speed * wind_direction_;
   }
   else
   {
-    // Read the 8 points corresponding to the vertices of the volume enclosing the link
-    // and the 5 for interpolation
-    math::Vector3 point_0 = math::Vector3(0,0,0);
-    math::Vector3 point_1 = math::Vector3(0,0,0);
-    math::Vector3 point_2 = math::Vector3(0,0,0);
-    math::Vector3 point_3 = math::Vector3(0,0,0);
-    math::Vector3 point_4 = math::Vector3(0,0,0);
-    math::Vector3 point_5 = math::Vector3(0,0,0);
-    math::Vector3 point_6 = math::Vector3(0,0,0);
-    math::Vector3 point_7 = math::Vector3(0,0,0);
 
-    math::Vector3 point_8 = math::Vector3(0,0,0);
-    math::Vector3 point_9 = math::Vector3(0,0,0);
-    math::Vector3 point_10 = math::Vector3(0,0,0);
-    math::Vector3 point_11 = math::Vector3(0,0,0);
-    math::Vector3 point_12 = math::Vector3(0,0,0);
-    math::Vector3 point_13 = math::Vector3(0,0,0);
+    ////////-------------------------TO DO NICOLAS--------------------------------
 
-    point_0.x = point_3.x = point_4.x = point_7.x = point_8.x = point_11.x = point_12.x = floor(link_position.x/world_resolution)*world_resolution;
-    point_1.x = point_2.x = point_5.x = point_6.x = point_9.x = point_10.x = point_13.x = ceil(link_position.x/world_resolution)*world_resolution;
-    point_0.x = point_1.x = point_2.x = point_3.x = point_8.x = point_9.x = floor(link_position.y/world_resolution)*world_resolution;
-    point_4.x = point_5.x = point_6.x = point_7.x = point_10.x = point_11.x = ceil(link_position.y/world_resolution)*world_resolution;
-    point_12.y = point_13.y = link_position.y;
-    // Determine their z-coordinates! Read through txt file for given x-y pairs,
-    // identify lines with z just below/just above link_position.z
+    /* Implement the static wind field here instead of what is below:
+      Step 0: read the text file and save it into an array (done when loading plugin) -- DONE
+      Step 1: get the current position of the aircraft  -- DONE
+      Step 2: identify the vertices of the cell enclosing the aircraft
+      Step 3: read the wind velocity for these vertices from the array
+      Step 4: Interpolate the wind velocity
+      Step 5: set wind_speed_msg.velocity.x/y/z equal to the interpolated values in the table
 
-    // Read through txt file to extract velocity components of each of the 8 given vertices
-    math::Vector3 wind_velocity_0 = math::Vector3(0,0,0);
-    math::Vector3 wind_velocity_1 = math::Vector3(0,0,0);
-    math::Vector3 wind_velocity_2 = math::Vector3(0,0,0);
-    math::Vector3 wind_velocity_3 = math::Vector3(0,0,0);
-    math::Vector3 wind_velocity_4 = math::Vector3(0,0,0);
-    math::Vector3 wind_velocity_5 = math::Vector3(0,0,0);
-    math::Vector3 wind_velocity_6 = math::Vector3(0,0,0);
-    math::Vector3 wind_velocity_7 = math::Vector3(0,0,0);
+      Better: subscribe to a topic that publishes the lookup table, save it.
+      This way, wind field can be updated during the simulation (dynamic field).
+      Subscriber implemented outside of this function?
+      This exceeds the scope of the thesis.
+    */
 
-    math::Vector3 wind_velocity_8 = math::Vector3(0,0,0);
-    math::Vector3 wind_velocity_9 = math::Vector3(0,0,0);
-    math::Vector3 wind_velocity_10 = math::Vector3(0,0,0);
-    math::Vector3 wind_velocity_11 = math::Vector3(0,0,0);
-    math::Vector3 wind_velocity_12 = math::Vector3(0,0,0);
-    math::Vector3 wind_velocity_13 = math::Vector3(0,0,0);
+    // Get the current position of the aircraft in world coordinates
+    math::Vector3 link_position = link_->GetWorldPose().pos;
 
-    // Interpolate linearly to find the value of the wind velocity at the given position
+    // Set geometrical values (to be tuned according to grayscale image used to generate world)
+    double grayscale_size = 257;
+    double world_size = 4000;
+    double hemicylinder_radius = 13;
+    double world_resolution = world_size/grayscale_size;
+    double world_height = world_resolution*hemicylinder_radius;
+    double hemicylinder_x_position = world_resolution*128;
+
+    //Determine the wind velocity at the aircraft position
+    if ( !(fabs(link_position.x)>(world_size/2.0) || fabs(link_position.y)>(world_size/2.0) || link_position.z > (world_height*2.0) || link_position.z < 0) )
+    {
+      // Read the 8 points corresponding to the vertices of the volume enclosing the link
+      // and the 5 for interpolation
+      math::Vector3 point_0 = math::Vector3(0,0,0);
+      math::Vector3 point_1 = math::Vector3(0,0,0);
+      math::Vector3 point_2 = math::Vector3(0,0,0);
+      math::Vector3 point_3 = math::Vector3(0,0,0);
+      math::Vector3 point_4 = math::Vector3(0,0,0);
+      math::Vector3 point_5 = math::Vector3(0,0,0);
+      math::Vector3 point_6 = math::Vector3(0,0,0);
+      math::Vector3 point_7 = math::Vector3(0,0,0);
+
+      math::Vector3 point_8 = math::Vector3(0,0,0);
+      math::Vector3 point_9 = math::Vector3(0,0,0);
+      math::Vector3 point_10 = math::Vector3(0,0,0);
+      math::Vector3 point_11 = math::Vector3(0,0,0);
+      math::Vector3 point_12 = math::Vector3(0,0,0);
+      math::Vector3 point_13 = math::Vector3(0,0,0);
+
+      point_0.x = point_3.x = point_4.x = point_7.x = point_8.x = point_11.x = point_12.x = floor(link_position.x/world_resolution)*world_resolution;
+      point_1.x = point_2.x = point_5.x = point_6.x = point_9.x = point_10.x = point_13.x = ceil(link_position.x/world_resolution)*world_resolution;
+      point_0.x = point_1.x = point_2.x = point_3.x = point_8.x = point_9.x = floor(link_position.y/world_resolution)*world_resolution;
+      point_4.x = point_5.x = point_6.x = point_7.x = point_10.x = point_11.x = ceil(link_position.y/world_resolution)*world_resolution;
+      point_12.y = point_13.y = link_position.y;
+      // Determine their z-coordinates! Read through txt file for given x-y pairs,
+      // identify lines with z just below/just above link_position.z
+
+      // Read through txt file to extract velocity components of each of the 8 given vertices
+      math::Vector3 wind_velocity_0 = math::Vector3(0,0,0);
+      math::Vector3 wind_velocity_1 = math::Vector3(0,0,0);
+      math::Vector3 wind_velocity_2 = math::Vector3(0,0,0);
+      math::Vector3 wind_velocity_3 = math::Vector3(0,0,0);
+      math::Vector3 wind_velocity_4 = math::Vector3(0,0,0);
+      math::Vector3 wind_velocity_5 = math::Vector3(0,0,0);
+      math::Vector3 wind_velocity_6 = math::Vector3(0,0,0);
+      math::Vector3 wind_velocity_7 = math::Vector3(0,0,0);
+
+      math::Vector3 wind_velocity_8 = math::Vector3(0,0,0);
+      math::Vector3 wind_velocity_9 = math::Vector3(0,0,0);
+      math::Vector3 wind_velocity_10 = math::Vector3(0,0,0);
+      math::Vector3 wind_velocity_11 = math::Vector3(0,0,0);
+      math::Vector3 wind_velocity_12 = math::Vector3(0,0,0);
+      math::Vector3 wind_velocity_13 = math::Vector3(0,0,0);
+
+      // Interpolate linearly to find the value of the wind velocity at the given position
 
 
-    wind_velocity = wind_speed_mean_*wind_direction_; // = ... (interpolation)
+      wind_velocity = wind_speed_mean_*wind_direction_; // = ... (interpolation)
 
 
 
+    }
   }
-
-  /*// Calculate the wind speed
-  double wind_speed = wind_speed_mean_; // + wind_speed_n_(random_generator_);
-  math::Vector3 wind_velocity = wind_speed * wind_direction_;*/
 
   // Publish the wind speed
   rotors_comm::WindSpeed wind_speed_msg;

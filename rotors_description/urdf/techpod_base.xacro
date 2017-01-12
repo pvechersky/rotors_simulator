@@ -67,13 +67,14 @@
     wind_direction="1 0 0"
     wind_force_mean="0.0"
     wind_force_variance="0.0"
-    wind_speed_mean="5.0"
+    wind_speed_mean="0.0"
     wind_speed_variance="0.0"
     wind_gust_direction="0 1 0"
     wind_gust_duration="0.0"
     wind_gust_start="0.0"
     wind_gust_force_mean="0.0"
-    wind_gust_force_variance="0.0">
+    wind_gust_force_variance="0.0"
+    custom_static_wind_field="true">
   </xacro:wind_plugin_macro>
 
   <xacro:if value="$(arg enable_ground_truth)">
