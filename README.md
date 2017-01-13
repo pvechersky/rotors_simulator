@@ -165,6 +165,69 @@ Depending on the type of the joystick and the personal preference for operation,
 
   > **Note** If for some reason the commands are not passed on to the simulation, try loading, setting and writing the correct parameters for the aircraft using QGC.
 
+Extended Wind Plugin
+-------------------------
+
+The existing wind plugin in RotorS has been extended to allow the use of a custom, static wind field for a given world. This is done by enabling the wind plugin macro in the aircraft base file (in our case `techpod_base.xacro`, which is found in `rotors_simulator/rotors_description/urdf`), and feeding it the correct parameters and files.
+
+#### Wind Plugin Macro
+Here's an example of the lines to be added in the base file, containing numerous user-defined variables:
+
+```
+<xacro:wind_plugin_macro
+  namespace="${namespace}"
+  xyz_offset="0 0 0"
+  wind_direction="1 0 0"
+  wind_force_mean="0.0"
+  wind_force_variance="0.0"
+  wind_speed_mean="5.0"
+  wind_speed_variance="0.0"
+  wind_gust_direction="0 1 0"
+  wind_gust_duration="0.0"
+  wind_gust_start="0.0"
+  wind_gust_force_mean="0.0"
+  wind_gust_force_variance="0.0"
+  custom_static_wind_field="true"
+  wind_path="$(find rotors_gazebo)/models/hemicyl/wind2.txt">
+</xacro:wind_plugin_macro>
+```
+The four values that need to be set are `wind_direction` and `wind_speed_mean`, which specify the default wind field when the aircraft is flying outside of the desired wind field, the boolean `custom_static_wind_field` which, when set to `true`, enables the extended functionality, as well as the string `wind_path` which describes the path (from `~/.ros`) to the text file specifying the wind field.
+
+#### Wind field text file
+The text file contains information about a series a grid points spread over the world, specifying for each its coordinates from the world origin (x, y, z) and the corresponding wind distribution at its location (u, v, w). The file must contain at least 8 points, and each of them must have the following format:
+```
+x y z u v w
+```
+Where each value is of type double (or less), and is separated from the others by a space (no commas!). The order in which the points are given is not important, and whether each line represents one point only or all points are listed on the same line does not matter.
+
+In the case of the hemicylindrical world, the beginning of the text file describing a divergent-free wind field with flow conditions of 5 m/s in x-direction looks as follows:
+```
+-2000.0 -2000.0 0.0 4.267 -0.0 -0.001
+-2000.0 2000.0 0.0 4.267 -0.0 -0.001
+-1980.0 -2000.0 0.0 4.054 0.0 0.004
+-1980.0 2000.0 0.0 4.054 0.0 0.004
+-1960.0 -2000.0 0.0 4.138 0.0 0.001
+-1960.0 2000.0 0.0 4.138 0.0 0.001
+...
+```
+For clarity and convenience, the wind field text file is placed in the same folder as the world model.
+
+#### Functioning
+In brief, the plugin works in distinct steps:
+
+  1. Load the plugin and read the text file once, saving the values in an `std::vector<math::Vector3> wind_field_[2]` object.
+
+  2. During update event:
+
+    2.1. Locate the aircraft and see if it is located within the specified wind field.
+
+    2.2. If so, identify the grid points at the vertices of the enclosing cell and extract their wind values. If not, set the wind velocity to the default, user-defined value.
+
+    2.3. Interpolate linearly in x,y and z directions to find the wind velocity at the aircraft position.
+    2.4. Publish the wind velocity in a wind speed message.
+
+
+
 QGroundControl
 ==============
 

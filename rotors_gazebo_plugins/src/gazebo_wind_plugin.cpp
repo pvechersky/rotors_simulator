@@ -26,7 +26,6 @@
 
 #include <math.h>
 #include <fstream>
-#include <string>
 
 namespace gazebo {
 
@@ -75,8 +74,6 @@ void GazeboWindPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
     getSdfParam<math::Vector3>(_sdf, "windDirection", wind_direction_, wind_direction_);
     // Get the wind speed params from SDF
     getSdfParam<double>(_sdf, "windSpeedMean", wind_speed_mean_, wind_speed_mean_);
-    getSdfParam<double>(_sdf, "windSpeedVariance", wind_speed_variance_, wind_speed_variance_);
-    // Get the wind gust params from SDF.
     getSdfParam<double>(_sdf, "windGustStart", wind_gust_start, wind_gust_start);
     getSdfParam<double>(_sdf, "windGustDuration", wind_gust_duration, wind_gust_duration);
     getSdfParam<double>(_sdf, "windGustForceMean", wind_gust_force_mean_, wind_gust_force_mean_);
@@ -94,15 +91,18 @@ void GazeboWindPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
   }
   else
   {
+    getSdfParam<math::Vector3>(_sdf, "windDirection", wind_direction_, wind_direction_);
+    getSdfParam<double>(_sdf, "windSpeedMean", wind_speed_mean_, wind_speed_mean_);
+    getSdfParam<std::string>(_sdf, "windPath", wind_path_, wind_path_);
     // Read the txt file containing the wind field data, save it to a 2D array of math::Vector3 elements
     std::ifstream fin;
-    fin.open("../catkin_ws/src/rotors_simulator/rotors_gazebo/models/hemicyl/dummy_wind_field.txt");
+    fin.open(wind_path_);
     if (fin.is_open())
     {
-      int i=0;
       math::Vector3 position;
       math::Vector3 wind;
-      double value;
+      double value = 0;
+      bool fill = true;
 
       while (fin >> value)
       {
@@ -114,16 +114,35 @@ void GazeboWindPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
         fin >> wind.z;
         wind_field_[0].push_back(position);
         wind_field_[1].push_back(wind);
-        i++;
+
+        // Fill the x and y coordinate vectors
+        for (int i = 0; i < coords_x_.size(); i++)
+          if (position.x == coords_x_[i])
+            fill = false;
+        if (fill)
+          coords_x_.push_back(position.x);
+        else
+          fill = true;
+
+        for (int i = 0; i < coords_y_.size(); i++)
+          if (position.y == coords_y_[i])
+            fill = false;
+        if (fill)
+          coords_y_.push_back(position.y);
+        else
+          fill = true;
+
+        // Find maximum and minimum values of z in the wind map
+        if (position.z < z_min_)
+          z_min_ = position.z;
+        else if (position.z > z_max_)
+          z_max_ = position.z;
       }
       ROS_INFO_STREAM("Wind field read successfully from text file.");
 
-      //Print wind field vector
-      /*ROS_INFO_STREAM("Have written " << wind_field_[0].size() << " lines from wind field text file into an " << wind_field_[0].size() << "-dimensional vector.");
-      for (int j=0; j<wind_field_[0].size();j++)
-      {
-        ROS_INFO_STREAM(wind_field_[0][j].x << " " << wind_field_[0][j].y << " " << wind_field_[0][j].z << " " << wind_field_[1][j].x << " " << wind_field_[1][j].y << " " << wind_field_[1][j].z);
-      }*/
+      // Sort the coordinate vectors
+      std::sort(coords_x_.begin(), coords_x_.end());
+      std::sort(coords_y_.begin(), coords_y_.end());
 
       fin.close();
     }
@@ -132,7 +151,6 @@ void GazeboWindPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
       gzerr << "[gazebo_wind_plugin] Could not open wind field text file.\n";
     }
   }
-
 
   link_ = model_->GetLink(link_name_);
   if (link_ == NULL)
@@ -190,87 +208,119 @@ void GazeboWindPlugin::OnUpdate(const common::UpdateInfo& _info) {
   }
   else
   {
-
-    ////////-------------------------TO DO NICOLAS--------------------------------
-
-    /* Implement the static wind field here instead of what is below:
-      Step 0: read the text file and save it into an array (done when loading plugin) -- DONE
-      Step 1: get the current position of the aircraft  -- DONE
-      Step 2: identify the vertices of the cell enclosing the aircraft
-      Step 3: read the wind velocity for these vertices from the array
-      Step 4: Interpolate the wind velocity
-      Step 5: set wind_speed_msg.velocity.x/y/z equal to the interpolated values in the table
-
-      Better: subscribe to a topic that publishes the lookup table, save it.
-      This way, wind field can be updated during the simulation (dynamic field).
-      Subscriber implemented outside of this function?
-      This exceeds the scope of the thesis.
-    */
-
     // Get the current position of the aircraft in world coordinates
     math::Vector3 link_position = link_->GetWorldPose().pos;
 
-    // Set geometrical values (to be tuned according to grayscale image used to generate world)
-    double grayscale_size = 257;
-    double world_size = 4000;
-    double hemicylinder_radius = 13;
-    double world_resolution = world_size/grayscale_size;
-    double world_height = world_resolution*hemicylinder_radius;
-    double hemicylinder_x_position = world_resolution*128;
-
-    //Determine the wind velocity at the aircraft position
-    if ( !(fabs(link_position.x)>(world_size/2.0) || fabs(link_position.y)>(world_size/2.0) || link_position.z > (world_height*2.0) || link_position.z < 0) )
+    //Determine the wind velocity at the aircraft position if within world bounds. Else, set to user defined constant value.
+    if (!(link_position.x < coords_x_[0] || link_position.x > coords_x_[coords_x_.size()-1] || link_position.y < coords_y_[0] || link_position.y > coords_y_[coords_y_.size()-1] || link_position.z < z_min_ || link_position.z > z_max_))
     {
-      // Read the 8 points corresponding to the vertices of the volume enclosing the link
-      // and the 5 for interpolation
-      math::Vector3 point_0 = math::Vector3(0,0,0);
-      math::Vector3 point_1 = math::Vector3(0,0,0);
-      math::Vector3 point_2 = math::Vector3(0,0,0);
-      math::Vector3 point_3 = math::Vector3(0,0,0);
-      math::Vector3 point_4 = math::Vector3(0,0,0);
-      math::Vector3 point_5 = math::Vector3(0,0,0);
-      math::Vector3 point_6 = math::Vector3(0,0,0);
-      math::Vector3 point_7 = math::Vector3(0,0,0);
+      // Create a vector containing the coordinates of 8 points corresponding to the vertices of the volume enclosing the link and the 5 points for interpolation
+      // Containing as well the wind velocity value for each point.
+      std::vector<math::Vector3> wind_field_cells[2];
+      for (int i = 0; i < 14; i++)
+        for (int j=0; j<2; j++)
+          wind_field_cells[j].push_back(math::Vector3(0, 0, 0));
 
-      math::Vector3 point_8 = math::Vector3(0,0,0);
-      math::Vector3 point_9 = math::Vector3(0,0,0);
-      math::Vector3 point_10 = math::Vector3(0,0,0);
-      math::Vector3 point_11 = math::Vector3(0,0,0);
-      math::Vector3 point_12 = math::Vector3(0,0,0);
-      math::Vector3 point_13 = math::Vector3(0,0,0);
+      // Find the vertices of the 8 points
+        // Find their x-coordinates
+      for (int i = 0; i < coords_x_.size(); i++)
+        if (coords_x_[i] < link_position.x && coords_x_[i+1] > link_position.x)
+        {
+          wind_field_cells[0][0].x= wind_field_cells[0][3].x = wind_field_cells[0][4].x = wind_field_cells[0][7].x = wind_field_cells[0][8].x = wind_field_cells[0][11].x = wind_field_cells[0][12].x = coords_x_[i];
+          wind_field_cells[0][1].x = wind_field_cells[0][2].x = wind_field_cells[0][5].x = wind_field_cells[0][6].x = wind_field_cells[0][9].x = wind_field_cells[0][10].x = wind_field_cells[0][13].x = coords_x_[i+1];
+          break;
+        }
 
-      point_0.x = point_3.x = point_4.x = point_7.x = point_8.x = point_11.x = point_12.x = floor(link_position.x/world_resolution)*world_resolution;
-      point_1.x = point_2.x = point_5.x = point_6.x = point_9.x = point_10.x = point_13.x = ceil(link_position.x/world_resolution)*world_resolution;
-      point_0.x = point_1.x = point_2.x = point_3.x = point_8.x = point_9.x = floor(link_position.y/world_resolution)*world_resolution;
-      point_4.x = point_5.x = point_6.x = point_7.x = point_10.x = point_11.x = ceil(link_position.y/world_resolution)*world_resolution;
-      point_12.y = point_13.y = link_position.y;
-      // Determine their z-coordinates! Read through txt file for given x-y pairs,
-      // identify lines with z just below/just above link_position.z
+        // Find their y-coordinates
+      for (int i = 0; i < coords_y_.size(); i++)
+        if (coords_y_[i] < link_position.y && coords_y_[i+1] > link_position.y)
+        {
+          wind_field_cells[0][0].y = wind_field_cells[0][1].y = wind_field_cells[0][2].y = wind_field_cells[0][3].y = wind_field_cells[0][8].y = wind_field_cells[0][9].y = coords_y_[i];
+          wind_field_cells[0][4].y = wind_field_cells[0][5].y = wind_field_cells[0][6].y = wind_field_cells[0][7].y = wind_field_cells[0][10].y = wind_field_cells[0][11].y = coords_y_[i+1];
+          break;
+        }
 
-      // Read through txt file to extract velocity components of each of the 8 given vertices
-      math::Vector3 wind_velocity_0 = math::Vector3(0,0,0);
-      math::Vector3 wind_velocity_1 = math::Vector3(0,0,0);
-      math::Vector3 wind_velocity_2 = math::Vector3(0,0,0);
-      math::Vector3 wind_velocity_3 = math::Vector3(0,0,0);
-      math::Vector3 wind_velocity_4 = math::Vector3(0,0,0);
-      math::Vector3 wind_velocity_5 = math::Vector3(0,0,0);
-      math::Vector3 wind_velocity_6 = math::Vector3(0,0,0);
-      math::Vector3 wind_velocity_7 = math::Vector3(0,0,0);
+      wind_field_cells[0][12].y = wind_field_cells[0][13].y = link_position.y;
 
-      math::Vector3 wind_velocity_8 = math::Vector3(0,0,0);
-      math::Vector3 wind_velocity_9 = math::Vector3(0,0,0);
-      math::Vector3 wind_velocity_10 = math::Vector3(0,0,0);
-      math::Vector3 wind_velocity_11 = math::Vector3(0,0,0);
-      math::Vector3 wind_velocity_12 = math::Vector3(0,0,0);
-      math::Vector3 wind_velocity_13 = math::Vector3(0,0,0);
+        // Create, fill and sort the z-coordinates vectors of the 4 corners of the volume cell enclosing the link
+      std::vector<double> coords_z_0;
+      std::vector<double> coords_z_1;
+      std::vector<double> coords_z_4;
+      std::vector<double> coords_z_5;
 
-      // Interpolate linearly to find the value of the wind velocity at the given position
+      for (int i = 0; i < wind_field_[0].size(); i++)
+      {
+        if (wind_field_[0][i].x == wind_field_cells[0][0].x && wind_field_[0][i].y == wind_field_cells[0][0].y)
+          coords_z_0.push_back(wind_field_[0][i].z);
+        else if (wind_field_[0][i].x == wind_field_cells[0][1].x && wind_field_[0][i].y == wind_field_cells[0][1].y)
+          coords_z_1.push_back(wind_field_[0][i].z);
+        else if (wind_field_[0][i].x == wind_field_cells[0][4].x && wind_field_[0][i].y == wind_field_cells[0][4].y)
+          coords_z_4.push_back(wind_field_[0][i].z);
+        else if (wind_field_[0][i].x == wind_field_cells[0][5].x && wind_field_[0][i].y == wind_field_cells[0][5].y)
+          coords_z_5.push_back(wind_field_[0][i].z);
+      }
 
+      std::sort(coords_z_0.begin(), coords_z_0.end());
+      std::sort(coords_z_1.begin(), coords_z_1.end());
+      std::sort(coords_z_4.begin(), coords_z_4.end());
+      std::sort(coords_z_5.begin(), coords_z_5.end());
 
-      wind_velocity = wind_speed_mean_*wind_direction_; // = ... (interpolation)
+        // Find the z-coordinates of the vertices, and of the 5 interpolation points
+      wind_field_cells[0][0].z = coords_z_0[0];
+      wind_field_cells[0][3].z = coords_z_0[1];
+      wind_field_cells[0][1].z = coords_z_1[0];
+      wind_field_cells[0][2].z = coords_z_1[1];
+      wind_field_cells[0][4].z = coords_z_4[0];
+      wind_field_cells[0][7].z = coords_z_4[1];
+      wind_field_cells[0][5].z = coords_z_5[0];
+      wind_field_cells[0][6].z = coords_z_5[1];
+      for (int i = 0; i < coords_z_0.size(); i++)
+        if (coords_z_0[i] < link_position.z && coords_z_0[i+1] > link_position.z)
+        {
+          wind_field_cells[0][0].z = coords_z_0[i];
+          wind_field_cells[0][3].z = coords_z_0[i+1];
+        }
+      for (int i = 0; i < coords_z_1.size(); i++)
+        if (coords_z_1[i] < link_position.z && coords_z_1[i+1] > link_position.z)
+        {
+          wind_field_cells[0][1].z = coords_z_1[i];
+          wind_field_cells[0][2].z = coords_z_1[i+1];
+        }
+      for (int i = 0; i < coords_z_4.size(); i++)
+        if (coords_z_4[i] < link_position.z && coords_z_4[i+1] > link_position.z)
+        {
+          wind_field_cells[0][4].z = coords_z_4[i];
+          wind_field_cells[0][7].z = coords_z_4[i+1];
+        }
+      for (int i = 0; i < coords_z_5.size(); i++)
+        if (coords_z_5[i] < link_position.z && coords_z_5[i+1] > link_position.z)
+        {
+          wind_field_cells[0][5].z = coords_z_5[i];
+          wind_field_cells[0][6].z = coords_z_5[i+1];
+        }
 
+      wind_field_cells[0][8].z =  wind_field_cells[0][9].z =  wind_field_cells[0][10].z =  wind_field_cells[0][11].z =  wind_field_cells[0][12].z =  wind_field_cells[0][13].z = link_position.z;
 
+      // Extract velocity components of each of the 8 given vertices.
+      for (int i = 0; i < wind_field_[1].size(); i++)
+        for (int j = 0; j < 8; j++)
+          if (wind_field_[0][i] == wind_field_cells[0][j])
+              wind_field_cells[1][j] = wind_field_[1][i];
 
+      // Interpolate three times linearly to find the value of the wind velocity at the given position
+      wind_field_cells[1][8] = wind_field_cells[1][0] + (wind_field_cells[1][3] - wind_field_cells[1][0])/(wind_field_cells[0][3].z - wind_field_cells[0][0].z)*(wind_field_cells[0][8].z - wind_field_cells[0][0].z);
+      wind_field_cells[1][9] = wind_field_cells[1][1] + (wind_field_cells[1][2] - wind_field_cells[1][1])/(wind_field_cells[0][2].z - wind_field_cells[0][1].z)*(wind_field_cells[0][9].z - wind_field_cells[0][1].z);
+      wind_field_cells[1][10] = wind_field_cells[1][5] + (wind_field_cells[1][6] - wind_field_cells[1][5])/(wind_field_cells[0][6].z - wind_field_cells[0][5].z)*(wind_field_cells[0][10].z - wind_field_cells[0][5].z);
+      wind_field_cells[1][11] = wind_field_cells[1][4] + (wind_field_cells[1][7] - wind_field_cells[1][4])/(wind_field_cells[0][7].z - wind_field_cells[0][4].z)*(wind_field_cells[0][11].z - wind_field_cells[0][4].z);
+
+      wind_field_cells[1][12] = wind_field_cells[1][8] + (wind_field_cells[1][11] - wind_field_cells[1][8])/(wind_field_cells[0][11].y - wind_field_cells[0][8].y)*(wind_field_cells[0][12].y - wind_field_cells[0][8].y);
+      wind_field_cells[1][13] = wind_field_cells[1][9] + (wind_field_cells[1][10] - wind_field_cells[1][9])/(wind_field_cells[0][10].y - wind_field_cells[0][9].y)*(wind_field_cells[0][13].y - wind_field_cells[0][9].y);
+
+      wind_velocity = wind_field_cells[1][12] + (wind_field_cells[1][13] - wind_field_cells[1][12])/(wind_field_cells[0][13].x - wind_field_cells[0][12].x)*(link_position.x - wind_field_cells[0][12].x);
+    }
+    else
+    {
+      wind_velocity = wind_speed_mean_ * wind_direction_;
     }
   }
 
