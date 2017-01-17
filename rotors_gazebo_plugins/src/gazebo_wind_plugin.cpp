@@ -101,10 +101,8 @@ void GazeboWindPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
     fin.open(wind_path_);
     if (fin.is_open())
     {
-      // *RM* int i=0;
       math::Vector3 position;
       math::Vector3 wind;
-      // *RM* double count_x = 0;
       double value = 0;
       bool fill = true;
 
@@ -118,59 +116,29 @@ void GazeboWindPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
         fin >> wind.z;
         wind_field_[0].push_back(position);
         wind_field_[1].push_back(wind);
-        // *Coordinates method* Fill the coords_x_ vector
-        for ( int i = 0; i < coords_x_.size(); i++ )
-        {
-          if ( position.x == coords_x_[i] )
+
+        // Fill the x and y coordinate vectors
+        for (int i = 0; i < coords_x_.size(); i++)
+          if (position.x == coords_x_[i])
             fill = false;
-        }
-        if ( fill )
+        if (fill)
           coords_x_.push_back(position.x);
         else
           fill = true;
-        // *CM* Fill the coords_y_ vector
-        for ( int i = 0; i < coords_y_.size(); i++ )
-        {
-          if ( position.y == coords_y_[i] )
+
+        for (int i = 0; i < coords_y_.size(); i++)
+          if (position.y == coords_y_[i])
             fill = false;
-        }
-        if ( fill )
+        if (fill)
           coords_y_.push_back(position.y);
         else
           fill = true;
-
-        /* *Resolution method* Calculate the number of points in the grid in z-direction
-        if ( wind_field_[0][i].x == wind_field_[0][0].x && wind_field_[0][i].y == wind_field_[0][0].y )
-          grid_size_z_++;
-        if ( wind_field_[0][i].x == wind_field_[0][0].x )
-          count_x++;
-        i++;*/
       }
       ROS_INFO_STREAM("Wind field read successfully from text file.");
 
-      // *CM* Sort the coordinate vectors
+      // Sort the coordinate vectors
       std::sort(coords_x_.begin(), coords_x_.end());
       std::sort(coords_y_.begin(), coords_y_.end());
-
-      /*// *CM* Print the coordinate vectors
-      for (int l = 0; l < coords_x_.size(); l++)
-        ROS_INFO_STREAM(coords_x_[l]);
-
-      for (int l = 0; l < coords_y_.size(); l++)
-        ROS_INFO_STREAM(coords_y_[l]);*/
-
-      /* *RM* // Get the number of points in the grid in x- and y-directions and find the resolutions
-      double grid_size_y = count_x/grid_size_z_;
-      double grid_size_x = wind_field_[0].size()/grid_size_y/grid_size_z_;
-      res_x_ = world_side_size_/(grid_size_x-1);
-      res_y_ = world_side_size_/(grid_size_y-1);*/
-
-      // Print lines of wind field text file
-      /*ROS_INFO_STREAM("Have written " << wind_field_[0].size() << " lines from wind field text file into an " << wind_field_[0].size() << "-dimensional vector.");
-      for (int j=0; j<wind_field_[0].size();j++)
-      {
-        ROS_INFO_STREAM(wind_field_[0][j].x << " " << wind_field_[0][j].y << " " << wind_field_[0][j].z << " " << wind_field_[1][j].x << " " << wind_field_[1][j].y << " " << wind_field_[1][j].z);
-      }*/
 
       fin.close();
     }
@@ -240,58 +208,52 @@ void GazeboWindPlugin::OnUpdate(const common::UpdateInfo& _info) {
     // Get the current position of the aircraft in world coordinates
     math::Vector3 link_position = link_->GetWorldPose().pos;
 
-    //Determine the wind velocity at the aircraft position if within world bounds
-    if ( !(fabs(link_position.x)>(world_side_size_/2.0) || fabs(link_position.y)>(world_side_size_/2.0) || link_position.z > (world_height_*2.0) || link_position.z < 0) )
+    //Determine the wind velocity at the aircraft position if within world bounds. Else, set to user defined constant value.
+    if (!(fabs(link_position.x)>(world_side_size_/2.0) || fabs(link_position.y)>(world_side_size_/2.0) || link_position.z > (world_height_*2.0) || link_position.z < 0))
     {
       // Create a vector containing the coordinates of 8 points corresponding to the vertices of the volume enclosing the link and the 5 points for interpolation
-      // Containing as well the wind velocity value for each point
+      // Containing as well the wind velocity value for each point.
       std::vector<math::Vector3> wind_field_cells[2];
       for (int i = 0; i < 14; i++)
-      {
         for (int j=0; j<2; j++)
           wind_field_cells[j].push_back(math::Vector3(0, 0, 0));
-      }
 
-      // *CM* Find the vertices of the 8 points
-
-      // *CM* Find their x-coordinates
-      for (int i = 0; i < coords_x_.size(); i++ )
-      {
-        if ( coords_x_[i] < link_position.x && coords_x_[i+1] > link_position.x )
+      // Find the vertices of the 8 points
+        // Find their x-coordinates
+      for (int i = 0; i < coords_x_.size(); i++)
+        if (coords_x_[i] < link_position.x && coords_x_[i+1] > link_position.x)
         {
           wind_field_cells[0][0].x= wind_field_cells[0][3].x = wind_field_cells[0][4].x = wind_field_cells[0][7].x = wind_field_cells[0][8].x = wind_field_cells[0][11].x = wind_field_cells[0][12].x = coords_x_[i];
           wind_field_cells[0][1].x = wind_field_cells[0][2].x = wind_field_cells[0][5].x = wind_field_cells[0][6].x = wind_field_cells[0][9].x = wind_field_cells[0][10].x = wind_field_cells[0][13].x = coords_x_[i+1];
           break;
         }
-      }
 
-      // *CM* Find their y-coordinates
-      for (int i = 0; i < coords_y_.size(); i++ )
-      {
-        if ( coords_y_[i] < link_position.y && coords_y_[i+1] > link_position.y )
+        // Find their y-coordinates
+      for (int i = 0; i < coords_y_.size(); i++)
+        if (coords_y_[i] < link_position.y && coords_y_[i+1] > link_position.y)
         {
           wind_field_cells[0][0].y = wind_field_cells[0][1].y = wind_field_cells[0][2].y = wind_field_cells[0][3].y = wind_field_cells[0][8].y = wind_field_cells[0][9].y = coords_y_[i];
           wind_field_cells[0][4].y = wind_field_cells[0][5].y = wind_field_cells[0][6].y = wind_field_cells[0][7].y = wind_field_cells[0][10].y = wind_field_cells[0][11].y = coords_y_[i+1];
           break;
         }
-      }
+
       wind_field_cells[0][12].y = wind_field_cells[0][13].y = link_position.y;
 
-      // *CM* Create the z-coordinates vectors of the 4 corners of the volume cell enclosing the link
+        // Create, fill and sort the z-coordinates vectors of the 4 corners of the volume cell enclosing the link
       std::vector<double> coords_z_0;
       std::vector<double> coords_z_1;
       std::vector<double> coords_z_4;
       std::vector<double> coords_z_5;
 
-      for ( int i = 0; i < wind_field_[0].size(); i++)
+      for (int i = 0; i < wind_field_[0].size(); i++)
       {
-        if ( wind_field_[0][i].x == wind_field_cells[0][0].x && wind_field_[0][i].y == wind_field_cells[0][0].y )
+        if (wind_field_[0][i].x == wind_field_cells[0][0].x && wind_field_[0][i].y == wind_field_cells[0][0].y)
           coords_z_0.push_back(wind_field_[0][i].z);
-        else if ( wind_field_[0][i].x == wind_field_cells[0][1].x && wind_field_[0][i].y == wind_field_cells[0][1].y )
+        else if (wind_field_[0][i].x == wind_field_cells[0][1].x && wind_field_[0][i].y == wind_field_cells[0][1].y)
           coords_z_1.push_back(wind_field_[0][i].z);
-        else if ( wind_field_[0][i].x == wind_field_cells[0][4].x && wind_field_[0][i].y == wind_field_cells[0][4].y )
+        else if (wind_field_[0][i].x == wind_field_cells[0][4].x && wind_field_[0][i].y == wind_field_cells[0][4].y)
           coords_z_4.push_back(wind_field_[0][i].z);
-        else if ( wind_field_[0][i].x == wind_field_cells[0][5].x && wind_field_[0][i].y == wind_field_cells[0][5].y )
+        else if (wind_field_[0][i].x == wind_field_cells[0][5].x && wind_field_[0][i].y == wind_field_cells[0][5].y)
           coords_z_5.push_back(wind_field_[0][i].z);
       }
 
@@ -300,7 +262,7 @@ void GazeboWindPlugin::OnUpdate(const common::UpdateInfo& _info) {
       std::sort(coords_z_4.begin(), coords_z_4.end());
       std::sort(coords_z_5.begin(), coords_z_5.end());
 
-      // *CM* Find the z-coordinates of the vertices, and of the 5 interpolation points
+        // Find the z-coordinates of the vertices, and of the 5 interpolation points
       wind_field_cells[0][0].z = coords_z_0[0];
       wind_field_cells[0][3].z = coords_z_0[1];
       wind_field_cells[0][1].z = coords_z_1[0];
@@ -309,24 +271,24 @@ void GazeboWindPlugin::OnUpdate(const common::UpdateInfo& _info) {
       wind_field_cells[0][7].z = coords_z_4[1];
       wind_field_cells[0][5].z = coords_z_5[0];
       wind_field_cells[0][6].z = coords_z_5[1];
-      for ( int i = 0; i < coords_z_0.size(); i++)
+      for (int i = 0; i < coords_z_0.size(); i++)
       {
-        if ( coords_z_0[i] < link_position.z && coords_z_0[i+1] > link_position.z )
+        if (coords_z_0[i] < link_position.z && coords_z_0[i+1] > link_position.z)
         {
           wind_field_cells[0][0].z = coords_z_0[i];
           wind_field_cells[0][3].z = coords_z_0[i+1];
         }
-        if ( coords_z_1[i] < link_position.z && coords_z_1[i+1] > link_position.z )
+        if (coords_z_1[i] < link_position.z && coords_z_1[i+1] > link_position.z)
         {
           wind_field_cells[0][1].z = coords_z_1[i];
           wind_field_cells[0][2].z = coords_z_1[i+1];
         }
-        if ( coords_z_4[i] < link_position.z && coords_z_4[i+1] > link_position.z )
+        if (coords_z_4[i] < link_position.z && coords_z_4[i+1] > link_position.z)
         {
           wind_field_cells[0][4].z = coords_z_4[i];
           wind_field_cells[0][7].z = coords_z_4[i+1];
         }
-        if ( coords_z_5[i] < link_position.z && coords_z_5[i+1] > link_position.z )
+        if (coords_z_5[i] < link_position.z && coords_z_5[i+1] > link_position.z)
         {
           wind_field_cells[0][5].z = coords_z_5[i];
           wind_field_cells[0][6].z = coords_z_5[i+1];
@@ -334,103 +296,11 @@ void GazeboWindPlugin::OnUpdate(const common::UpdateInfo& _info) {
       }
       wind_field_cells[0][8].z =  wind_field_cells[0][9].z =  wind_field_cells[0][10].z =  wind_field_cells[0][11].z =  wind_field_cells[0][12].z =  wind_field_cells[0][13].z = link_position.z;
 
-      /* *RM* // Set the x- and y-coordinates of the points
-      wind_field_cells[0][0].x= wind_field_cells[0][3].x = wind_field_cells[0][4].x = wind_field_cells[0][7].x = wind_field_cells[0][8].x = wind_field_cells[0][11].x = wind_field_cells[0][12].x = floor(link_position.x/res_x_)*res_x_;
-      wind_field_cells[0][1].x = wind_field_cells[0][2].x = wind_field_cells[0][5].x = wind_field_cells[0][6].x = wind_field_cells[0][9].x = wind_field_cells[0][10].x = wind_field_cells[0][13].x = ceil(link_position.x/res_x_)*res_x_;
-      wind_field_cells[0][0].y = wind_field_cells[0][1].y = wind_field_cells[0][2].y = wind_field_cells[0][3].y = wind_field_cells[0][8].y = wind_field_cells[0][9].y = floor(link_position.y/res_y_)*res_y_;
-      wind_field_cells[0][4].y = wind_field_cells[0][5].y = wind_field_cells[0][6].y = wind_field_cells[0][7].y = wind_field_cells[0][10].y = wind_field_cells[0][11].y = ceil(link_position.y/res_y_)*res_y_;
-      wind_field_cells[0][12].y = wind_field_cells[0][13].y = link_position.y;
-
-      // Determine the z-coordinates of the points
-      // Initialize needed variables
-      double z_0_min = world_height_*2.0;
-      double z_0_max = 0;
-      double z_1_min = world_height_*2.0;
-      double z_1_max = 0;
-      double z_4_min = world_height_*2.0;
-      double z_4_max = 0;
-      double z_5_min = world_height_*2.0;
-      double z_5_max = 0;
-      double res_z_0 = 0.0;
-      double res_z_1 = 0.0;
-      double res_z_4 = 0.0;
-      double res_z_5 = 0.0;
-
-      // Read through txt file for given x-y pairs, find their resolution in z-direction comparing biggest and smallest altitude
-
-      // TO DO : Change calculation of z to be only dependent of file values, not calculated values!
-      // E.g., save all z-values corresponding to a x-y-pair into a vector, sort them from biggest to smallest,
-      // browse through to find the one where z[i] < link_position.z && z[i+1] > link_position.z
-
-      for (int i = 0; i < wind_field_[0].size(); i++)
-      {
-        //Determine z resolution above point 0
-        if (wind_field_[0][i].x == wind_field_cells[0][0].x && wind_field_[0][i].y == wind_field_cells[0][0].y)
-        {
-          if (wind_field_[0][i].z < z_0_min)
-            z_0_min = wind_field_[0][i].z;
-          if (wind_field_[0][i].z > z_0_min)
-            z_0_max = wind_field_[0][i].z;
-        }
-        res_z_0 = (z_0_max - z_0_min)/(grid_size_z_-1);
-        //Determine z resolution above point 1
-        if (wind_field_[0][i].x == wind_field_cells[0][1].x && wind_field_[0][i].y == wind_field_cells[0][1].y)
-        {
-          if (wind_field_[0][i].z < z_1_min)
-            z_1_min = wind_field_[0][i].z;
-          if (wind_field_[0][i].z > z_1_min)
-            z_1_max = wind_field_[0][i].z;
-        }
-        res_z_1 = (z_1_max - z_1_min)/(grid_size_z_-1);
-        //Determine z resolution above point 4
-        if (wind_field_[0][i].x == wind_field_cells[0][4].x && wind_field_[0][i].y == wind_field_cells[0][4].y)
-        {
-          if (wind_field_[0][i].z < z_4_min)
-            z_4_min = wind_field_[0][i].z;
-          if (wind_field_[0][i].z > z_4_min)
-            z_4_max = wind_field_[0][i].z;
-        }
-        res_z_4 = (z_4_max - z_4_min)/(grid_size_z_-1);
-        //Determine z resolution above point 5
-        if (wind_field_[0][i].x == wind_field_cells[0][5].x && wind_field_[0][i].y == wind_field_cells[0][5].y)
-        {
-          if (wind_field_[0][i].z < z_5_min)
-            z_5_min = wind_field_[0][i].z;
-          if (wind_field_[0][i].z > z_5_min)
-            z_5_max = wind_field_[0][i].z;
-        }
-        res_z_5 = (z_5_max - z_5_min)/(grid_size_z_-1);
-      }
-
-      // Set z-coordinates. Precision of txt file is two decimals after the comma
-      wind_field_cells[0][0].z =  floor(link_position.z/res_z_0)*res_z_0;
-      wind_field_cells[0][3].z =  ceil(link_position.z/res_z_0)*res_z_0;
-      wind_field_cells[0][1].z =  floor(link_position.z/res_z_1)*res_z_1;
-      wind_field_cells[0][2].z =  ceil(link_position.z/res_z_1)*res_z_1;
-      wind_field_cells[0][4].z =  floor(link_position.z/res_z_4)*res_z_4;
-      wind_field_cells[0][7].z =  ceil(link_position.z/res_z_4)*res_z_4;
-      wind_field_cells[0][5].z =  floor(link_position.z/res_z_5)*res_z_5;
-      wind_field_cells[0][6].z =  ceil(link_position.z/res_z_5)*res_z_5;
-      /*wind_field_cells[0][0].z =  round(floor(link_position.z/res_z_0)*res_z_0*100.0)/100.0;
-      wind_field_cells[0][3].z =  round(ceil(link_position.z/res_z_0)*res_z_0*100.0)/100.0;
-      wind_field_cells[0][1].z =  round(floor(link_position.z/res_z_1)*res_z_1*100.0)/100.0;
-      wind_field_cells[0][2].z =  round(ceil(link_position.z/res_z_1)*res_z_1*100.0)/100.0;
-      wind_field_cells[0][4].z =  round(floor(link_position.z/res_z_4)*res_z_4*100.0)/100.0;
-      wind_field_cells[0][7].z =  round(ceil(link_position.z/res_z_4)*res_z_4*100.0)/100.0;
-      wind_field_cells[0][5].z =  round(floor(link_position.z/res_z_5)*res_z_5*100.0)/100.0;
-      wind_field_cells[0][6].z =  round(ceil(link_position.z/res_z_5)*res_z_5*100.0)/100.0;* /
-      wind_field_cells[0][8].z =  wind_field_cells[0][9].z =  wind_field_cells[0][10].z =  wind_field_cells[0][11].z =  wind_field_cells[0][12].z =  wind_field_cells[0][13].z = link_position.z;
-      */
-
-      // Extract velocity components of each of the 8 given vertices. Problem: rounded values in file do not correspond to calculated values. Sensitive to geometry...
+      // Extract velocity components of each of the 8 given vertices.
       for (int i = 0; i < wind_field_[1].size(); i++)
-      {
         for (int j = 0; j < 8; j++)
-        {
           if (wind_field_[0][i] == wind_field_cells[0][j])
               wind_field_cells[1][j] = wind_field_[1][i];
-        }
-      }
 
       // Interpolate three times linearly to find the value of the wind velocity at the given position
       wind_field_cells[1][8] = wind_field_cells[1][0] + (wind_field_cells[1][3] - wind_field_cells[1][0])/(wind_field_cells[0][3].z - wind_field_cells[0][0].z)*(wind_field_cells[0][8].z - wind_field_cells[0][0].z);
