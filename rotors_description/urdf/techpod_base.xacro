@@ -75,7 +75,7 @@
     wind_gust_force_mean="0.0"
     wind_gust_force_variance="0.0"
     custom_static_wind_field="true"
-    wind_path="../catkin_ws/src/rotors_simulator/rotors_gazebo/models/hemicyl/wind2equi4.txt"
+    wind_path="$(find rotors_gazebo)/models/hemicyl/wind2.txt"
     world_side_size="4000"
     world_height="202.3346">
   </xacro:wind_plugin_macro>
