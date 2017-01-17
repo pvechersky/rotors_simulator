@@ -272,28 +272,30 @@ void GazeboWindPlugin::OnUpdate(const common::UpdateInfo& _info) {
       wind_field_cells[0][5].z = coords_z_5[0];
       wind_field_cells[0][6].z = coords_z_5[1];
       for (int i = 0; i < coords_z_0.size(); i++)
-      {
         if (coords_z_0[i] < link_position.z && coords_z_0[i+1] > link_position.z)
         {
           wind_field_cells[0][0].z = coords_z_0[i];
           wind_field_cells[0][3].z = coords_z_0[i+1];
         }
+      for (int i = 0; i < coords_z_1.size(); i++)
         if (coords_z_1[i] < link_position.z && coords_z_1[i+1] > link_position.z)
         {
           wind_field_cells[0][1].z = coords_z_1[i];
           wind_field_cells[0][2].z = coords_z_1[i+1];
         }
+      for (int i = 0; i < coords_z_4.size(); i++)
         if (coords_z_4[i] < link_position.z && coords_z_4[i+1] > link_position.z)
         {
           wind_field_cells[0][4].z = coords_z_4[i];
           wind_field_cells[0][7].z = coords_z_4[i+1];
         }
+      for (int i = 0; i < coords_z_5.size(); i++)
         if (coords_z_5[i] < link_position.z && coords_z_5[i+1] > link_position.z)
         {
           wind_field_cells[0][5].z = coords_z_5[i];
           wind_field_cells[0][6].z = coords_z_5[i+1];
         }
-      }
+
       wind_field_cells[0][8].z =  wind_field_cells[0][9].z =  wind_field_cells[0][10].z =  wind_field_cells[0][11].z =  wind_field_cells[0][12].z =  wind_field_cells[0][13].z = link_position.z;
 
       // Extract velocity components of each of the 8 given vertices.
