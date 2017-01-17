@@ -55,9 +55,10 @@ static const math::Vector3 kDefaultWindDirection = math::Vector3(1, 0, 0);
 static const math::Vector3 kDefaultWindGustDirection = math::Vector3(0, 1, 0);
 
 static constexpr bool kDefaultCustomStaticWindField = false;
+static const std::string kDefaultWindPath = "..";
 static constexpr double kDefaultGridSizeZ = 0.0;
-static constexpr double kDefaultGridSizeXY = 0.0;
-static constexpr double kDefaultResXY = 10.0;
+static constexpr double kDefaultResX = 0.0;
+static constexpr double kDefaultResY = 0.0;
 static constexpr double kDefaultWorldSideSize = 1000.0;
 static constexpr double kDefaultWorldHeight = 200.0;
 
@@ -81,9 +82,10 @@ class GazeboWindPlugin : public ModelPlugin {
         wind_gust_direction_(kDefaultWindGustDirection),
         random_generator_(random_device_()),
         custom_static_wind_field_(kDefaultCustomStaticWindField),
+        wind_path_(kDefaultWindPath),
         grid_size_z_(kDefaultGridSizeZ),
-        grid_size_xy_(kDefaultGridSizeXY),
-        res_xy_(kDefaultResXY),
+        res_x_(kDefaultResX),
+        res_y_(kDefaultResY),
         world_side_size_(kDefaultWorldSideSize),
         world_height_(kDefaultWorldHeight),
         frame_id_(kDefaultFrameId),
@@ -140,10 +142,11 @@ class GazeboWindPlugin : public ModelPlugin {
   common::Time wind_gust_start_;
 
   bool custom_static_wind_field_;
+  std::string wind_path_;
   std::vector<math::Vector3> wind_field_[2];
   double grid_size_z_;
-  double grid_size_xy_;
-  double res_xy_;
+  double res_x_;
+  double res_y_;
   double world_side_size_;
   double world_height_;
 
