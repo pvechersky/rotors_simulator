@@ -56,8 +56,8 @@ static const math::Vector3 kDefaultWindGustDirection = math::Vector3(0, 1, 0);
 
 static constexpr bool kDefaultCustomStaticWindField = false;
 static const std::string kDefaultWindPath = "$(find rotors_gazebo)";
-static constexpr double kDefaultWorldSideSize = 1000.0;
-static constexpr double kDefaultWorldHeight = 200.0;
+static constexpr double kDefaultZMin = 10.0;
+static constexpr double kDefaultZMax = 0.0;
 
 /// \brief This gazebo plugin simulates wind acting on a model.
 class GazeboWindPlugin : public ModelPlugin {
@@ -80,8 +80,8 @@ class GazeboWindPlugin : public ModelPlugin {
         random_generator_(random_device_()),
         custom_static_wind_field_(kDefaultCustomStaticWindField),
         wind_path_(kDefaultWindPath),
-        world_side_size_(kDefaultWorldSideSize),
-        world_height_(kDefaultWorldHeight),
+        z_min_(kDefaultZMin),
+        z_max_(kDefaultZMax),
         frame_id_(kDefaultFrameId),
         link_name_(kDefaultLinkName),
         node_handle_(NULL) {}
@@ -140,8 +140,8 @@ class GazeboWindPlugin : public ModelPlugin {
   std::vector<math::Vector3> wind_field_[2];
   std::vector<double> coords_x_;
   std::vector<double> coords_y_;
-  double world_side_size_;
-  double world_height_;
+  double z_min_;
+  double z_max_;
 
   ros::Publisher wind_pub_;
   ros::Publisher wind_speed_pub_;

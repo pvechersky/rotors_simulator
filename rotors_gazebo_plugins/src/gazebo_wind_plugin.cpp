@@ -93,8 +93,6 @@ void GazeboWindPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
   {
     getSdfParam<math::Vector3>(_sdf, "windDirection", wind_direction_, wind_direction_);
     getSdfParam<double>(_sdf, "windSpeedMean", wind_speed_mean_, wind_speed_mean_);
-    getSdfParam<double>(_sdf, "worldSideSize", world_side_size_, world_side_size_);
-    getSdfParam<double>(_sdf, "worldHeight", world_height_, world_height_);
     getSdfParam<std::string>(_sdf, "windPath", wind_path_, wind_path_);
     // Read the txt file containing the wind field data, save it to a 2D array of math::Vector3 elements
     std::ifstream fin;
@@ -133,6 +131,12 @@ void GazeboWindPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
           coords_y_.push_back(position.y);
         else
           fill = true;
+
+        // Find maximum and minimum values of z in the wind map
+        if (position.z < z_min_)
+          z_min_ = position.z;
+        else if (position.z > z_max_)
+          z_max_ = position.z;
       }
       ROS_INFO_STREAM("Wind field read successfully from text file.");
 
@@ -147,7 +151,6 @@ void GazeboWindPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
       gzerr << "[gazebo_wind_plugin] Could not open wind field text file.\n";
     }
   }
-
 
   link_ = model_->GetLink(link_name_);
   if (link_ == NULL)
@@ -209,7 +212,7 @@ void GazeboWindPlugin::OnUpdate(const common::UpdateInfo& _info) {
     math::Vector3 link_position = link_->GetWorldPose().pos;
 
     //Determine the wind velocity at the aircraft position if within world bounds. Else, set to user defined constant value.
-    if (!(fabs(link_position.x)>(world_side_size_/2.0) || fabs(link_position.y)>(world_side_size_/2.0) || link_position.z > (world_height_*2.0) || link_position.z < 0))
+    if (!(link_position.x < coords_x_[0] || link_position.x > coords_x_[coords_x_.size()-1] || link_position.y < coords_y_[0] || link_position.y > coords_y_[coords_y_.size()-1] || link_position.z < z_min_ || link_position.z > z_max_))
     {
       // Create a vector containing the coordinates of 8 points corresponding to the vertices of the volume enclosing the link and the 5 points for interpolation
       // Containing as well the wind velocity value for each point.
