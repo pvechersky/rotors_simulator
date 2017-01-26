@@ -171,7 +171,7 @@ Extended Wind Plugin
 The existing wind plugin in RotorS has been extended to allow the use of a custom, static wind field for a given world. This is done by enabling the wind plugin macro in the aircraft base file (in our case `techpod_base.xacro`, which is found in `rotors_simulator/rotors_description/urdf`), and feeding it the correct parameters and files.
 
 #### Wind Plugin Macro
-Here's an example of the lines to be added in the base file, containing numerous user-defined variables:
+Here's an example of the plugin macro to be added in the base file, containing numerous user-defined variables:
 
 ```
 <xacro:wind_plugin_macro
@@ -191,7 +191,8 @@ Here's an example of the lines to be added in the base file, containing numerous
   wind_path="$(find rotors_gazebo)/models/hemicyl/wind2.txt">
 </xacro:wind_plugin_macro>
 ```
-The four values that need to be set are `wind_direction` and `wind_speed_mean`, which specify the default wind field when the aircraft is flying outside of the desired wind field, the boolean `custom_static_wind_field` which, when set to `true`, enables the extended functionality, as well as the string `wind_path` which describes the path (from `~/.ros`) to the text file specifying the wind field.
+All parameters needed in the macro as well as their units are specified in the `component_snippets.xacro` file.
+The four important values for the extended plugin are `wind_direction` and `wind_speed_mean`, which specify the default wind field when the aircraft is flying outside of the desired wind field, the boolean `custom_static_wind_field` which, when set to `true`, enables the extended functionality, as well as the string `wind_path` which describes the path (from `~/.ros`) to the text file specifying the wind field.
 
 #### Wind field text file
 The text file contains information about a series a grid points spread over the world, specifying for each its coordinates from the world origin (x, y, z) and the corresponding wind distribution at its location (u, v, w). The file must contain at least 8 points, and each of them must have the following format:

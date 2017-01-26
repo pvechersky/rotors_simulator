@@ -43,7 +43,7 @@
   <xacro:default_air_speed_sensor namespace="${namespace}" parent_link="${namespace}/base_link" />
 
   <!-- Mount a downward-looking camera. -->
-  <xacro:raw_camera_macro
+  <!-- <xacro:raw_camera_macro
     namespace="${namespace}"
     parent_link="${namespace}/base_link"
     camera_suffix="downward"
@@ -59,7 +59,7 @@
     enable_visual="false">
     <mesh filename="package://rotors_description/meshes/vi_camera.dae" scale="1 1 1" />
     <origin xyz="0 0 -0.03" rpy="0 1.5707 1.5707" />
-  </xacro:raw_camera_macro>
+  </xacro:raw_camera_macro> 3346-->
 
   <xacro:wind_plugin_macro
     namespace="${namespace}"
@@ -75,7 +75,7 @@
     wind_gust_force_mean="0.0"
     wind_gust_force_variance="0.0"
     custom_static_wind_field="true"
-    wind_path="$(find rotors_gazebo)/models/hemicyl/wind2.txt">
+    custom_wind_field_path="$(find rotors_gazebo)/models/hemicyl/wind2.txt">
   </xacro:wind_plugin_macro>
 
   <xacro:if value="$(arg enable_ground_truth)">

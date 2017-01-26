@@ -48,14 +48,14 @@ static constexpr double kDefaultWindGustForceVariance = 0.0;
 static constexpr double kDefaultWindSpeedMean = 0.0;
 static constexpr double kDefaultWindSpeedVariance = 0.0;
 
-static constexpr double kDefaultWindGustStart = 0.0;
+static constexpr double kDefaultWindGustStart = 10.0;
 static constexpr double kDefaultWindGustDuration = 0.0;
 
 static const math::Vector3 kDefaultWindDirection = math::Vector3(1, 0, 0);
 static const math::Vector3 kDefaultWindGustDirection = math::Vector3(0, 1, 0);
 
 static constexpr bool kDefaultCustomStaticWindField = false;
-static const std::string kDefaultWindPath = "$(find rotors_gazebo)";
+static const std::string kDefaultCustomWindFieldPath = "$(find rotors_gazebo)";
 static constexpr double kDefaultZMin = 10.0;
 static constexpr double kDefaultZMax = 0.0;
 
@@ -79,7 +79,7 @@ class GazeboWindPlugin : public ModelPlugin {
         wind_gust_direction_(kDefaultWindGustDirection),
         random_generator_(random_device_()),
         custom_static_wind_field_(kDefaultCustomStaticWindField),
-        wind_path_(kDefaultWindPath),
+        custom_wind_field_path_(kDefaultCustomWindFieldPath),
         z_min_(kDefaultZMin),
         z_max_(kDefaultZMax),
         frame_id_(kDefaultFrameId),
@@ -136,7 +136,7 @@ class GazeboWindPlugin : public ModelPlugin {
   common::Time wind_gust_start_;
 
   bool custom_static_wind_field_;
-  std::string wind_path_;
+  std::string custom_wind_field_path_;
   std::vector<math::Vector3> wind_field_[2];
   std::vector<double> coords_x_;
   std::vector<double> coords_y_;

@@ -1,6 +1,6 @@
 <launch>
   <arg name="uav_name" default="techpod"/>
-  <arg name="world_name" default="hemicyl"/>
+  <arg name="world_name" default="yosemite"/>
   <arg name="enable_logging" default="true"/>
   <arg name="enable_ground_truth" default="true"/>
   <arg name="log_file" default="$(arg uav_name)"/>
@@ -10,9 +10,8 @@
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
     <arg name="world_name" value="$(find rotors_gazebo)/worlds/$(arg world_name).world"/>
     <!-- <arg name="debug" value="true"/> -->
-    <arg name="paused" value="false"/>
-    <!--<arg name="gui" value="false"/> -->
-    <arg name="verbose" value="true" />
+    <arg name="paused" value="true"/>
+    <!-- <arg name="gui" value="false"/> -->
   </include>
 
   <group ns="$(arg uav_name)">
