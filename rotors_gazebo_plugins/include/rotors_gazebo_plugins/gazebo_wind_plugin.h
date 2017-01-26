@@ -48,16 +48,16 @@ static constexpr double kDefaultWindGustForceVariance = 0.0;
 static constexpr double kDefaultWindSpeedMean = 0.0;
 static constexpr double kDefaultWindSpeedVariance = 0.0;
 
-static constexpr double kDefaultWindGustStart = 0.0;
+static constexpr double kDefaultWindGustStart = 10.0;
 static constexpr double kDefaultWindGustDuration = 0.0;
 
 static const math::Vector3 kDefaultWindDirection = math::Vector3(1, 0, 0);
 static const math::Vector3 kDefaultWindGustDirection = math::Vector3(0, 1, 0);
 
 static constexpr bool kDefaultCustomStaticWindField = false;
-static const std::string kDefaultWindPath = "$(find rotors_gazebo)";
-static constexpr double kDefaultZMin = 10.0;
-static constexpr double kDefaultZMax = 0.0;
+static const std::string kDefaultCustomWindFieldPath = "$(find rotors_gazebo)";
+// *CM* static constexpr double kDefaultZMin = 10.0;
+// *CM* static constexpr double kDefaultZMax = 0.0;
 
 /// \brief This gazebo plugin simulates wind acting on a model.
 class GazeboWindPlugin : public ModelPlugin {
@@ -79,14 +79,15 @@ class GazeboWindPlugin : public ModelPlugin {
         wind_gust_direction_(kDefaultWindGustDirection),
         random_generator_(random_device_()),
         custom_static_wind_field_(kDefaultCustomStaticWindField),
-        wind_path_(kDefaultWindPath),
-        z_min_(kDefaultZMin),
-        z_max_(kDefaultZMax),
+        // *CM* z_min_(kDefaultZMin),
+        // *CM* z_max_(kDefaultZMax),
         frame_id_(kDefaultFrameId),
         link_name_(kDefaultLinkName),
         node_handle_(NULL) {}
 
   virtual ~GazeboWindPlugin();
+
+  void ReadCustomWindField(std::string& custom_wind_field_path);
 
  protected:
   /// \brief Load the plugin.
@@ -136,12 +137,11 @@ class GazeboWindPlugin : public ModelPlugin {
   common::Time wind_gust_start_;
 
   bool custom_static_wind_field_;
-  std::string wind_path_;
-  std::vector<math::Vector3> wind_field_[2];
-  std::vector<double> coords_x_;
-  std::vector<double> coords_y_;
-  double z_min_;
-  double z_max_;
+  // *CM* std::vector<math::Vector3> wind_field_[2];
+  // *CM* std::vector<double> coords_x_;
+  // *CM* std::vector<double> coords_y_;
+  // *CM* double z_min_;
+  // *CM* double z_max_;
 
   ros::Publisher wind_pub_;
   ros::Publisher wind_speed_pub_;
