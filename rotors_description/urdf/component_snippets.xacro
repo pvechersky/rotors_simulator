@@ -573,7 +573,7 @@
   <!-- Macro to add a magnetometer. -->
   <xacro:macro name="magnetometer_plugin_macro"
     params="namespace magnetometer_suffix parent_link magnetometer_topic
-      mass_magnetometer_sensor ref_mag_north ref_mag_east ref_mag_down 
+      mass_magnetometer_sensor ref_mag_north ref_mag_east ref_mag_down
       noise_normal noise_uniform_initial_bias *inertia *origin">
     <!-- Magnetometer link -->
     <link name="${namespace}/magnetometer${magnetometer_suffix}_link">
@@ -597,7 +597,7 @@
         <magnetometerTopic>${magnetometer_topic}</magnetometerTopic> <!-- (string): name of the sensor output topic and prefix of service names (defaults to 'magnetic_field') -->
         <!-- [Tesla] Below is the reference Earth's magnetic field at the reference location in NED frame.
              The default reference location is Zurich (lat=+47.3667degN, lon=+8.5500degE, h=+500m, WGS84).
-	     You can obtain the magnetic field strength for your location using the World Magnetic Model:
+	     You can obtain the magnetic field strength for your location using the World Magnetic Model: 
              http://www.ngdc.noaa.gov/geomag-web/#igrfwmm -->
         <refMagNorth>${ref_mag_north}</refMagNorth>
         <refMagEast>${ref_mag_east}</refMagEast>
