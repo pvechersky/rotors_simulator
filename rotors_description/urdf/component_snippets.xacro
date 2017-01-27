@@ -432,7 +432,7 @@
   <!-- Macro to add the wind plugin. -->
   <xacro:macro name="wind_plugin_macro"
     params="namespace xyz_offset wind_direction wind_force_mean wind_force_variance
-      wind_speed_mean wind_speed_variance wind_gust_direction wind_gust_duration
+      wind_speed_mean wind_speed_variance wind_gust_direction wind_gust_duration 
       wind_gust_start wind_gust_force_mean wind_gust_force_variance
       custom_static_wind_field custom_wind_field_path">
     <gazebo>
