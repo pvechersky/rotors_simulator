@@ -57,7 +57,6 @@ void GazeboWindPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
   else
     gzerr << "[gazebo_wind_plugin] Please specify a xyzOffset.\n";
 
-  //Elements of function: getSdfParam<type>(sdf element, name of parameter in sdf file, name of parameter in this class, default value)
   getSdfParam<std::string>(_sdf, "windPubTopic", wind_pub_topic_, wind_pub_topic_);
   getSdfParam<std::string>(_sdf, "windSpeedPubTopic", wind_speed_pub_topic_, wind_speed_pub_topic_);
   getSdfParam<std::string>(_sdf, "frameId", frame_id_, frame_id_);
@@ -67,7 +66,7 @@ void GazeboWindPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
   getSdfParam<math::Vector3>(_sdf, "windDirection", wind_direction_, wind_direction_);
   getSdfParam<double>(_sdf, "windSpeedMean", wind_speed_mean_, wind_speed_mean_);
 
-  // Should a custom static wind field be used? Parameter to be set in techpod_base.xacro
+  // Check if a custom static wind field should be used, and act accordingly
   getSdfParam<bool>(_sdf, "customStaticWindField", custom_static_wind_field_, custom_static_wind_field_);
 
   if (!custom_static_wind_field_) {
@@ -90,61 +89,12 @@ void GazeboWindPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
     wind_gust_force_n_ = NormalDistribution(0, sqrt(wind_gust_force_variance_));
     wind_speed_n_ = NormalDistribution(0, sqrt(wind_speed_variance_));
   } else {
-    getSdfParam<std::string>(_sdf, "customWindFieldPath", custom_wind_field_path_, custom_wind_field_path_);
-    // Read the txt file containing the wind field data, save it to a 2D array of math::Vector3 elements
-    std::ifstream fin;
-    fin.open(custom_wind_field_path_);
-    if (fin.is_open()) {
-      math::Vector3 position;
-      math::Vector3 wind;
-      double value = 0;
-      bool fill = true;
+    // Get the wind field text file path, read it and save data
+    std::string custom_wind_field_path = kDefaultCustomWindFieldPath;
 
-      while (fin >> value) {
-        position.x = value;
-        fin >> position.y >> position.z >> wind.x >> wind.y >> wind.z;
-        wind_field_[0].push_back(position);
-        wind_field_[1].push_back(wind);
+    getSdfParam<std::string>(_sdf, "customWindFieldPath", custom_wind_field_path, custom_wind_field_path);
 
-        // Fill the x and y coordinate vectors
-        // Check if x coordinate is already present in coords_x
-        for (int i = 0; i < coords_x_.size(); i++) {
-          if (position.x == coords_x_[i])
-            fill = false;
-        }
-        // If not, push it back in the vector. Else, reinitialize fill variable.
-        if (fill)
-          coords_x_.push_back(position.x);
-        else
-          fill = true;
-        // Check if y coordinate is already present in coords_y
-        for (int i = 0; i < coords_y_.size(); i++) {
-          if (position.y == coords_y_[i])
-            fill = false;
-        }
-        // If not, push it back in the vector. Else, reinitialize fill variable.
-        if (fill)
-          coords_y_.push_back(position.y);
-        else
-          fill = true;
-
-        // Find maximum and minimum values of z in the wind map
-        if (position.z < z_min_)
-          z_min_ = position.z;
-        else if (position.z > z_max_)
-          z_max_ = position.z;
-      }
-
-      ROS_INFO_STREAM("Wind field read successfully from text file.");
-
-      // Sort the coordinate vectors
-      std::sort(coords_x_.begin(), coords_x_.end());
-      std::sort(coords_y_.begin(), coords_y_.end());
-
-      fin.close();
-    } else {
-      gzerr << "[gazebo_wind_plugin] Could not open wind field text file.\n";
-    }
+    ReadCustomWindField(custom_wind_field_path);
   }
 
   link_ = model_->GetLink(link_name_);
@@ -167,7 +117,8 @@ void GazeboWindPlugin::OnUpdate(const common::UpdateInfo& _info) {
 
   math::Vector3 wind_velocity = math::Vector3(0,0,0);
 
-  if (!custom_static_wind_field_) { // Choose method
+  // Choose method for calculating wind velocity
+  if (!custom_static_wind_field_) {
     // Calculate the wind force.
     double wind_strength = wind_force_mean_ + wind_force_n_(random_generator_);
     math::Vector3 wind = wind_strength * wind_direction_;
@@ -204,8 +155,8 @@ void GazeboWindPlugin::OnUpdate(const common::UpdateInfo& _info) {
     // Get the current position of the aircraft in world coordinates
     math::Vector3 link_position = link_->GetWorldPose().pos;
 
-    //Determine the wind velocity at the aircraft position if within world bounds. Else, set to user defined constant value.
-    if (!(link_position.x < coords_x_[0] || link_position.x > coords_x_[coords_x_.size()-1] || link_position.y < coords_y_[0] || link_position.y > coords_y_[coords_y_.size()-1] || link_position.z < z_min_ || link_position.z > z_max_)) {
+    // Check if aircraft is out of wind field or not, and act accordingly
+    /* *CM* if (!(link_position.x < coords_x_[0] || link_position.x > coords_x_[coords_x_.size()-1] || link_position.y < coords_y_[0] || link_position.y > coords_y_[coords_y_.size()-1] || link_position.z < z_min_ || link_position.z > z_max_)) {
       // Create a vector containing the coordinates of 8 points corresponding to the vertices of the volume enclosing the link and the 5 points for interpolation
       // Containing as well the wind velocity value for each point.
       std::vector<math::Vector3> wind_field_cells[2];
@@ -316,8 +267,9 @@ void GazeboWindPlugin::OnUpdate(const common::UpdateInfo& _info) {
 
       wind_velocity = wind_field_cells[1][12] + (wind_field_cells[1][13] - wind_field_cells[1][12])/(wind_field_cells[0][13].x - wind_field_cells[0][12].x)*(link_position.x - wind_field_cells[0][12].x);
     } else {
+      // Set the wind velocity to the specified default constant value */
       wind_velocity = wind_speed_mean_ * wind_direction_;
-    }
+    //}
   }
 
   // Publish the wind speed
@@ -331,6 +283,101 @@ void GazeboWindPlugin::OnUpdate(const common::UpdateInfo& _info) {
   wind_speed_msg.velocity.z = wind_velocity.z;
 
   wind_speed_pub_.publish(wind_speed_msg);
+}
+
+void GazeboWindPlugin::ReadCustomWindField(std::string& custom_wind_field_path) {
+  std::ifstream fin;
+  fin.open(custom_wind_field_path);
+  if (fin.is_open()) {
+    std::string data_name;
+
+    //Those are here just for the moment. Should be class provate variables.
+    float min_x_;
+    float min_y_;
+    int n_x_;
+    int n_y_;
+    double res_x_;
+    float res_y_;
+
+    // Continue filling up the conditions! For documentation: order of elements in txt file not important
+    while (fin >> data_name){
+      if (data_name == "min_x:") {
+        fin >> min_x_;
+        ROS_INFO_STREAM("min_x is : " << min_x_);
+      } else if (data_name == "min_y:") {
+        fin >> min_y_;
+        ROS_INFO_STREAM("min_y is: " << min_y_);
+      } else if (data_name == "n_x:") {
+        fin >> n_x_;
+        ROS_INFO_STREAM("n_x is: " << n_x_);
+      } else if (data_name == "n_y:") {
+        fin >> n_y_;
+        ROS_INFO_STREAM("n_y is: " << n_y_);
+      } else if (data_name == "res_x:") {
+        fin >> res_x_;
+        ROS_INFO_STREAM("res_x is: " << res_x_);
+      } else if (data_name == "res_y:") {
+        fin >> res_y_;
+        ROS_INFO_STREAM("res_y is: " << res_y_);
+      } else {
+        getline(fin, data_name);
+      }
+    }
+
+
+    /*while (fin >> data_name) {
+      if (data_name == "min_x:")
+    }*/
+
+    /* *CM* math::Vector3 position;
+    math::Vector3 wind;
+    double value = 0;
+    bool fill = true;
+
+    while (fin >> value) {
+      position.x = value;
+      fin >> position.y >> position.z >> wind.x >> wind.y >> wind.z;
+      wind_field_[0].push_back(position);
+      wind_field_[1].push_back(wind);
+
+      // Fill the x and y coordinate vectors
+      // Check if x coordinate is already present in coords_x
+      for (int i = 0; i < coords_x_.size(); i++) {
+        if (position.x == coords_x_[i])
+          fill = false;
+      }
+      // If not, push it back in the vector. Else, reinitialize fill variable.
+      if (fill)
+        coords_x_.push_back(position.x);
+      else
+        fill = true;
+      // Check if y coordinate is already present in coords_y
+      for (int i = 0; i < coords_y_.size(); i++) {
+        if (position.y == coords_y_[i])
+          fill = false;
+      }
+      // If not, push it back in the vector. Else, reinitialize fill variable.
+      if (fill)
+        coords_y_.push_back(position.y);
+      else
+        fill = true;
+
+      // Find maximum and minimum values of z in the wind map
+      if (position.z < z_min_)
+        z_min_ = position.z;
+      else if (position.z > z_max_)
+        z_max_ = position.z;
+    }
+    // Sort the coordinate vectors
+    std::sort(coords_x_.begin(), coords_x_.end());
+    std::sort(coords_y_.begin(), coords_y_.end());
+    */
+    fin.close();
+    ROS_INFO_STREAM("Wind field read successfully from text file.");
+  } else {
+    gzerr << "[gazebo_wind_plugin] Could not open wind field text file.\n";
+  }
+
 }
 
 GZ_REGISTER_MODEL_PLUGIN(GazeboWindPlugin);
