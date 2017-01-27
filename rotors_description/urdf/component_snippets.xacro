@@ -432,7 +432,7 @@
   <!-- Macro to add the wind plugin. -->
   <xacro:macro name="wind_plugin_macro"
     params="namespace xyz_offset wind_direction wind_force_mean wind_force_variance
-      wind_speed_mean wind_speed_variance wind_gust_direction wind_gust_duration
+      wind_speed_mean wind_speed_variance wind_gust_direction wind_gust_duration 
       wind_gust_start wind_gust_force_mean wind_gust_force_variance
       custom_static_wind_field custom_wind_field_path">
     <gazebo>
@@ -458,7 +458,7 @@
   </xacro:macro>
 
   <!-- Macro to add a GPS sensor. -->
-  <xacro:macro name="gps_plugin_macro"
+  <xacro:macro name="gps_plugin_macro" 
     params="namespace gps_suffix parent_link gps_topic ground_speed_topic
       mass_gps_sensor reference_latitude reference_longitude reference_altitude
       reference_heading noise_normal_position noise_uniform_position
@@ -573,7 +573,7 @@
   <!-- Macro to add a magnetometer. -->
   <xacro:macro name="magnetometer_plugin_macro"
     params="namespace magnetometer_suffix parent_link magnetometer_topic
-      mass_magnetometer_sensor ref_mag_north ref_mag_east ref_mag_down
+      mass_magnetometer_sensor ref_mag_north ref_mag_east ref_mag_down 
       noise_normal noise_uniform_initial_bias *inertia *origin">
     <!-- Magnetometer link -->
     <link name="${namespace}/magnetometer${magnetometer_suffix}_link">
@@ -597,7 +597,7 @@
         <magnetometerTopic>${magnetometer_topic}</magnetometerTopic> <!-- (string): name of the sensor output topic and prefix of service names (defaults to 'magnetic_field') -->
         <!-- [Tesla] Below is the reference Earth's magnetic field at the reference location in NED frame.
              The default reference location is Zurich (lat=+47.3667degN, lon=+8.5500degE, h=+500m, WGS84).
-	     You can obtain the magnetic field strength for your location using the World Magnetic Model:
+	     You can obtain the magnetic field strength for your location using the World Magnetic Model: 
              http://www.ngdc.noaa.gov/geomag-web/#igrfwmm -->
         <refMagNorth>${ref_mag_north}</refMagNorth>
         <refMagEast>${ref_mag_east}</refMagEast>
@@ -1082,7 +1082,7 @@
     <xacro:air_speed_sensor_plugin_macro
       namespace="${namespace}"
       parent_link="${parent_link}"
-      mass_air_speed_sensor="0.015"
+      mass_air_speed_sensor="0.015" 
       air_speed_topic="air_speed"
       ground_speed_topic="ground_speed"
       wind_speed_topic="gazebo/wind_speed">
