@@ -168,10 +168,66 @@ Depending on the type of the joystick and the personal preference for operation,
 Extended Wind Plugin
 -------------------------
 
-The existing wind plugin in RotorS has been extended to allow the use of a custom, static wind field for a given world. This is done by enabling the wind plugin macro in the aircraft base file (in our case `techpod_base.xacro`, which is found in `rotors_simulator/rotors_description/urdf`), and feeding it the correct parameters and files.
+The existing wind plugin in RotorS has been extended to allow the use of a custom, static wind field for a given world. This is done by enabling the wind plugin macro in the aircraft base file (in our case `techpod_base.xacro`, which is found in `rotors_simulator/rotors_description/urdf`), and feeding it the correct parameters and files. The wind grid and values are generated using a suitable model, and saved in a text file read by the plugin.
+
+#### Grid specifications
+
+The grid used to define the wind field must be equidistant in x, respectively y-direction. The points in z-direction are distributed with upwards linearly increasing distance (spacing factors can be tuned as desired).
+
+#### Wind field text file format
+
+The text file contains information about the grid geometry as well as the wind values at each grid point. The data needed in the text file consists of:
+
+  1. Smallest x-coordinate of the grid `min_x`, of type integer, in [m].
+
+  2. Smallest y-coordinate of the grid `min_y`, of type integer, in [m].
+
+  3. Number of grid points in x-direction `n_x`, of type integer.
+
+  4. Number of grid points in y-direction `n_y`, of type integer.
+
+  5. Resolution in x-direction `res_x`, of type float, in [m].
+
+  6. Resolution in y-direction `res_y`, of type float, in [m].
+
+  7. Spacing factors in z-direction stored in `vertical_spacing_factors`, an (n_z)-dimensional array of float values between 0 for the lowest and 1 for the highest point.
+  8. The altitude of each grid point contained in the lower x-y plane, stored in `bottom_z`, an (n_x*n_y)-dimensional array of float values, in [m].
+  > **Note**: Element [0] is the grid corner point with the lowest x and y-coordinates, and the array is filled counting up in x-direction first, then in y-direction (such that a point with indices i,j corresponds to the (i+j*n_x)th element of the array).
+
+  9. Similarly, the altitude of each grid point contained in the upper x-y plane, stored in `top_z`, an (n_x*n_y)-dimensional array of float values, in [m].
+
+  10. The speed of the wind in x-direction for each grid point, stored in `u`, an (n_x*n_y*n_z)-dimensional array of float values, in [m/s].
+  > **Note**: Element [0] is the grid corner point with the lowest x,y and z-coordinates, and the array is filled counting up in x-direction first, then in y-direction and finally in z-direction (such that a point with indices i,j,k corresponds to the (i + j*n_x + k*n_x*n_y)th element of the array).
+
+  11. Similarly, the speed of the wind in y-direction stored in the array `v`, and in z-direction stored in `w`.
+
+The order in which the data is saved in the text file is not relevant, but the format must comply with the following requirements:
+
+  1. In the first line of the file, the name of one of the 12 needed data followed directly by a semicolon (e.g., `vertical_spacing_factors:`)
+
+  2. In the following line, the corresponding data. If multiple values are needed, they must be separated by a space (e.g., `0.0 0.025641 0.051282 0.076923 ...`)
+
+  3. The rest of the data follows the same format.
+
+In the case of the hemicylindrical world, the beginning of the text file describing a divergent-free wind field looks as follows:
+
+```
+min_x:
+-2000.0
+min_y:
+-2000.0
+n_x:
+201
+n_y:
+2
+...
+```
+
+For clarity and convenience, the wind field text file is placed in the same folder as the world model.
 
 #### Wind Plugin Macro
-Here's an example of the plugin macro to be added in the base file, containing numerous user-defined variables:
+
+Here is an example of the plugin macro to be added in the base file, containing numerous necessary user-defined variables:
 
 ```
 <xacro:wind_plugin_macro
@@ -188,43 +244,25 @@ Here's an example of the plugin macro to be added in the base file, containing n
   wind_gust_force_mean="0.0"
   wind_gust_force_variance="0.0"
   custom_static_wind_field="true"
-  wind_path="$(find rotors_gazebo)/models/hemicyl/wind2.txt">
+  custom_wind_field_path="$(find rotors_gazebo)/models/hemicyl/custom_wind_field.txt">
 </xacro:wind_plugin_macro>
 ```
 All parameters needed in the macro as well as their units are specified in the `component_snippets.xacro` file.
-The four important values for the extended plugin are `wind_direction` and `wind_speed_mean`, which specify the default wind field when the aircraft is flying outside of the desired wind field, the boolean `custom_static_wind_field` which, when set to `true`, enables the extended functionality, as well as the string `wind_path` which describes the path (from `~/.ros`) to the text file specifying the wind field.
-
-#### Wind field text file
-The text file contains information about a series a grid points spread over the world, specifying for each its coordinates from the world origin (x, y, z) and the corresponding wind distribution at its location (u, v, w). The file must contain at least 8 points, and each of them must have the following format:
-```
-x y z u v w
-```
-Where each value is of type double (or less), and is separated from the others by a space (no commas!). The order in which the points are given is not important, and whether each line represents one point only or all points are listed on the same line does not matter.
-
-In the case of the hemicylindrical world, the beginning of the text file describing a divergent-free wind field with flow conditions of 5 m/s in x-direction looks as follows:
-```
--2000.0 -2000.0 0.0 4.267 -0.0 -0.001
--2000.0 2000.0 0.0 4.267 -0.0 -0.001
--1980.0 -2000.0 0.0 4.054 0.0 0.004
--1980.0 2000.0 0.0 4.054 0.0 0.004
--1960.0 -2000.0 0.0 4.138 0.0 0.001
--1960.0 2000.0 0.0 4.138 0.0 0.001
-...
-```
-For clarity and convenience, the wind field text file is placed in the same folder as the world model.
+The four relevant values for the use of the extended plugin are `wind_direction` and `wind_speed_mean`, which specify the default constant wind field when the aircraft is flying outside of the custom wind field region, the boolean `custom_static_wind_field` which, when set to `true`, enables the extended functionality, as well as the string `custom_wind_field_path` which describes the path (from `~/.ros`) to the text file specifying the grid and wind field.
 
 #### Functioning
 In brief, the plugin works in distinct steps:
 
-  1. Load the plugin and read the text file once, saving the values in an `std::vector<math::Vector3> wind_field_[2]` object.
+  1. Load the plugin and read the text file once, saving the data.
 
   2. During update event:
 
-    2.1. Locate the aircraft and see if it is located within the specified wind field.
+    2.1. Locate the aircraft and see if it is flying within the specified wind field bounds.
 
     2.2. If so, identify the grid points at the vertices of the enclosing cell and extract their wind values. If not, set the wind velocity to the default, user-defined value.
 
-    2.3. Interpolate linearly in x,y and z directions to find the wind velocity at the aircraft position.
+    2.3. Interpolate linearly in z,y and x-directions to find the wind velocity at the aircraft position.
+
     2.4. Publish the wind velocity in a wind speed message.
 
 
