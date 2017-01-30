@@ -155,121 +155,27 @@ void GazeboWindPlugin::OnUpdate(const common::UpdateInfo& _info) {
     // Get the current position of the aircraft in world coordinates
     math::Vector3 link_position = link_->GetWorldPose().pos;
 
+    // Find indices for x,y and minimal/maximal values of the vertical spacing factor of the four surrounding grid columns
+    int i_inf = floor((link_position.x - min_x_) / res_x_);
+    int i_sup = i_inf + 1;
+    int j_inf = floor((link_position.y - min_y_) / res_y_);
+    int j_sup = j_inf + 1;
+
+    float vertical_spacing_factor_0 = (link_position.z - bottom_z_[i_inf + (j_inf * n_x_)]) / (top_z_[i_inf + (j_inf * n_x_)] - bottom_z_[i_inf + (j_inf * n_x_)]);
+    float vertical_spacing_factor_1 = (link_position.z - bottom_z_[i_sup + (j_inf * n_x_)]) / (top_z_[i_sup + (j_inf * n_x_)] - bottom_z_[i_sup + (j_inf * n_x_)]);
+    float vertical_spacing_factor_4 = (link_position.z - bottom_z_[i_inf + (j_sup * n_x_)]) / (top_z_[i_inf + (j_sup * n_x_)] - bottom_z_[i_inf + (j_sup * n_x_)]);
+    float vertical_spacing_factor_5 = (link_position.z - bottom_z_[i_sup + (j_sup * n_x_)]) / (top_z_[i_sup + (j_sup * n_x_)] - bottom_z_[i_sup + (j_sup * n_x_)]);
+
+    float vertical_spacing_factor_min = std::min(std::min(std::min(vertical_spacing_factor_0,vertical_spacing_factor_1),vertical_spacing_factor_4),vertical_spacing_factor_5);
+    float vertical_spacing_factor_max = std::max(std::max(std::max(vertical_spacing_factor_0,vertical_spacing_factor_1),vertical_spacing_factor_4),vertical_spacing_factor_5);
+
     // Check if aircraft is out of wind field or not, and act accordingly
-    /* *CM* if (!(link_position.x < coords_x_[0] || link_position.x > coords_x_[coords_x_.size()-1] || link_position.y < coords_y_[0] || link_position.y > coords_y_[coords_y_.size()-1] || link_position.z < z_min_ || link_position.z > z_max_)) {
-      // Create a vector containing the coordinates of 8 points corresponding to the vertices of the volume enclosing the link and the 5 points for interpolation
-      // Containing as well the wind velocity value for each point.
-      std::vector<math::Vector3> wind_field_cells[2];
-      for (int i = 0; i < 14; i++) {
-        for (int j=0; j<2; j++)
-          wind_field_cells[j].push_back(math::Vector3(0, 0, 0));
-      }
-
-      // Find the vertices of the 8 points
-        // Find their x-coordinates
-      for (int i = 0; i < coords_x_.size(); i++) {
-        if (coords_x_[i] < link_position.x && coords_x_[i+1] > link_position.x) {
-          wind_field_cells[0][0].x= wind_field_cells[0][3].x = wind_field_cells[0][4].x = wind_field_cells[0][7].x = wind_field_cells[0][8].x = wind_field_cells[0][11].x = wind_field_cells[0][12].x = coords_x_[i];
-          wind_field_cells[0][1].x = wind_field_cells[0][2].x = wind_field_cells[0][5].x = wind_field_cells[0][6].x = wind_field_cells[0][9].x = wind_field_cells[0][10].x = wind_field_cells[0][13].x = coords_x_[i+1];
-          break;
-        }
-      }
-
-        // Find their y-coordinates
-      for (int i = 0; i < coords_y_.size(); i++) {
-        if (coords_y_[i] < link_position.y && coords_y_[i+1] > link_position.y) {
-          wind_field_cells[0][0].y = wind_field_cells[0][1].y = wind_field_cells[0][2].y = wind_field_cells[0][3].y = wind_field_cells[0][8].y = wind_field_cells[0][9].y = coords_y_[i];
-          wind_field_cells[0][4].y = wind_field_cells[0][5].y = wind_field_cells[0][6].y = wind_field_cells[0][7].y = wind_field_cells[0][10].y = wind_field_cells[0][11].y = coords_y_[i+1];
-          break;
-        }
-      }
-
-      wind_field_cells[0][12].y = wind_field_cells[0][13].y = link_position.y;
-
-        // Create, fill and sort the z-coordinates vectors of the 4 corners of the volume cell enclosing the link
-      std::vector<double> coords_z_0;
-      std::vector<double> coords_z_1;
-      std::vector<double> coords_z_4;
-      std::vector<double> coords_z_5;
-
-      for (int i = 0; i < wind_field_[0].size(); i++) {
-        if (wind_field_[0][i].x == wind_field_cells[0][0].x && wind_field_[0][i].y == wind_field_cells[0][0].y)
-          coords_z_0.push_back(wind_field_[0][i].z);
-        else if (wind_field_[0][i].x == wind_field_cells[0][1].x && wind_field_[0][i].y == wind_field_cells[0][1].y)
-          coords_z_1.push_back(wind_field_[0][i].z);
-        else if (wind_field_[0][i].x == wind_field_cells[0][4].x && wind_field_[0][i].y == wind_field_cells[0][4].y)
-          coords_z_4.push_back(wind_field_[0][i].z);
-        else if (wind_field_[0][i].x == wind_field_cells[0][5].x && wind_field_[0][i].y == wind_field_cells[0][5].y)
-          coords_z_5.push_back(wind_field_[0][i].z);
-      }
-
-      std::sort(coords_z_0.begin(), coords_z_0.end());
-      std::sort(coords_z_1.begin(), coords_z_1.end());
-      std::sort(coords_z_4.begin(), coords_z_4.end());
-      std::sort(coords_z_5.begin(), coords_z_5.end());
-
-        // Find the z-coordinates of the vertices, and of the 5 interpolation points
-      wind_field_cells[0][0].z = coords_z_0[0];
-      wind_field_cells[0][3].z = coords_z_0[1];
-      wind_field_cells[0][1].z = coords_z_1[0];
-      wind_field_cells[0][2].z = coords_z_1[1];
-      wind_field_cells[0][4].z = coords_z_4[0];
-      wind_field_cells[0][7].z = coords_z_4[1];
-      wind_field_cells[0][5].z = coords_z_5[0];
-      wind_field_cells[0][6].z = coords_z_5[1];
-
-      for (int i = 0; i < coords_z_0.size(); i++) {
-        if (coords_z_0[i] < link_position.z && coords_z_0[i+1] > link_position.z) {
-          wind_field_cells[0][0].z = coords_z_0[i];
-          wind_field_cells[0][3].z = coords_z_0[i+1];
-        }
-      }
-
-      for (int i = 0; i < coords_z_1.size(); i++) {
-        if (coords_z_1[i] < link_position.z && coords_z_1[i+1] > link_position.z) {
-          wind_field_cells[0][1].z = coords_z_1[i];
-          wind_field_cells[0][2].z = coords_z_1[i+1];
-        }
-      }
-
-      for (int i = 0; i < coords_z_4.size(); i++) {
-        if (coords_z_4[i] < link_position.z && coords_z_4[i+1] > link_position.z) {
-          wind_field_cells[0][4].z = coords_z_4[i];
-          wind_field_cells[0][7].z = coords_z_4[i+1];
-        }
-      }
-
-      for (int i = 0; i < coords_z_5.size(); i++) {
-        if (coords_z_5[i] < link_position.z && coords_z_5[i+1] > link_position.z) {
-          wind_field_cells[0][5].z = coords_z_5[i];
-          wind_field_cells[0][6].z = coords_z_5[i+1];
-        }
-      }
-
-      wind_field_cells[0][8].z =  wind_field_cells[0][9].z =  wind_field_cells[0][10].z =  wind_field_cells[0][11].z =  wind_field_cells[0][12].z =  wind_field_cells[0][13].z = link_position.z;
-
-      // Extract velocity components of each of the 8 given vertices.
-      for (int i = 0; i < wind_field_[1].size(); i++) {
-        for (int j = 0; j < 8; j++) {
-          if (wind_field_[0][i] == wind_field_cells[0][j])
-              wind_field_cells[1][j] = wind_field_[1][i];
-        }
-      }
-
-      // Interpolate three times linearly to find the value of the wind velocity at the given position
-      wind_field_cells[1][8] = wind_field_cells[1][0] + (wind_field_cells[1][3] - wind_field_cells[1][0])/(wind_field_cells[0][3].z - wind_field_cells[0][0].z)*(wind_field_cells[0][8].z - wind_field_cells[0][0].z);
-      wind_field_cells[1][9] = wind_field_cells[1][1] + (wind_field_cells[1][2] - wind_field_cells[1][1])/(wind_field_cells[0][2].z - wind_field_cells[0][1].z)*(wind_field_cells[0][9].z - wind_field_cells[0][1].z);
-      wind_field_cells[1][10] = wind_field_cells[1][5] + (wind_field_cells[1][6] - wind_field_cells[1][5])/(wind_field_cells[0][6].z - wind_field_cells[0][5].z)*(wind_field_cells[0][10].z - wind_field_cells[0][5].z);
-      wind_field_cells[1][11] = wind_field_cells[1][4] + (wind_field_cells[1][7] - wind_field_cells[1][4])/(wind_field_cells[0][7].z - wind_field_cells[0][4].z)*(wind_field_cells[0][11].z - wind_field_cells[0][4].z);
-
-      wind_field_cells[1][12] = wind_field_cells[1][8] + (wind_field_cells[1][11] - wind_field_cells[1][8])/(wind_field_cells[0][11].y - wind_field_cells[0][8].y)*(wind_field_cells[0][12].y - wind_field_cells[0][8].y);
-      wind_field_cells[1][13] = wind_field_cells[1][9] + (wind_field_cells[1][10] - wind_field_cells[1][9])/(wind_field_cells[0][10].y - wind_field_cells[0][9].y)*(wind_field_cells[0][13].y - wind_field_cells[0][9].y);
-
-      wind_velocity = wind_field_cells[1][12] + (wind_field_cells[1][13] - wind_field_cells[1][12])/(wind_field_cells[0][13].x - wind_field_cells[0][12].x)*(link_position.x - wind_field_cells[0][12].x);
+    if (!( i_inf < 0 || j_inf < 0 || vertical_spacing_factor_max < 0 || i_sup > (n_x_ - 1) || j_sup > (n_y_ - 1) || vertical_spacing_factor_min > 1 )) {
+      InterpolateWindVelocity(link_position, i_inf, i_sup, j_inf, j_sup, vertical_spacing_factor_0, vertical_spacing_factor_1, vertical_spacing_factor_4, vertical_spacing_factor_5, wind_velocity);
     } else {
-      // Set the wind velocity to the specified default constant value */
+      // Set the wind velocity to the default constant value specified by the user
       wind_velocity = wind_speed_mean_ * wind_direction_;
-    //}
+    }
   }
 
   // Publish the wind speed
@@ -290,94 +196,177 @@ void GazeboWindPlugin::ReadCustomWindField(std::string& custom_wind_field_path) 
   fin.open(custom_wind_field_path);
   if (fin.is_open()) {
     std::string data_name;
+    float data;
 
-    //Those are here just for the moment. Should be class provate variables.
-    float min_x_;
-    float min_y_;
-    int n_x_;
-    int n_y_;
-    double res_x_;
-    float res_y_;
-
-    // Continue filling up the conditions! For documentation: order of elements in txt file not important
-    while (fin >> data_name){
+    // Read the line with the variable name
+    while (fin >> data_name) {
+      // Save data on following line into the correct variable
       if (data_name == "min_x:") {
         fin >> min_x_;
-        ROS_INFO_STREAM("min_x is : " << min_x_);
       } else if (data_name == "min_y:") {
         fin >> min_y_;
-        ROS_INFO_STREAM("min_y is: " << min_y_);
       } else if (data_name == "n_x:") {
         fin >> n_x_;
-        ROS_INFO_STREAM("n_x is: " << n_x_);
       } else if (data_name == "n_y:") {
         fin >> n_y_;
-        ROS_INFO_STREAM("n_y is: " << n_y_);
       } else if (data_name == "res_x:") {
         fin >> res_x_;
-        ROS_INFO_STREAM("res_x is: " << res_x_);
       } else if (data_name == "res_y:") {
         fin >> res_y_;
-        ROS_INFO_STREAM("res_y is: " << res_y_);
+      } else if (data_name == "vertical_spacing_factors:") {
+        while (fin >> data) {
+          vertical_spacing_factors_.push_back(data);
+          if (fin.peek() == '\n') break;
+        }
+      } else if (data_name == "bottom_z:") {
+        while (fin >> data) {
+          bottom_z_.push_back(data);
+          if (fin.peek() == '\n') break;
+        }
+      } else if (data_name == "top_z:") {
+        while (fin >> data) {
+          top_z_.push_back(data);
+          if (fin.peek() == '\n') break;
+        }
+      } else if (data_name == "u:") {
+        while (fin >> data) {
+          u_.push_back(data);
+          if (fin.peek() == '\n') break;
+        }
+      } else if (data_name == "v:") {
+        while (fin >> data) {
+          v_.push_back(data);
+          if (fin.peek() == '\n') break;
+        }
+      } else if (data_name == "w:") {
+        while (fin >> data) {
+          w_.push_back(data);
+          if (fin.peek() == '\n') break;
+        }
       } else {
-        getline(fin, data_name);
+        // If invalid data name, read the rest of the invalid line, publish a message and ignore data on next line. Then resume reading.
+        std::string restOfLine;
+        getline(fin, restOfLine);
+        gzerr << "Invalid data name '" << data_name << restOfLine << "' in custom wind field text file. Ignoring data on next line.\n";
+        fin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
       }
     }
 
-
-    /*while (fin >> data_name) {
-      if (data_name == "min_x:")
-    }*/
-
-    /* *CM* math::Vector3 position;
-    math::Vector3 wind;
-    double value = 0;
-    bool fill = true;
-
-    while (fin >> value) {
-      position.x = value;
-      fin >> position.y >> position.z >> wind.x >> wind.y >> wind.z;
-      wind_field_[0].push_back(position);
-      wind_field_[1].push_back(wind);
-
-      // Fill the x and y coordinate vectors
-      // Check if x coordinate is already present in coords_x
-      for (int i = 0; i < coords_x_.size(); i++) {
-        if (position.x == coords_x_[i])
-          fill = false;
-      }
-      // If not, push it back in the vector. Else, reinitialize fill variable.
-      if (fill)
-        coords_x_.push_back(position.x);
-      else
-        fill = true;
-      // Check if y coordinate is already present in coords_y
-      for (int i = 0; i < coords_y_.size(); i++) {
-        if (position.y == coords_y_[i])
-          fill = false;
-      }
-      // If not, push it back in the vector. Else, reinitialize fill variable.
-      if (fill)
-        coords_y_.push_back(position.y);
-      else
-        fill = true;
-
-      // Find maximum and minimum values of z in the wind map
-      if (position.z < z_min_)
-        z_min_ = position.z;
-      else if (position.z > z_max_)
-        z_max_ = position.z;
-    }
-    // Sort the coordinate vectors
-    std::sort(coords_x_.begin(), coords_x_.end());
-    std::sort(coords_y_.begin(), coords_y_.end());
-    */
     fin.close();
-    ROS_INFO_STREAM("Wind field read successfully from text file.");
+
+    ROS_INFO_STREAM("Custom wind field read successfully from text file.");
   } else {
-    gzerr << "[gazebo_wind_plugin] Could not open wind field text file.\n";
+    gzerr << "Could not open custom wind field text file.\n";
   }
 
+}
+
+void GazeboWindPlugin::InterpolateWindVelocity(math::Vector3 link_position, int i_inf, int i_sup, int j_inf, int j_sup, float vertical_spacing_factor_0, float vertical_spacing_factor_1, float vertical_spacing_factor_4, float vertical_spacing_factor_5, math::Vector3& wind_velocity) {
+  // Find indices in z-direction for each surrounding grid column. If link is not within the range of one of the column, set indices either to lowest of highest two.
+  int k_inf_0, k_inf_1, k_inf_4, k_inf_5;
+  k_inf_0 = k_inf_1 = k_inf_4 = k_inf_5 = 0;
+
+  int k_sup_0, k_sup_1, k_sup_4, k_sup_5;
+  k_sup_0 = k_sup_1 = k_sup_4 = k_sup_5 = vertical_spacing_factors_.size() - 1;
+
+  if (vertical_spacing_factor_0 < 0) {
+    k_sup_0 = 1;
+  } else if (vertical_spacing_factor_0 > 1) {
+    k_inf_0 = vertical_spacing_factors_.size() - 2;
+  } else {
+    for (int l = 0; l < vertical_spacing_factors_.size(); l++) {
+      if (vertical_spacing_factors_[l] < vertical_spacing_factor_0 && vertical_spacing_factors_[l+1] > vertical_spacing_factor_0) {
+        k_inf_0 = l;
+        k_sup_0 = l + 1;
+        break;
+      }
+    }
+  }
+
+  if (vertical_spacing_factor_1 < 0) {
+    k_sup_1 = 1;
+  } else if (vertical_spacing_factor_1 > 1) {
+    k_inf_1 = vertical_spacing_factors_.size() - 2;
+  } else {
+    for (int l = 0; l < vertical_spacing_factors_.size(); l++) {
+      if (vertical_spacing_factors_[l] < vertical_spacing_factor_1 && vertical_spacing_factors_[l+1] > vertical_spacing_factor_1) {
+        k_inf_1 = l;
+        k_sup_1 = l + 1;
+        break;
+      }
+    }
+  }
+
+  if (vertical_spacing_factor_4 < 0) {
+    k_sup_4 = 1;
+  } else if (vertical_spacing_factor_4 > 1) {
+    k_inf_4 = vertical_spacing_factors_.size() - 2;
+  } else {
+    for (int l = 0; l < vertical_spacing_factors_.size(); l++) {
+      if (vertical_spacing_factors_[l] < vertical_spacing_factor_4 && vertical_spacing_factors_[l+1] > vertical_spacing_factor_4) {
+        k_inf_4 = l;
+        k_sup_4 = l + 1;
+        break;
+      }
+    }
+  }
+
+  if (vertical_spacing_factor_5 < 0) {
+    k_sup_5 = 1;
+  } else if (vertical_spacing_factor_5 > 1) {
+    k_inf_5 = vertical_spacing_factors_.size() - 2;
+  } else {
+    for (int l = 0; l < vertical_spacing_factors_.size(); l++) {
+      if (vertical_spacing_factors_[l] < vertical_spacing_factor_5 && vertical_spacing_factors_[l+1] > vertical_spacing_factor_5) {
+        k_inf_5 = l;
+        k_sup_5 = l + 1;
+        break;
+      }
+    }
+  }
+
+  // Extract the velocities corresponding to each vertex to make interpolation more readable
+  math::Vector3 wind_0 = math::Vector3(u_[i_inf + j_inf * n_x_ + k_inf_0 * n_x_ * n_y_],v_[i_inf + j_inf * n_x_ + k_inf_0 * n_x_ * n_y_],w_[i_inf + j_inf * n_x_ + k_inf_0 * n_x_ * n_y_]);
+  math::Vector3 wind_1 = math::Vector3(u_[i_sup + j_inf * n_x_ + k_inf_1 * n_x_ * n_y_],v_[i_sup + j_inf * n_x_ + k_inf_1 * n_x_ * n_y_],w_[i_sup + j_inf * n_x_ + k_inf_1 * n_x_ * n_y_]);
+  math::Vector3 wind_2 = math::Vector3(u_[i_sup + j_inf * n_x_ + k_sup_1 * n_x_ * n_y_],v_[i_sup + j_inf * n_x_ + k_sup_1 * n_x_ * n_y_],w_[i_sup + j_inf * n_x_ + k_sup_1 * n_x_ * n_y_]);
+  math::Vector3 wind_3 = math::Vector3(u_[i_inf + j_inf * n_x_ + k_sup_0 * n_x_ * n_y_],v_[i_inf + j_inf * n_x_ + k_sup_0 * n_x_ * n_y_],w_[i_inf + j_inf * n_x_ + k_sup_0 * n_x_ * n_y_]);
+  math::Vector3 wind_4 = math::Vector3(u_[i_inf + j_sup * n_x_ + k_inf_4 * n_x_ * n_y_],v_[i_inf + j_sup * n_x_ + k_inf_4 * n_x_ * n_y_],w_[i_inf + j_sup * n_x_ + k_inf_4 * n_x_ * n_y_]);
+  math::Vector3 wind_5 = math::Vector3(u_[i_sup + j_sup * n_x_ + k_inf_5 * n_x_ * n_y_],v_[i_sup + j_sup * n_x_ + k_inf_5 * n_x_ * n_y_],w_[i_sup + j_sup * n_x_ + k_inf_5 * n_x_ * n_y_]);
+  math::Vector3 wind_6 = math::Vector3(u_[i_sup + j_sup * n_x_ + k_sup_5 * n_x_ * n_y_],v_[i_sup + j_sup * n_x_ + k_sup_5 * n_x_ * n_y_],w_[i_sup + j_sup * n_x_ + k_sup_5 * n_x_ * n_y_]);
+  math::Vector3 wind_7 = math::Vector3(u_[i_inf + j_sup * n_x_ + k_sup_4 * n_x_ * n_y_],v_[i_inf + j_sup * n_x_ + k_sup_4 * n_x_ * n_y_],w_[i_inf + j_sup * n_x_ + k_sup_4 * n_x_ * n_y_]);
+
+  // Find z-coordinates of each vertex to make interpolation more readable
+  float z_0 = (top_z_[i_inf + j_inf * n_x_] - bottom_z_[i_inf + j_inf * n_x_]) * vertical_spacing_factors_[k_inf_0] + bottom_z_[i_inf + j_inf * n_x_];
+  float z_1 = (top_z_[i_sup + j_inf * n_x_] - bottom_z_[i_sup + j_inf * n_x_]) * vertical_spacing_factors_[k_inf_1] + bottom_z_[i_sup + j_inf * n_x_];
+  float z_2 = (top_z_[i_sup + j_inf * n_x_] - bottom_z_[i_sup + j_inf * n_x_]) * vertical_spacing_factors_[k_sup_1] + bottom_z_[i_sup + j_inf * n_x_];
+  float z_3 = (top_z_[i_inf + j_inf * n_x_] - bottom_z_[i_inf + j_inf * n_x_]) * vertical_spacing_factors_[k_sup_0] + bottom_z_[i_inf + j_inf * n_x_];
+  float z_4 = (top_z_[i_inf + j_sup * n_x_] - bottom_z_[i_inf + j_sup * n_x_]) * vertical_spacing_factors_[k_inf_4] + bottom_z_[i_inf + j_sup * n_x_];
+  float z_5 = (top_z_[i_sup + j_sup * n_x_] - bottom_z_[i_sup + j_sup * n_x_]) * vertical_spacing_factors_[k_inf_5] + bottom_z_[i_sup + j_sup * n_x_];
+  float z_6 = (top_z_[i_sup + j_sup * n_x_] - bottom_z_[i_sup + j_sup * n_x_]) * vertical_spacing_factors_[k_sup_5] + bottom_z_[i_sup + j_sup * n_x_];
+  float z_7 = (top_z_[i_inf + j_sup * n_x_] - bottom_z_[i_inf + j_sup * n_x_]) * vertical_spacing_factors_[k_sup_4] + bottom_z_[i_inf + j_sup * n_x_];
+
+  // Interpolate linearly in z-direction
+  math::Vector3 wind_8 = wind_0 + (wind_3 - wind_0) / (z_3 - z_0) * (link_position.z - z_0);
+  math::Vector3 wind_9 = wind_1 + (wind_2 - wind_1) / (z_2 - z_1) * (link_position.z - z_1);
+  math::Vector3 wind_10 = wind_4 + (wind_7 - wind_4) / (z_7 - z_4) * (link_position.z - z_4);
+  math::Vector3 wind_11 = wind_5 + (wind_6 - wind_5) / (z_6 - z_5) * (link_position.z - z_5);
+
+  // Find y-coordinates of points 8, 9, 10, 11 to make interpolation more readable
+  float y_8 = min_y_ + res_y_ * j_inf;
+  float y_9 = min_y_ + res_y_ * j_inf;
+  float y_10 = min_y_ + res_y_ * j_sup;
+  float y_11 = min_y_ + res_y_ * j_sup;
+
+  // Interpolate linearly in y-direction
+  math::Vector3 wind_12 = wind_8 + (wind_10 - wind_8) / (y_10 - y_8) * (link_position.y - y_8);
+  math::Vector3 wind_13 = wind_9 + (wind_11 - wind_9) / (y_11 - y_9) * (link_position.y - y_9);
+
+  // Find x-coordinates of points 12, 13 to make interpolation more readable
+  float x_12 = min_x_ + res_x_ * i_inf;
+  float x_13 = min_x_ + res_x_ * i_sup;
+
+  // Interpolate linearly in x-direction
+  wind_velocity = wind_12 + (wind_13 - wind_12) / (x_13 - x_12) * (link_position.x - x_12);
 }
 
 GZ_REGISTER_MODEL_PLUGIN(GazeboWindPlugin);

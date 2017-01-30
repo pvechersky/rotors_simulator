@@ -88,6 +88,8 @@ class GazeboWindPlugin : public ModelPlugin {
   virtual ~GazeboWindPlugin();
 
   void ReadCustomWindField(std::string& custom_wind_field_path);
+  void InterpolateWindVelocity(math::Vector3 link_position, int i_inf, int i_sup, int j_inf, int j_sup, float vertical_spacing_factor_0, float vertical_spacing_factor_1, float vertical_spacing_factor_4, float vertical_spacing_factor_5, math::Vector3& wind_velocity);
+
 
  protected:
   /// \brief Load the plugin.
@@ -137,6 +139,19 @@ class GazeboWindPlugin : public ModelPlugin {
   common::Time wind_gust_start_;
 
   bool custom_static_wind_field_;
+  float min_x_;
+  float min_y_;
+  int n_x_;
+  int n_y_;
+  float res_x_;
+  float res_y_;
+  std::vector<float> vertical_spacing_factors_;
+  std::vector<float> bottom_z_;
+  std::vector<float> top_z_;
+  std::vector<float> u_;
+  std::vector<float> v_;
+  std::vector<float> w_;
+
   // *CM* std::vector<math::Vector3> wind_field_[2];
   // *CM* std::vector<double> coords_x_;
   // *CM* std::vector<double> coords_y_;
