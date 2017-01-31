@@ -91,9 +91,7 @@ void GazeboWindPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
   } else {
     // Get the wind field text file path, read it and save data
     std::string custom_wind_field_path = kDefaultCustomWindFieldPath;
-
     getSdfParam<std::string>(_sdf, "customWindFieldPath", custom_wind_field_path, custom_wind_field_path);
-
     ReadCustomWindField(custom_wind_field_path);
   }
 
@@ -161,17 +159,24 @@ void GazeboWindPlugin::OnUpdate(const common::UpdateInfo& _info) {
     int j_inf = floor((link_position.y - min_y_) / res_y_);
     int j_sup = j_inf + 1;
 
-    float vertical_spacing_factor_0 = (link_position.z - bottom_z_[i_inf + (j_inf * n_x_)]) / (top_z_[i_inf + (j_inf * n_x_)] - bottom_z_[i_inf + (j_inf * n_x_)]);
-    float vertical_spacing_factor_1 = (link_position.z - bottom_z_[i_sup + (j_inf * n_x_)]) / (top_z_[i_sup + (j_inf * n_x_)] - bottom_z_[i_sup + (j_inf * n_x_)]);
-    float vertical_spacing_factor_4 = (link_position.z - bottom_z_[i_inf + (j_sup * n_x_)]) / (top_z_[i_inf + (j_sup * n_x_)] - bottom_z_[i_inf + (j_sup * n_x_)]);
-    float vertical_spacing_factor_5 = (link_position.z - bottom_z_[i_sup + (j_sup * n_x_)]) / (top_z_[i_sup + (j_sup * n_x_)] - bottom_z_[i_sup + (j_sup * n_x_)]);
+    int idx_i[8], idx_j[8];
+    idx_i[0] = idx_i[3] = idx_i[4] = idx_i[7] = i_inf;
+    idx_i[1] = idx_i[2] = idx_i[5] = idx_i[6] = i_sup;
+    idx_j[0] = idx_j[1] = idx_j[4] = idx_j[5] = j_inf;
+    idx_j[2] = idx_j[3] = idx_j[6] = idx_j[7] = j_sup;
 
-    float vertical_spacing_factor_min = std::min(std::min(std::min(vertical_spacing_factor_0,vertical_spacing_factor_1),vertical_spacing_factor_4),vertical_spacing_factor_5);
-    float vertical_spacing_factor_max = std::max(std::max(std::max(vertical_spacing_factor_0,vertical_spacing_factor_1),vertical_spacing_factor_4),vertical_spacing_factor_5);
+
+    float vertical_spacing_factor_columns[4];
+    for (int i = 0; i < 4; i++) {
+      vertical_spacing_factor_columns[i] = (link_position.z - bottom_z_[idx_i[i] + (idx_j[i] * n_x_)]) / (top_z_[idx_i[i] + (idx_j[i] * n_x_)] - bottom_z_[idx_i[i] + (idx_j[i] * n_x_)]);
+    }
+
+    float vertical_spacing_factor_min = std::min(std::min(std::min(vertical_spacing_factor_columns[0],vertical_spacing_factor_columns[1]),vertical_spacing_factor_columns[2]),vertical_spacing_factor_columns[3]);
+    float vertical_spacing_factor_max = std::max(std::max(std::max(vertical_spacing_factor_columns[0],vertical_spacing_factor_columns[1]),vertical_spacing_factor_columns[2]),vertical_spacing_factor_columns[3]);
 
     // Check if aircraft is out of wind field or not, and act accordingly
     if (!( i_inf < 0 || j_inf < 0 || vertical_spacing_factor_max < 0 || i_sup > (n_x_ - 1) || j_sup > (n_y_ - 1) || vertical_spacing_factor_min > 1 )) {
-      InterpolateWindVelocity(link_position, i_inf, i_sup, j_inf, j_sup, vertical_spacing_factor_0, vertical_spacing_factor_1, vertical_spacing_factor_4, vertical_spacing_factor_5, wind_velocity);
+      InterpolateWindVelocity(link_position, idx_i, idx_j, vertical_spacing_factor_columns, wind_velocity);
     } else {
       // Set the wind velocity to the default constant value specified by the user
       wind_velocity = wind_speed_mean_ * wind_direction_;
@@ -261,112 +266,62 @@ void GazeboWindPlugin::ReadCustomWindField(std::string& custom_wind_field_path) 
 
 }
 
-void GazeboWindPlugin::InterpolateWindVelocity(math::Vector3 link_position, int i_inf, int i_sup, int j_inf, int j_sup, float vertical_spacing_factor_0, float vertical_spacing_factor_1, float vertical_spacing_factor_4, float vertical_spacing_factor_5, math::Vector3& wind_velocity) {
-  // Find indices in z-direction for each surrounding grid column. If link is not within the range of one of the column, set indices either to lowest of highest two.
-  int k_inf_0, k_inf_1, k_inf_4, k_inf_5;
-  k_inf_0 = k_inf_1 = k_inf_4 = k_inf_5 = 0;
+void GazeboWindPlugin::InterpolateWindVelocity(math::Vector3 link_position, int idx_i[8], int idx_j[8], float vertical_spacing_factor_columns[4], math::Vector3& wind_velocity) {
+  // Find indices in z-direction for each of the vertices. If link is not within the range of one of the column, set indices either to lowest of highest two.
+  int idx_k[8] = {0};
+  std::fill_n(&idx_k[4], 4, vertical_spacing_factors_.size() - 1);
 
-  int k_sup_0, k_sup_1, k_sup_4, k_sup_5;
-  k_sup_0 = k_sup_1 = k_sup_4 = k_sup_5 = vertical_spacing_factors_.size() - 1;
-
-  if (vertical_spacing_factor_0 < 0) {
-    k_sup_0 = 1;
-  } else if (vertical_spacing_factor_0 > 1) {
-    k_inf_0 = vertical_spacing_factors_.size() - 2;
-  } else {
-    for (int l = 0; l < vertical_spacing_factors_.size(); l++) {
-      if (vertical_spacing_factors_[l] < vertical_spacing_factor_0 && vertical_spacing_factors_[l+1] > vertical_spacing_factor_0) {
-        k_inf_0 = l;
-        k_sup_0 = l + 1;
-        break;
-      }
-    }
-  }
-
-  if (vertical_spacing_factor_1 < 0) {
-    k_sup_1 = 1;
-  } else if (vertical_spacing_factor_1 > 1) {
-    k_inf_1 = vertical_spacing_factors_.size() - 2;
-  } else {
-    for (int l = 0; l < vertical_spacing_factors_.size(); l++) {
-      if (vertical_spacing_factors_[l] < vertical_spacing_factor_1 && vertical_spacing_factors_[l+1] > vertical_spacing_factor_1) {
-        k_inf_1 = l;
-        k_sup_1 = l + 1;
-        break;
-      }
-    }
-  }
-
-  if (vertical_spacing_factor_4 < 0) {
-    k_sup_4 = 1;
-  } else if (vertical_spacing_factor_4 > 1) {
-    k_inf_4 = vertical_spacing_factors_.size() - 2;
-  } else {
-    for (int l = 0; l < vertical_spacing_factors_.size(); l++) {
-      if (vertical_spacing_factors_[l] < vertical_spacing_factor_4 && vertical_spacing_factors_[l+1] > vertical_spacing_factor_4) {
-        k_inf_4 = l;
-        k_sup_4 = l + 1;
-        break;
-      }
-    }
-  }
-
-  if (vertical_spacing_factor_5 < 0) {
-    k_sup_5 = 1;
-  } else if (vertical_spacing_factor_5 > 1) {
-    k_inf_5 = vertical_spacing_factors_.size() - 2;
-  } else {
-    for (int l = 0; l < vertical_spacing_factors_.size(); l++) {
-      if (vertical_spacing_factors_[l] < vertical_spacing_factor_5 && vertical_spacing_factors_[l+1] > vertical_spacing_factor_5) {
-        k_inf_5 = l;
-        k_sup_5 = l + 1;
-        break;
+  for (int i = 0; i < 4; i++) {
+    if (vertical_spacing_factor_columns[i] < 0) {
+      idx_k[i+4] = 1;
+    } else if (vertical_spacing_factor_columns[i] > 1) {
+      idx_k[i] = vertical_spacing_factors_.size() - 2;
+    } else {
+      for (int j = 0; j < vertical_spacing_factors_.size(); j++) {
+        if (vertical_spacing_factors_[j] < vertical_spacing_factor_columns[i] && vertical_spacing_factors_[j+1] > vertical_spacing_factor_columns[i]) {
+          idx_k[i] = j;
+          idx_k[i+4] = j + 1;
+          break;
+        }
       }
     }
   }
 
   // Extract the velocities corresponding to each vertex to make interpolation more readable
-  math::Vector3 wind_0 = math::Vector3(u_[i_inf + j_inf * n_x_ + k_inf_0 * n_x_ * n_y_],v_[i_inf + j_inf * n_x_ + k_inf_0 * n_x_ * n_y_],w_[i_inf + j_inf * n_x_ + k_inf_0 * n_x_ * n_y_]);
-  math::Vector3 wind_1 = math::Vector3(u_[i_sup + j_inf * n_x_ + k_inf_1 * n_x_ * n_y_],v_[i_sup + j_inf * n_x_ + k_inf_1 * n_x_ * n_y_],w_[i_sup + j_inf * n_x_ + k_inf_1 * n_x_ * n_y_]);
-  math::Vector3 wind_2 = math::Vector3(u_[i_sup + j_inf * n_x_ + k_sup_1 * n_x_ * n_y_],v_[i_sup + j_inf * n_x_ + k_sup_1 * n_x_ * n_y_],w_[i_sup + j_inf * n_x_ + k_sup_1 * n_x_ * n_y_]);
-  math::Vector3 wind_3 = math::Vector3(u_[i_inf + j_inf * n_x_ + k_sup_0 * n_x_ * n_y_],v_[i_inf + j_inf * n_x_ + k_sup_0 * n_x_ * n_y_],w_[i_inf + j_inf * n_x_ + k_sup_0 * n_x_ * n_y_]);
-  math::Vector3 wind_4 = math::Vector3(u_[i_inf + j_sup * n_x_ + k_inf_4 * n_x_ * n_y_],v_[i_inf + j_sup * n_x_ + k_inf_4 * n_x_ * n_y_],w_[i_inf + j_sup * n_x_ + k_inf_4 * n_x_ * n_y_]);
-  math::Vector3 wind_5 = math::Vector3(u_[i_sup + j_sup * n_x_ + k_inf_5 * n_x_ * n_y_],v_[i_sup + j_sup * n_x_ + k_inf_5 * n_x_ * n_y_],w_[i_sup + j_sup * n_x_ + k_inf_5 * n_x_ * n_y_]);
-  math::Vector3 wind_6 = math::Vector3(u_[i_sup + j_sup * n_x_ + k_sup_5 * n_x_ * n_y_],v_[i_sup + j_sup * n_x_ + k_sup_5 * n_x_ * n_y_],w_[i_sup + j_sup * n_x_ + k_sup_5 * n_x_ * n_y_]);
-  math::Vector3 wind_7 = math::Vector3(u_[i_inf + j_sup * n_x_ + k_sup_4 * n_x_ * n_y_],v_[i_inf + j_sup * n_x_ + k_sup_4 * n_x_ * n_y_],w_[i_inf + j_sup * n_x_ + k_sup_4 * n_x_ * n_y_]);
+  math::Vector3 wind[14];
+  for (int i = 0; i < 8; i++) {
+    wind[i].x = u_[idx_i[i] + idx_j[i] * n_x_ + idx_k[i] * n_x_ * n_y_];
+    wind[i].y = v_[idx_i[i] + idx_j[i] * n_x_ + idx_k[i] * n_x_ * n_y_];
+    wind[i].z = w_[idx_i[i] + idx_j[i] * n_x_ + idx_k[i] * n_x_ * n_y_];
+  }
 
   // Find z-coordinates of each vertex to make interpolation more readable
-  float z_0 = (top_z_[i_inf + j_inf * n_x_] - bottom_z_[i_inf + j_inf * n_x_]) * vertical_spacing_factors_[k_inf_0] + bottom_z_[i_inf + j_inf * n_x_];
-  float z_1 = (top_z_[i_sup + j_inf * n_x_] - bottom_z_[i_sup + j_inf * n_x_]) * vertical_spacing_factors_[k_inf_1] + bottom_z_[i_sup + j_inf * n_x_];
-  float z_2 = (top_z_[i_sup + j_inf * n_x_] - bottom_z_[i_sup + j_inf * n_x_]) * vertical_spacing_factors_[k_sup_1] + bottom_z_[i_sup + j_inf * n_x_];
-  float z_3 = (top_z_[i_inf + j_inf * n_x_] - bottom_z_[i_inf + j_inf * n_x_]) * vertical_spacing_factors_[k_sup_0] + bottom_z_[i_inf + j_inf * n_x_];
-  float z_4 = (top_z_[i_inf + j_sup * n_x_] - bottom_z_[i_inf + j_sup * n_x_]) * vertical_spacing_factors_[k_inf_4] + bottom_z_[i_inf + j_sup * n_x_];
-  float z_5 = (top_z_[i_sup + j_sup * n_x_] - bottom_z_[i_sup + j_sup * n_x_]) * vertical_spacing_factors_[k_inf_5] + bottom_z_[i_sup + j_sup * n_x_];
-  float z_6 = (top_z_[i_sup + j_sup * n_x_] - bottom_z_[i_sup + j_sup * n_x_]) * vertical_spacing_factors_[k_sup_5] + bottom_z_[i_sup + j_sup * n_x_];
-  float z_7 = (top_z_[i_inf + j_sup * n_x_] - bottom_z_[i_inf + j_sup * n_x_]) * vertical_spacing_factors_[k_sup_4] + bottom_z_[i_inf + j_sup * n_x_];
+  float z[8];
+  for (int i = 0; i < 8; i++) {
+    z[i] = (top_z_[idx_i[i] + idx_j[i] * n_x_] - bottom_z_[idx_i[i] + idx_j[i] * n_x_]) * vertical_spacing_factors_[idx_k[i]] + bottom_z_[idx_i[i] + idx_j[i] * n_x_];
+  }
 
   // Interpolate linearly in z-direction
-  math::Vector3 wind_8 = wind_0 + (wind_3 - wind_0) / (z_3 - z_0) * (link_position.z - z_0);
-  math::Vector3 wind_9 = wind_1 + (wind_2 - wind_1) / (z_2 - z_1) * (link_position.z - z_1);
-  math::Vector3 wind_10 = wind_4 + (wind_7 - wind_4) / (z_7 - z_4) * (link_position.z - z_4);
-  math::Vector3 wind_11 = wind_5 + (wind_6 - wind_5) / (z_6 - z_5) * (link_position.z - z_5);
+  for (int i = 8; i < 12; i++) {
+    wind[i] = wind[i-8] + (wind[i-4] - wind[i-8]) / (z[i-4] - z[i-8]) * (link_position.z - z[i-8]);
+  }
 
   // Find y-coordinates of points 8, 9, 10, 11 to make interpolation more readable
-  float y_8 = min_y_ + res_y_ * j_inf;
-  float y_9 = min_y_ + res_y_ * j_inf;
-  float y_10 = min_y_ + res_y_ * j_sup;
-  float y_11 = min_y_ + res_y_ * j_sup;
+  float y_8 = min_y_ + res_y_ * idx_j[0];
+  float y_9 = min_y_ + res_y_ * idx_j[1];
+  float y_10 = min_y_ + res_y_ * idx_j[2];
+  float y_11 = min_y_ + res_y_ * idx_j[3];
 
   // Interpolate linearly in y-direction
-  math::Vector3 wind_12 = wind_8 + (wind_10 - wind_8) / (y_10 - y_8) * (link_position.y - y_8);
-  math::Vector3 wind_13 = wind_9 + (wind_11 - wind_9) / (y_11 - y_9) * (link_position.y - y_9);
+  wind[12] = wind[8] + (wind[11] - wind[8]) / (y_11 - y_8) * (link_position.y - y_8);
+  wind[13] = wind[9] + (wind[10] - wind[9]) / (y_10 - y_9) * (link_position.y - y_9);
 
   // Find x-coordinates of points 12, 13 to make interpolation more readable
-  float x_12 = min_x_ + res_x_ * i_inf;
-  float x_13 = min_x_ + res_x_ * i_sup;
+  float x_12 = min_x_ + res_x_ * idx_i[0];
+  float x_13 = min_x_ + res_x_ * idx_i[1];
 
   // Interpolate linearly in x-direction
-  wind_velocity = wind_12 + (wind_13 - wind_12) / (x_13 - x_12) * (link_position.x - x_12);
+  wind_velocity = wind[12] + (wind[13] - wind[12]) / (x_13 - x_12) * (link_position.x - x_12);
 }
 
 GZ_REGISTER_MODEL_PLUGIN(GazeboWindPlugin);

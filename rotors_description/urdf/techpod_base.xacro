@@ -74,7 +74,7 @@
     wind_gust_start="0.0"
     wind_gust_force_mean="0.0"
     wind_gust_force_variance="0.0"
-    custom_static_wind_field="true"
+    custom_static_wind_field="false"
     custom_wind_field_path="$(find rotors_gazebo)/models/hemicyl/custom_wind_field.txt">
   </xacro:wind_plugin_macro>
 

@@ -172,15 +172,15 @@ The existing wind plugin in RotorS has been extended to allow the use of a custo
 
 #### Grid specifications
 
-The grid used to define the wind field must be equidistant in x, respectively y-direction. The points in z-direction are distributed with upwards linearly increasing distance (spacing factors can be tuned as desired).
+The grid used to define the wind field must be equidistant in x, respectively y-direction. The points in z-direction are distributed with upwards linearly increasing distance (spacing factors can be tuned as desired). The grid is terrain-following, meaning that all the points in the lower z-layer have a constant altitude offset from the terrain.
 
 #### Wind field text file format
 
 The text file contains information about the grid geometry as well as the wind values at each grid point. The data needed in the text file consists of:
 
-  1. Smallest x-coordinate of the grid `min_x`, of type integer, in [m].
+  1. Smallest x-coordinate of the grid `min_x`, of type float, in [m].
 
-  2. Smallest y-coordinate of the grid `min_y`, of type integer, in [m].
+  2. Smallest y-coordinate of the grid `min_y`, of type float, in [m].
 
   3. Number of grid points in x-direction `n_x`, of type integer.
 
@@ -203,27 +203,13 @@ The text file contains information about the grid geometry as well as the wind v
 
 The order in which the data is saved in the text file is not relevant, but the format must comply with the following requirements:
 
-  1. In the first line of the file, the name of one of the 12 needed data followed directly by a semicolon (e.g., `vertical_spacing_factors:`)
+  1. In the first line of the file, the name of one of the 12 needed data followed directly by a colon (e.g., `vertical_spacing_factors:`)
 
   2. In the following line, the corresponding data. If multiple values are needed, they must be separated by a space (e.g., `0.0 0.025641 0.051282 0.076923 ...`)
 
   3. The rest of the data follows the same format.
 
-In the case of the hemicylindrical world, the beginning of the text file describing a divergent-free wind field looks as follows:
-
-```
-min_x:
--2000.0
-min_y:
--2000.0
-n_x:
-201
-n_y:
-2
-...
-```
-
-For clarity and convenience, the wind field text file is placed in the same folder as the world model.
+An example wind field text file can be seen for the hemicylindrical world at `rotors_gazebo/models/hemicyl` (placed in the same folder as the world model for clarity and convenience).
 
 #### Wind Plugin Macro
 
