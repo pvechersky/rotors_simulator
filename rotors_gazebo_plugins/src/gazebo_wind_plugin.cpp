@@ -153,30 +153,70 @@ void GazeboWindPlugin::OnUpdate(const common::UpdateInfo& _info) {
     // Get the current position of the aircraft in world coordinates
     math::Vector3 link_position = link_->GetWorldPose().pos;
 
-    // Find indices for x,y and minimal/maximal values of the vertical spacing factor of the four surrounding grid columns
+    // Find the x and y indices of the eight vertices of the cell enclosing the aircraft
     int i_inf = floor((link_position.x - min_x_) / res_x_);
     int i_sup = i_inf + 1;
     int j_inf = floor((link_position.y - min_y_) / res_y_);
     int j_sup = j_inf + 1;
 
     int idx_i[8], idx_j[8];
-    idx_i[0] = idx_i[3] = idx_i[4] = idx_i[7] = i_inf;
-    idx_i[1] = idx_i[2] = idx_i[5] = idx_i[6] = i_sup;
-    idx_j[0] = idx_j[1] = idx_j[4] = idx_j[5] = j_inf;
-    idx_j[2] = idx_j[3] = idx_j[6] = idx_j[7] = j_sup;
+    idx_i[0] = idx_i[1] = idx_i[4] = idx_i[5] = i_inf;
+    idx_i[2] = idx_i[3] = idx_i[6] = idx_i[7] = i_sup;
+    std::fill_n(&idx_j[0], 4, j_inf);
+    std::fill_n(&idx_j[4], 4, j_sup);
 
-
-    float vertical_spacing_factor_columns[4];
+    // Find the vertical factor of the aircraft in each of the four surrounding grid columns, and their minimal/maximal value
+    float vertical_factor_columns[4];
     for (int i = 0; i < 4; i++) {
-      vertical_spacing_factor_columns[i] = (link_position.z - bottom_z_[idx_i[i] + (idx_j[i] * n_x_)]) / (top_z_[idx_i[i] + (idx_j[i] * n_x_)] - bottom_z_[idx_i[i] + (idx_j[i] * n_x_)]);
+      vertical_factor_columns[i] = (link_position.z - bottom_z_[idx_i[2*i] + (idx_j[2*i] * n_x_)]) / (top_z_[idx_i[2*i] + (idx_j[2*i] * n_x_)] - bottom_z_[idx_i[2*i] + (idx_j[2*i] * n_x_)]);
     }
 
-    float vertical_spacing_factor_min = std::min(std::min(std::min(vertical_spacing_factor_columns[0],vertical_spacing_factor_columns[1]),vertical_spacing_factor_columns[2]),vertical_spacing_factor_columns[3]);
-    float vertical_spacing_factor_max = std::max(std::max(std::max(vertical_spacing_factor_columns[0],vertical_spacing_factor_columns[1]),vertical_spacing_factor_columns[2]),vertical_spacing_factor_columns[3]);
+    float vertical_factor_min = std::min(std::min(std::min(vertical_factor_columns[0],vertical_factor_columns[1]),vertical_factor_columns[2]),vertical_factor_columns[3]);
+    float vertical_factor_max = std::max(std::max(std::max(vertical_factor_columns[0],vertical_factor_columns[1]),vertical_factor_columns[2]),vertical_factor_columns[3]);
 
     // Check if aircraft is out of wind field or not, and act accordingly
-    if (!( i_inf < 0 || j_inf < 0 || vertical_spacing_factor_max < 0 || i_sup > (n_x_ - 1) || j_sup > (n_y_ - 1) || vertical_spacing_factor_min > 1 )) {
-      InterpolateWindVelocity(link_position, idx_i, idx_j, vertical_spacing_factor_columns, wind_velocity);
+    if (!( i_inf < 0 || j_inf < 0 || vertical_factor_max < 0 || i_sup > (n_x_ - 1) || j_sup > (n_y_ - 1) || vertical_factor_min > 1 )) {
+      // Find indices in z-direction for each of the vertices. If link is not within the range of one of the columns, set indices either to lowest of highest two.
+      int idx_k[8] = {0};
+      idx_k[1] = idx_k[3] = idx_k[5] = idx_k[7] = vertical_spacing_factors_.size() - 1;
+
+      for (int i = 0; i < 4; i++) {
+        if (vertical_factor_columns[i] < 0) {
+          idx_k[2*i+1] = 1;
+        } else if (vertical_factor_columns[i] > 1) {
+          idx_k[2*i] = vertical_spacing_factors_.size() - 2;
+        } else {
+          for (int j = 0; j < vertical_spacing_factors_.size(); j++) {
+            if (vertical_spacing_factors_[j] < vertical_factor_columns[i] && vertical_spacing_factors_[j+1] > vertical_factor_columns[i]) {
+              idx_k[2*i] = j;
+              idx_k[2*i+1] = j + 1;
+              break;
+            }
+          }
+        }
+      }
+
+      // Extract the wind velocities corresponding to each vertex
+      math::Vector3 wind_at_vertices[8];
+      for (int i = 0; i < 8; i++) {
+        wind_at_vertices[i].x = u_[idx_i[i] + idx_j[i] * n_x_ + idx_k[i] * n_x_ * n_y_];
+        wind_at_vertices[i].y = v_[idx_i[i] + idx_j[i] * n_x_ + idx_k[i] * n_x_ * n_y_];
+        wind_at_vertices[i].z = w_[idx_i[i] + idx_j[i] * n_x_ + idx_k[i] * n_x_ * n_y_];
+      }
+
+      // Extract the relevant coordinate of every point needed for trilinear interpolation (first z-direction, then x-direction, then y-direction)
+      float interpolation_points[14];
+      for (int i = 0; i < 14; i++) {
+        if (i < 8) {
+          interpolation_points[i] = (top_z_[idx_i[i] + idx_j[i] * n_x_] - bottom_z_[idx_i[i] + idx_j[i] * n_x_]) * vertical_spacing_factors_[idx_k[i]] + bottom_z_[idx_i[i] + idx_j[i] * n_x_];
+        } else if (i >= 8 && i < 12) {
+          interpolation_points[i] = min_x_ + res_x_ * idx_i[2*(i-8)];
+        } else {
+          interpolation_points[i] = min_y_ + res_y_ * idx_j[i-9];
+        }
+      }
+
+      wind_velocity = TrilinearInterpolation(link_position, wind_at_vertices, interpolation_points);
     } else {
       // Set the wind velocity to the default constant value specified by the user
       wind_velocity = wind_speed_mean_ * wind_direction_;
@@ -196,13 +236,13 @@ void GazeboWindPlugin::OnUpdate(const common::UpdateInfo& _info) {
   wind_speed_pub_.publish(wind_speed_msg);
 }
 
+// This functions opens a text file containing the custom wind field, reads it and saves the data.
 void GazeboWindPlugin::ReadCustomWindField(std::string& custom_wind_field_path) {
   std::ifstream fin;
   fin.open(custom_wind_field_path);
   if (fin.is_open()) {
     std::string data_name;
     float data;
-
     // Read the line with the variable name
     while (fin >> data_name) {
       // Save data on following line into the correct variable
@@ -256,7 +296,6 @@ void GazeboWindPlugin::ReadCustomWindField(std::string& custom_wind_field_path) 
         fin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
       }
     }
-
     fin.close();
 
     ROS_INFO_STREAM("Custom wind field read successfully from text file.");
@@ -266,62 +305,50 @@ void GazeboWindPlugin::ReadCustomWindField(std::string& custom_wind_field_path) 
 
 }
 
-void GazeboWindPlugin::InterpolateWindVelocity(math::Vector3 link_position, int idx_i[8], int idx_j[8], float vertical_spacing_factor_columns[4], math::Vector3& wind_velocity) {
-  // Find indices in z-direction for each of the vertices. If link is not within the range of one of the column, set indices either to lowest of highest two.
-  int idx_k[8] = {0};
-  std::fill_n(&idx_k[4], 4, vertical_spacing_factors_.size() - 1);
+/*
+  Linear interpolation
+    position: y-coordinate of the target point
+    values:   a pointer to an array of size 2 containing the values of the two points to interpolate from (12 and 13)
+    points:   a pointer to an array of size 2 containing the y-coordinate of the two points to interpolate from
+*/
+math::Vector3 GazeboWindPlugin::LinearInterpolation(double position, math::Vector3 *values, float *points) {
+  math::Vector3 value = values[0] + (values[1] - values[0]) / (points[1] - points[0]) * (position - points[0]);
+  return value;
+}
 
-  for (int i = 0; i < 4; i++) {
-    if (vertical_spacing_factor_columns[i] < 0) {
-      idx_k[i+4] = 1;
-    } else if (vertical_spacing_factor_columns[i] > 1) {
-      idx_k[i] = vertical_spacing_factors_.size() - 2;
-    } else {
-      for (int j = 0; j < vertical_spacing_factors_.size(); j++) {
-        if (vertical_spacing_factors_[j] < vertical_spacing_factor_columns[i] && vertical_spacing_factors_[j+1] > vertical_spacing_factor_columns[i]) {
-          idx_k[i] = j;
-          idx_k[i+4] = j + 1;
-          break;
-        }
-      }
-    }
-  }
+/*
+  Bilinear interpolation
+    position: a pointer to an aray of size 2 containing the x and y-coordinates of the target point
+    values:   a pointer to an array of size 4 containing the values of the four points to interpolate from (8, 9, 10 and 11)
+    points:   a pointer to an array of size 6 containing the x-coordinate of the four points to interpolate from,
+              and the y-coordinate of the two intermediate points (12 and 13)
+*/
+math::Vector3 GazeboWindPlugin::BilinearInterpolation(double *position, math::Vector3 *values, float *points) {
+  math::Vector3 intermediate_values[2] = {
+                                            LinearInterpolation(position[0],&(values[0]),&(points[0])),
+                                            LinearInterpolation(position[0],&(values[2]),&(points[2]))
+                                         };
+  math::Vector3 value = LinearInterpolation(position[1], intermediate_values, &(points[4]));
+  return value;
+}
 
-  // Extract the velocities corresponding to each vertex to make interpolation more readable
-  math::Vector3 wind[14];
-  for (int i = 0; i < 8; i++) {
-    wind[i].x = u_[idx_i[i] + idx_j[i] * n_x_ + idx_k[i] * n_x_ * n_y_];
-    wind[i].y = v_[idx_i[i] + idx_j[i] * n_x_ + idx_k[i] * n_x_ * n_y_];
-    wind[i].z = w_[idx_i[i] + idx_j[i] * n_x_ + idx_k[i] * n_x_ * n_y_];
-  }
-
-  // Find z-coordinates of each vertex to make interpolation more readable
-  float z[8];
-  for (int i = 0; i < 8; i++) {
-    z[i] = (top_z_[idx_i[i] + idx_j[i] * n_x_] - bottom_z_[idx_i[i] + idx_j[i] * n_x_]) * vertical_spacing_factors_[idx_k[i]] + bottom_z_[idx_i[i] + idx_j[i] * n_x_];
-  }
-
-  // Interpolate linearly in z-direction
-  for (int i = 8; i < 12; i++) {
-    wind[i] = wind[i-8] + (wind[i-4] - wind[i-8]) / (z[i-4] - z[i-8]) * (link_position.z - z[i-8]);
-  }
-
-  // Find y-coordinates of points 8, 9, 10, 11 to make interpolation more readable
-  float y_8 = min_y_ + res_y_ * idx_j[0];
-  float y_9 = min_y_ + res_y_ * idx_j[1];
-  float y_10 = min_y_ + res_y_ * idx_j[2];
-  float y_11 = min_y_ + res_y_ * idx_j[3];
-
-  // Interpolate linearly in y-direction
-  wind[12] = wind[8] + (wind[11] - wind[8]) / (y_11 - y_8) * (link_position.y - y_8);
-  wind[13] = wind[9] + (wind[10] - wind[9]) / (y_10 - y_9) * (link_position.y - y_9);
-
-  // Find x-coordinates of points 12, 13 to make interpolation more readable
-  float x_12 = min_x_ + res_x_ * idx_i[0];
-  float x_13 = min_x_ + res_x_ * idx_i[1];
-
-  // Interpolate linearly in x-direction
-  wind_velocity = wind[12] + (wind[13] - wind[12]) / (x_13 - x_12) * (link_position.x - x_12);
+/*
+  Trilinear interpolation
+    link_position:  a Vector3 containing the x, y and z-coordinates of the target point
+    values:         a pointer to an array of size 8 containing the values of the eight points to interpolate from (0, 1, 2, 3, 4, 5, 6 and 7)
+    points:         a pointer to an array of size 14 containing the z-coordinate of the eight points to interpolate from,
+                    the x-coordinate of the four intermediate points (8, 9, 10 and 11), and the y-coordinate of the last two intermediate points (12 and 13)
+*/
+math::Vector3 GazeboWindPlugin::TrilinearInterpolation(math::Vector3 link_position, math::Vector3 *values, float *points) {
+  double position[3] = {link_position.x,link_position.y,link_position.z};
+  math::Vector3 intermediate_values[4] = {
+                                            LinearInterpolation(position[2],&(values[0]),&(points[0])),
+                                            LinearInterpolation(position[2],&(values[2]),&(points[2])),
+                                            LinearInterpolation(position[2],&(values[4]),&(points[4])),
+                                            LinearInterpolation(position[2],&(values[6]),&(points[6]))
+                                         };
+  math::Vector3 value = BilinearInterpolation(&(position[0]),intermediate_values,&(points[8]));
+  return value;
 }
 
 GZ_REGISTER_MODEL_PLUGIN(GazeboWindPlugin);

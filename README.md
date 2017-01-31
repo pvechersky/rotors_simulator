@@ -209,7 +209,7 @@ The order in which the data is saved in the text file is not relevant, but the f
 
   3. The rest of the data follows the same format.
 
-An example wind field text file can be seen for the hemicylindrical world at `rotors_gazebo/models/hemicyl` (placed in the same folder as the world model for clarity and convenience).
+An example wind field text file can be seen for the hemicylindrical world at `$(find rotors_gazebo)/models/hemicyl` (placed in the same folder as the world model for clarity and convenience).
 
 #### Wind Plugin Macro
 
@@ -243,11 +243,11 @@ In brief, the plugin works in distinct steps:
 
   2. During update event:
 
-    2.1. Locate the aircraft and see if it is flying within the specified wind field bounds.
+    2.1. Locate the aircraft and see whether it is flying within the specified wind field bounds.
 
-    2.2. If so, identify the grid points at the vertices of the enclosing cell and extract their wind values. If not, set the wind velocity to the default, user-defined value.
+    2.2. If so, identify the grid points forming the vertices of the enclosing cell and extract their wind values. If not, set the wind velocity to the user-defined default value.
 
-    2.3. Interpolate linearly in z,y and x-directions to find the wind velocity at the aircraft position.
+    2.3. Interpolate linearly in z, x and y-directions to find the wind velocity at the aircraft position.
 
     2.4. Publish the wind velocity in a wind speed message.
 
