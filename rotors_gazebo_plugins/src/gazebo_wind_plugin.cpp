@@ -166,28 +166,28 @@ void GazeboWindPlugin::OnUpdate(const common::UpdateInfo& _info) {
     std::fill_n(&idx_j[4], 4, j_sup);
 
     // Find the vertical factor of the aircraft in each of the four surrounding grid columns, and their minimal/maximal value
-    float vertical_factor_columns[4];
+    float vertical_factors_columns[4];
     for (int i = 0; i < 4; i++) {
-      vertical_factor_columns[i] = (link_position.z - bottom_z_[idx_i[2*i] + (idx_j[2*i] * n_x_)]) / (top_z_[idx_i[2*i] + (idx_j[2*i] * n_x_)] - bottom_z_[idx_i[2*i] + (idx_j[2*i] * n_x_)]);
+      vertical_factors_columns[i] = (link_position.z - bottom_z_[idx_i[2*i] + (idx_j[2*i] * n_x_)]) / (top_z_[idx_i[2*i] + (idx_j[2*i] * n_x_)] - bottom_z_[idx_i[2*i] + (idx_j[2*i] * n_x_)]);
     }
 
-    float vertical_factor_min = std::min(std::min(std::min(vertical_factor_columns[0],vertical_factor_columns[1]),vertical_factor_columns[2]),vertical_factor_columns[3]);
-    float vertical_factor_max = std::max(std::max(std::max(vertical_factor_columns[0],vertical_factor_columns[1]),vertical_factor_columns[2]),vertical_factor_columns[3]);
+    float vertical_factors_min = std::min(std::min(std::min(vertical_factors_columns[0],vertical_factors_columns[1]),vertical_factors_columns[2]),vertical_factors_columns[3]);
+    float vertical_factors_max = std::max(std::max(std::max(vertical_factors_columns[0],vertical_factors_columns[1]),vertical_factors_columns[2]),vertical_factors_columns[3]);
 
     // Check if aircraft is out of wind field or not, and act accordingly
-    if (!( i_inf < 0 || j_inf < 0 || vertical_factor_max < 0 || i_sup > (n_x_ - 1) || j_sup > (n_y_ - 1) || vertical_factor_min > 1 )) {
+    if (!( i_inf < 0 || j_inf < 0 || vertical_factors_max < 0 || i_sup > (n_x_ - 1) || j_sup > (n_y_ - 1) || vertical_factors_min > 1 )) {
       // Find indices in z-direction for each of the vertices. If link is not within the range of one of the columns, set indices either to lowest of highest two.
       int idx_k[8] = {0};
       idx_k[1] = idx_k[3] = idx_k[5] = idx_k[7] = vertical_spacing_factors_.size() - 1;
 
       for (int i = 0; i < 4; i++) {
-        if (vertical_factor_columns[i] < 0) {
+        if (vertical_factors_columns[i] < 0) {
           idx_k[2*i+1] = 1;
-        } else if (vertical_factor_columns[i] > 1) {
+        } else if (vertical_factors_columns[i] > 1) {
           idx_k[2*i] = vertical_spacing_factors_.size() - 2;
         } else {
           for (int j = 0; j < vertical_spacing_factors_.size(); j++) {
-            if (vertical_spacing_factors_[j] < vertical_factor_columns[i] && vertical_spacing_factors_[j+1] > vertical_factor_columns[i]) {
+            if (vertical_spacing_factors_[j] < vertical_factors_columns[i] && vertical_spacing_factors_[j+1] > vertical_factors_columns[i]) {
               idx_k[2*i] = j;
               idx_k[2*i+1] = j + 1;
               break;
