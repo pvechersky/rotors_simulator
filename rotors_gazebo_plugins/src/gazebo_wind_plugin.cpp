@@ -184,7 +184,7 @@ void GazeboWindPlugin::OnUpdate(const common::UpdateInfo& _info) {
           idx_k[2*i] = vertical_spacing_factors_.size() - 2;
         } else {                                       // Link z-position between two grid points in that column.
           for (int j = 0; j < vertical_spacing_factors_.size(); j++) {
-            if (vertical_spacing_factors_[j] < vertical_factors_columns[i] && vertical_spacing_factors_[j+1] > vertical_factors_columns[i]) {
+            if (vertical_spacing_factors_[j] <= vertical_factors_columns[i] && vertical_spacing_factors_[j+1] > vertical_factors_columns[i]) {
               idx_k[2*i] = j;
               idx_k[2*i+1] = j + 1;
               break;
