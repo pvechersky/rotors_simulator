@@ -155,8 +155,13 @@ void GazeboWindPlugin::OnUpdate(const common::UpdateInfo& _info) {
 
     // Find the x and y indices of the eight vertices of the cell enclosing the aircraft.
     int i_inf = floor((link_position.x - min_x_) / res_x_);
-    int i_sup = i_inf + 1;
     int j_inf = floor((link_position.y - min_y_) / res_y_);
+
+    // In case aircraft is on one of the boundary surfaces at max_x or max_y
+    if (i_inf == n_x_ - 1) i_inf = n_x_ - 2;
+    if (j_inf == n_y_ - 1) j_inf = n_y_ - 2;
+
+    int i_sup = i_inf + 1;
     int j_sup = j_inf + 1;
 
     int idx_i[8] = {i_inf,i_inf,i_sup,i_sup,i_inf,i_inf,i_sup,i_sup};
@@ -165,7 +170,7 @@ void GazeboWindPlugin::OnUpdate(const common::UpdateInfo& _info) {
     // Find the vertical factor of the aircraft in each of the four surrounding grid columns, and their minimal/maximal value.
     float vertical_factors_columns[4];
     for (int i = 0; i < 4; i++) {
-      vertical_factors_columns[i] = (link_position.z - bottom_z_[idx_i[2*i] + (idx_j[2*i] * n_x_)]) / (top_z_[idx_i[2*i] + (idx_j[2*i] * n_x_)] - bottom_z_[idx_i[2*i] + (idx_j[2*i] * n_x_)]);
+      vertical_factors_columns[i] = (link_position.z - bottom_z_[idx_i[2*i] + idx_j[2*i] * n_x_]) / (top_z_[idx_i[2*i] + idx_j[2*i] * n_x_] - bottom_z_[idx_i[2*i] + idx_j[2*i] * n_x_]);
     }
 
     float vertical_factors_min = std::min(std::min(std::min(vertical_factors_columns[0],vertical_factors_columns[1]),vertical_factors_columns[2]),vertical_factors_columns[3]);
@@ -180,10 +185,10 @@ void GazeboWindPlugin::OnUpdate(const common::UpdateInfo& _info) {
       for (int i = 0; i < 4; i++) {
         if (vertical_factors_columns[i] < 0) {         // Link z-position below lowest grid point of that column.
           idx_k[2*i+1] = 1;
-        } else if (vertical_factors_columns[i] > 1) {  // Link z-position above highest grid point of that column.
+        } else if (vertical_factors_columns[i] >= 1) {  // Link z-position above highest grid point of that column.
           idx_k[2*i] = vertical_spacing_factors_.size() - 2;
         } else {                                       // Link z-position between two grid points in that column.
-          for (int j = 0; j < vertical_spacing_factors_.size(); j++) {
+          for (int j = 0; j < vertical_spacing_factors_.size() - 1; j++) {
             if (vertical_spacing_factors_[j] <= vertical_factors_columns[i] && vertical_spacing_factors_[j+1] > vertical_factors_columns[i]) {
               idx_k[2*i] = j;
               idx_k[2*i+1] = j + 1;
