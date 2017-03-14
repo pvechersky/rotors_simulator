@@ -54,6 +54,9 @@ static constexpr double kDefaultWindGustDuration = 0.0;
 static const math::Vector3 kDefaultWindDirection = math::Vector3(1, 0, 0);
 static const math::Vector3 kDefaultWindGustDirection = math::Vector3(0, 1, 0);
 
+static constexpr bool kDefaultCustomStaticWindField = false;
+static const std::string kDefaultCustomWindFieldPath = "$(find rotors_gazebo)";
+
 /// \brief This gazebo plugin simulates wind acting on a model.
 class GazeboWindPlugin : public ModelPlugin {
  public:
@@ -73,11 +76,17 @@ class GazeboWindPlugin : public ModelPlugin {
         wind_direction_(kDefaultWindDirection),
         wind_gust_direction_(kDefaultWindGustDirection),
         random_generator_(random_device_()),
+        custom_static_wind_field_(kDefaultCustomStaticWindField),
         frame_id_(kDefaultFrameId),
         link_name_(kDefaultLinkName),
         node_handle_(NULL) {}
 
   virtual ~GazeboWindPlugin();
+
+  void ReadCustomWindField(std::string& custom_wind_field_path);
+  math::Vector3 LinearInterpolation(double position, math::Vector3 *values, float *points);
+  math::Vector3 BilinearInterpolation(double *position, math::Vector3 *values, float *points);
+  math::Vector3 TrilinearInterpolation(math::Vector3 link_position, math::Vector3 *values, float *points);
 
  protected:
   /// \brief Load the plugin.
@@ -125,6 +134,20 @@ class GazeboWindPlugin : public ModelPlugin {
 
   common::Time wind_gust_end_;
   common::Time wind_gust_start_;
+
+  bool custom_static_wind_field_;
+  float min_x_;
+  float min_y_;
+  int n_x_;
+  int n_y_;
+  float res_x_;
+  float res_y_;
+  std::vector<float> vertical_spacing_factors_;
+  std::vector<float> bottom_z_;
+  std::vector<float> top_z_;
+  std::vector<float> u_;
+  std::vector<float> v_;
+  std::vector<float> w_;
 
   ros::Publisher wind_pub_;
   ros::Publisher wind_speed_pub_;
