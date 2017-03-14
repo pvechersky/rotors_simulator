@@ -37,4 +37,4 @@ class TeleopWidget(QWidget):
     self.slider_aileron.setSliderPosition(50 + 50 * msg.normalized[0])
     self.slider_elevator.setSliderPosition(50 + 50 * msg.normalized[1])
     self.slider_rudder.setSliderPosition(50 + 50 * msg.normalized[2])
-    self.slider_throttle.setSliderPosition(100 * msg.normalized[3])
+    self.slider_throttle.setSliderPosition(100 * msg.normalized[5])
